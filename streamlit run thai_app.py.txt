@@ -1,0 +1,1 @@
+streamlit run thai_app.py

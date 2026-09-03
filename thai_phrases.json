@@ -1,0 +1,612 @@
+[
+    {
+        "thai": "ตลอดทั้งคืน",
+        "english": "all night",
+        "roman": "tlotthangkhuen"
+    },
+    {
+        "thai": "ขออีกอันหนึ่งครับ",
+        "english": "Another one, please.",
+        "roman": "khoikannuengkhrap"
+    },
+    {
+        "thai": "สีอะไรก็ได้?",
+        "english": "Any color?",
+        "roman": "siaraik็dai?"
+    },
+    {
+        "thai": "นี่เป็นของคุณใช่ไหม?",
+        "english": "are these yours?",
+        "roman": "nipenkhongkhunchaimai?"
+    },
+    {
+        "thai": "คุณจะมาไหม?",
+        "english": "Are you coming?",
+        "roman": "khunchamamai?"
+    },
+    {
+        "thai": "คุณกำลังมองหาอะไรบางอย่างใช่ไหม?",
+        "english": "Are you looking for something?",
+        "roman": "khunkamlangmonghaaraibangoiาngchaimai?"
+    },
+    {
+        "thai": "คุณเหนื่อยมั้ย?",
+        "english": "Are you tired?",
+        "roman": "khunenuemai?"
+    },
+    {
+        "thai": "ในตอนท้าย",
+        "english": "at the end",
+        "roman": "naitonthai"
+    },
+    {
+        "thai": "โปรดให้ความสนใจ",
+        "english": "attention please",
+        "roman": "pontaikwamtnchai"
+    },
+    {
+        "thai": "ข้างหลังคุณ",
+        "english": "Behind you.",
+        "roman": "khanglangkhun"
+    },
+    {
+        "thai": "กล่อง",
+        "english": "box",
+        "roman": "klong"
+    },
+    {
+        "thai": "แฟนหนุ่ม",
+        "english": "boyfriend",
+        "roman": "faennum"
+    },
+    {
+        "thai": "แฟนสาว",
+        "english": "girlfriend",
+        "roman": "faensao"
+    },
+    {
+        "thai": "ซื้อทีหลัง",
+        "english": "buy later",
+        "roman": "suethilang"
+    },
+    {
+        "thai": "ตะเกียบ",
+        "english": "chopsticks",
+        "roman": "takiap"
+    },
+    {
+        "thai": "การทำความสะอาด",
+        "english": "cleaning",
+        "roman": "kanthamkwamsaat"
+    },
+    {
+        "thai": "กลับมาใหม่นะ.",
+        "english": "Come back later.",
+        "roman": "klapmaaimna."
+    },
+    {
+        "thai": "คุณคิดถึงฉันมั้ย?",
+        "english": "Did you miss me?",
+        "roman": "khunkhitthuengchanmai?"
+    },
+    {
+        "thai": "ขณะนี้คุณมีลูกค้าจำนวนมากหรือไม่?",
+        "english": "Do you have many customers at the moment?",
+        "roman": "khananikhunmilukkhachamnuanmakruemai?"
+    },
+    {
+        "thai": "ไม่รู้ว่าฉันต้องการอะไร",
+        "english": "Don't know what I want.",
+        "roman": "mairuwachantongkanarai"
+    },
+    {
+        "thai": "กินอาหารทีหลัง",
+        "english": "eat food later",
+        "roman": "kinahanthilang"
+    },
+    {
+        "thai": "บะหมี่ไข่",
+        "english": "egg noodles",
+        "roman": "bamikhai"
+    },
+    {
+        "thai": "เพลิดเพลินไปกับคืนนี้",
+        "english": "Enjoy tonight.",
+        "roman": "phelitphelinpaikapkhuenni"
+    },
+    {
+        "thai": "ทุกทาง",
+        "english": "every way",
+        "roman": "thukthang"
+    },
+    {
+        "thai": "Find me",
+        "english": "Find me",
+        "roman": "Find me"
+    },
+    {
+        "thai": "สำหรับ",
+        "english": "for",
+        "roman": "samrap"
+    },
+    {
+        "thai": "สำหรับฉัน?",
+        "english": "for me?",
+        "roman": "samrapchan?"
+    },
+    {
+        "thai": "จาก",
+        "english": "from",
+        "roman": "chak"
+    },
+    {
+        "thai": "ด้านหน้าของคุณ",
+        "english": "front of you",
+        "roman": "dannakhongkhun"
+    },
+    {
+        "thai": "ความคิดดี ทำได้ดี",
+        "english": "Good idea. Well done.",
+        "roman": "khwamkhitdi thamdadaiี"
+    },
+    {
+        "thai": "งานดีมากครับ",
+        "english": "Great work.",
+        "roman": "ngandimakkhrap"
+    },
+    {
+        "thai": "ลองเดาดูสิว่าฉันต้องการอะไร",
+        "english": "Guess what I want.",
+        "roman": "longdaodusiwachantongkanarai"
+    },
+    {
+        "thai": "ขอให้เป็นวันที่ดี.",
+        "english": "Have a good day.",
+        "roman": "khohaipenwanthidi."
+    },
+    {
+        "thai": "หนัก?",
+        "english": "heavy?",
+        "roman": "nak?"
+    },
+    {
+        "thai": "ยังไง",
+        "english": "how",
+        "roman": "yangngai"
+    },
+    {
+        "thai": "คุณอยู่กรุงเทพมานานแค่ไหนแล้ว?",
+        "english": "How long have you been in Bangkok?",
+        "roman": "khunyukrungthepmanankhaenailaeo?"
+    },
+    {
+        "thai": "คุณจะอยู่กรุงเทพฯ นานแค่ไหน?",
+        "english": "How long will you stay in Bangkok?",
+        "roman": "khunchayukrungthep nankhaenai?"
+    },
+    {
+        "thai": "ทิปเท่าไหร่?",
+        "english": "How much was the tip?",
+        "roman": "thipthaorai?"
+    },
+    {
+        "thai": "ลูกชายของคุณอายุเท่าไร?",
+        "english": "How old is your son?",
+        "roman": "lukchaikhongkhunaiุthaorai?"
+    },
+    {
+        "thai": "ฉันกำลังเดินไปทางนั้น",
+        "english": "I am walking that way",
+        "roman": "chankamlangdoenpaithangnan"
+    },
+    {
+        "thai": "ฉันไม่สามารถเข้าใจได้.",
+        "english": "I cannot understand.",
+        "roman": "chanmaisamantkhaochaidai."
+    },
+    {
+        "thai": "ฉันจะกลับมาใหม่ทีหลัง.",
+        "english": "I come back later.",
+        "roman": "chanchaklapmaaimthilang."
+    },
+    {
+        "thai": "ฉันไม่สนใจ",
+        "english": "I don't care.",
+        "roman": "chanmaisanachai"
+    },
+    {
+        "thai": "ฉันรู้สึกไม่สบายใจ.",
+        "english": "I feel uncomfortable.",
+        "roman": "chanrusuekmaisabaichai."
+    },
+    {
+        "thai": "ฉันส่งเงินให้คุณแล้ว",
+        "english": "I have sent you money.",
+        "roman": "chansongngoenhaikhunlaeo"
+    },
+    {
+        "thai": "ฉันเพิ่งไปทานอาหารเย็นที่ร้าน",
+        "english": "I just had dinner at....",
+        "roman": "chanphoengpaithanahanyenthiran"
+    },
+    {
+        "thai": "ฉันได้กลิ่น ฉันสูบกัญชามา",
+        "english": "I smell. I have been smoking weed.",
+        "roman": "chandakailin chansupkanchama"
+    },
+    {
+        "thai": "ฉันบอกเธอ",
+        "english": "I told her",
+        "roman": "chanbokthoe"
+    },
+    {
+        "thai": "ฉันรออยู่ข้างนอก",
+        "english": "I wait outside.",
+        "roman": "chanaroyukhangnok"
+    },
+    {
+        "thai": "ฉันจะทำมัน",
+        "english": "I will do it.",
+        "roman": "chanchathamman"
+    },
+    {
+        "thai": "ฉันจะสั่งสองอัน",
+        "english": "I will order two.",
+        "roman": "chanchasangsongan"
+    },
+    {
+        "thai": "ฉันจะจ่ายค่าอาหารเย็นให้ทุกคน",
+        "english": "I will pay dinner for everyone.",
+        "roman": "chanchachaikhaahanyenhaithukkn"
+    },
+    {
+        "thai": "หากคุณเรียนรู้ประโยคหนึ่ง คุณก็เรียนรู้คำศัพท์หลายคำ",
+        "english": "if you learn a sentence, you are learning many words",
+        "roman": "akkhunrianruprayoknueng khunk็rianrukhamsaplaikham"
+    },
+    {
+        "thai": "ดีกว่ามั้ย?",
+        "english": "Is it better?",
+        "roman": "dikwamai?"
+    },
+    {
+        "thai": "นั่นพายแอปเปิ้ลเหรอ?",
+        "english": "Is that apple pie?",
+        "roman": "nanphaiaeppoenero?"
+    },
+    {
+        "thai": "มันเป็นเรื่องง่ายสำหรับฉัน",
+        "english": "It is easy for me.",
+        "roman": "manpenrueangngaisamrapchan"
+    },
+    {
+        "thai": "มันยากมาก.",
+        "english": "It is very difficult.",
+        "roman": "manyakmak."
+    },
+    {
+        "thai": "ภายหลัง",
+        "english": "later",
+        "roman": "phailang"
+    },
+    {
+        "thai": "ขา",
+        "english": "legs",
+        "roman": "kha"
+    },
+    {
+        "thai": "น้องชาย",
+        "english": "little brother",
+        "roman": "nongchai"
+    },
+    {
+        "thai": "น้องสาว",
+        "english": "little sister",
+        "roman": "nongsao"
+    },
+    {
+        "thai": "อาจจะ",
+        "english": "Maybe",
+        "roman": "atcha"
+    },
+    {
+        "thai": "บางทีภายหลัง",
+        "english": "maybe later",
+        "roman": "bangthiphailang"
+    },
+    {
+        "thai": "ยินดีที่ได้เจอคุณอีกครั้ง",
+        "english": "Nice to see you again.",
+        "roman": "yindithidaichoekhunikkrang"
+    },
+    {
+        "thai": "ห้ามจอดรถ",
+        "english": "No parking.",
+        "roman": "amchotrot"
+    },
+    {
+        "thai": "ไม่ใช่ที่นี่",
+        "english": "Not here.",
+        "roman": "maichaithini"
+    },
+    {
+        "thai": "ยังไม่ได้สั่งเลย..",
+        "english": "Not ordering yet.",
+        "roman": "yangmaidaisangloei.."
+    },
+    {
+        "thai": "ยังไม่ถึงจุดนั้น",
+        "english": "Not there yet.",
+        "roman": "yangmaithuengchutnan"
+    },
+    {
+        "thai": "ไม่ใช่คืนนี้",
+        "english": "Not tonight.",
+        "roman": "maichaikhuenni"
+    },
+    {
+        "thai": "ยัง.",
+        "english": "Not yet.",
+        "roman": "yang."
+    },
+    {
+        "thai": "พี่ชาย",
+        "english": "older brother",
+        "roman": "phichai"
+    },
+    {
+        "thai": "อีกหนึ่ง",
+        "english": "one more",
+        "roman": "iknueng"
+    },
+    {
+        "thai": "ขออีกอันหนึ่ง",
+        "english": "one more please",
+        "roman": "khoikannueng"
+    },
+    {
+        "thai": "สั่งซื้อภายหลัง",
+        "english": "Order later",
+        "roman": "sangsuephailang"
+    },
+    {
+        "thai": "ข้างนอกดีขึ้นมาก",
+        "english": "outside much better",
+        "roman": "khangnokdikhuenmak"
+    },
+    {
+        "thai": "ธรรมดา",
+        "english": "plain",
+        "roman": "thamda"
+    },
+    {
+        "thai": "กรุณาอุ่นเครื่องหน่อยนะคะ.",
+        "english": "Please heat up.",
+        "roman": "krunaunkheruengnoinakha."
+    },
+    {
+        "thai": "ฝนตกตลอดทั้งวัน",
+        "english": "rain all day",
+        "roman": "fanatoktlotthangwan"
+    },
+    {
+        "thai": "ฝนตกตลอดคืน",
+        "english": "rain all night",
+        "roman": "fanatoktlotkhuen"
+    },
+    {
+        "thai": "ซ่อมแซมสิ่งนี้",
+        "english": "repair this",
+        "roman": "somsaemsingni"
+    },
+    {
+        "thai": "แก้วเดียวกันก็โอเค",
+        "english": "same glass is ok",
+        "roman": "kaeodiaokank็okhe"
+    },
+    {
+        "thai": "ส่งเงินไปแล้ว",
+        "english": "Sent money now.",
+        "roman": "songngoenpailaeo"
+    },
+    {
+        "thai": "แยก",
+        "english": "separate",
+        "roman": "yaek"
+    },
+    {
+        "thai": "เธอเล่าให้ฉันฟังว่าคุณยุ่งเมื่อคืน",
+        "english": "She told me you were busy last night.",
+        "roman": "thoelaohaichanfangwakhunyungmueakhuen"
+    },
+    {
+        "thai": "แสดงให้ฉันดู",
+        "english": "show me",
+        "roman": "saetnghaichandu"
+    },
+    {
+        "thai": "ท่านอนไม่ดี",
+        "english": "Sleeping position not good.",
+        "roman": "thanonmaidi"
+    },
+    {
+        "thai": "เร็วๆ นี้",
+        "english": "soon",
+        "roman": "reo ni"
+    },
+    {
+        "thai": "เริ่ม",
+        "english": "start",
+        "roman": "roem"
+    },
+    {
+        "thai": "เริ่มงานได้เลย.",
+        "english": "Start work.",
+        "roman": "roemngandailoei."
+    },
+    {
+        "thai": "หยุดอยู่ตรงนั้น",
+        "english": "stop there",
+        "roman": "yutyutranganan"
+    },
+    {
+        "thai": "ตรงไปข้างหน้า.",
+        "english": "Straight ahead.",
+        "roman": "trongpaikhangna."
+    },
+    {
+        "thai": "นั่นไม่ดีเลย",
+        "english": "That is not good.",
+        "roman": "nanmaidiloei"
+    },
+    {
+        "thai": "นั่นไม่ใช่สิ่งที่ฉันขอ",
+        "english": "That is not what I asked for.",
+        "roman": "nanmaichaisingthichanakho"
+    },
+    {
+        "thai": "ที่สุด",
+        "english": "the best",
+        "roman": "thisut"
+    },
+    {
+        "thai": "แก้วนี้ก็โอเคนะ",
+        "english": "This glass is okay.",
+        "roman": "kaeonik็okhena"
+    },
+    {
+        "thai": "นี่คือเพื่อนของฉันจากออสเตรเลีย",
+        "english": "this is my friend from Australia",
+        "roman": "nikhuephueankhongchanchakottenlia"
+    },
+    {
+        "thai": "อันนี้",
+        "english": "this one",
+        "roman": "anni"
+    },
+    {
+        "thai": "วันนี้เป็นวันทำความสะอาด",
+        "english": "Today is cleaning day.",
+        "roman": "wannipenwanthamkwamsaat"
+    },
+    {
+        "thai": "แยกกัน",
+        "english": "together separate",
+        "roman": "yaekkan"
+    },
+    {
+        "thai": "มากเกินไป",
+        "english": "too much",
+        "roman": "makkoenpai"
+    },
+    {
+        "thai": "ปิดพัดลม",
+        "english": "Turn off fan.",
+        "roman": "pitphatnm"
+    },
+    {
+        "thai": "แล้วแต่คุณ.",
+        "english": "Up to you.",
+        "roman": "laeotaekhun."
+    },
+    {
+        "thai": "สุขภาพดีมาก",
+        "english": "Very healthy",
+        "roman": "sukphapdimak"
+    },
+    {
+        "thai": "เงียบมาก",
+        "english": "very quiet",
+        "roman": "ngiapmak"
+    },
+    {
+        "thai": "อยากให้ฉันย้ายมั้ย?",
+        "english": "Want me to move?",
+        "roman": "yakhaichanyaimai?"
+    },
+    {
+        "thai": "เราไปกันเถอะ",
+        "english": "We go.",
+        "roman": "raopaikanthoe"
+    },
+    {
+        "thai": "เราคุยกันทีหลัง",
+        "english": "we talk later",
+        "roman": "raokhuikanthilang"
+    },
+    {
+        "thai": "คุณทำอะไร?",
+        "english": "What did you make?",
+        "roman": "khunthamarai?"
+    },
+    {
+        "thai": "คุณกำลังมองหาอะไรอยู่?",
+        "english": "What you looking for?",
+        "roman": "khunkamlangmonghaaraiyu?"
+    },
+    {
+        "thai": "อยู่ที่ไหน",
+        "english": "where is",
+        "roman": "yuthinai"
+    },
+    {
+        "thai": "น้ำแข็งของฉันอยู่ไหน?",
+        "english": "Where is my ice?",
+        "roman": "namkhae็ngkhongchanyunai?"
+    },
+    {
+        "thai": "คุณกำลังมองหาใครอยู่?",
+        "english": "Who are you looking for?",
+        "roman": "khunkamlangmonghakhainyu?"
+    },
+    {
+        "thai": "นั่นใคร?",
+        "english": "who is that?",
+        "roman": "nankhain?"
+    },
+    {
+        "thai": "จะกลับมาเร็วๆ นี้.",
+        "english": "Will come back soon.",
+        "roman": "chaklapmareo ni."
+    },
+    {
+        "thai": "ใช่ครับ ฉันจะถึงที่นั่นภายใน 1 ชั่วโมง",
+        "english": "Yes. I will be there in 1 hour.",
+        "roman": "chaikhrap chanchathuengthinanphainai 1 chuamong"
+    },
+    {
+        "thai": "วันนี้คุณมาเช้า",
+        "english": "You are early today.",
+        "roman": "wannikhunmachao"
+    },
+    {
+        "thai": "คุณมีหน้าตาที่สวยจัง",
+        "english": "You have a nice face.",
+        "roman": "khunminatathisuaichang"
+    },
+    {
+        "thai": "คุณมีขาที่สวยจัง",
+        "english": "You have great legs.",
+        "roman": "khunmikhathisuaichang"
+    },
+    {
+        "thai": "คุณไม่เคยเปิดเลย",
+        "english": "You never open.",
+        "roman": "khunmaikhoeipoetloei"
+    },
+    {
+        "thai": "คุณอยู่ที่นี่",
+        "english": "You stay here.",
+        "roman": "khunyuthini"
+    },
+    {
+        "thai": "คุณต้องการให้ฉันย้ายเหรอ?",
+        "english": "You want me to move?",
+        "roman": "khuntongkanhaichanyaiero?"
+    },
+    {
+        "thai": "ภาษาอังกฤษของคุณกำลังดีขึ้น",
+        "english": "Your English is getting better.",
+        "roman": "phasaangkritkhongkhunkamlangdikhuen"
+    }
+]
