@@ -23,7 +23,7 @@ st.markdown("""
     }
 
     /* Target all Streamlit buttons for clean single-line text */
-    div.stButton > button {
+    div.stButton > button, div[data-testid="stCustomComponent"] button {
         font-size: 15px !important;
         font-weight: bold !important;
         border-radius: 8px !important;
@@ -31,11 +31,12 @@ st.markdown("""
         white-space: nowrap !important;
     }
 
-    /* Orange Primary Buttons */
-    div.stButton > button[kind="primary"] {
+    /* Orange Primary Buttons & Custom Mic Button Styling */
+    div.stButton > button[kind="primary"], div[data-testid="stCustomComponent"] button {
         background-color: #FF6600 !important;
         color: #FFFFFF !important;
         border: none !important;
+        width: 100% !important;
     }
 
     /* Navy Secondary Buttons */
@@ -86,8 +87,6 @@ if "reveal" not in st.session_state:
     st.session_state.reveal = False
 if "interpreted_thai" not in st.session_state:
     st.session_state.interpreted_thai = ""
-if "translation_error" not in st.session_state:
-    st.session_state.translation_error = False
 
 current_phrase = PHRASES_DB[st.session_state.phrase_index]
 total = len(PHRASES_DB)
@@ -115,17 +114,7 @@ if centered_button("▶ Play Phrase", "btn_play", type="primary"):
     md_audio = f'<audio autoplay src="data:audio/mp3;base64,{b64_audio}"></audio>'
     st.markdown(md_audio, unsafe_allow_html=True)
 
-# 5. Microphone Input Button
-_, mic_col, _ = st.columns([1, 4, 1])
-with mic_col:
-    spoken_audio = mic_recorder(
-        start_prompt="🎙 Speak On",
-        stop_prompt="⏹ Stop",
-        key='recorder',
-        use_container_width=True
-    )
-
-# 6. Navigation Buttons (Forced horizontally: Prev | Rand | Next)
+# 5. Navigation Buttons (Horizontal Layout)
 nav_col1, nav_col2, nav_col3 = st.columns([1, 1, 1])
 
 with nav_col1:
@@ -133,7 +122,6 @@ with nav_col1:
         st.session_state.phrase_index = (st.session_state.phrase_index - 1) % total
         st.session_state.reveal = False
         st.session_state.interpreted_thai = ""
-        st.session_state.translation_error = False
         st.rerun()
 
 with nav_col2:
@@ -141,7 +129,6 @@ with nav_col2:
         st.session_state.phrase_index = random.randint(0, total - 1)
         st.session_state.reveal = False
         st.session_state.interpreted_thai = ""
-        st.session_state.translation_error = False
         st.rerun()
 
 with nav_col3:
@@ -149,25 +136,26 @@ with nav_col3:
         st.session_state.phrase_index = (st.session_state.phrase_index + 1) % total
         st.session_state.reveal = False
         st.session_state.interpreted_thai = ""
-        st.session_state.translation_error = False
         st.rerun()
 
 st.divider()
 
-# 7. Interpreted Thai Output Display Field
-if st.session_state.translation_error:
-    st.markdown("<h2 style='text-align: center; color: #CC0000; font-size: 28px; font-weight: bold;'>Not Understood</h2>", unsafe_allow_html=True)
-elif st.session_state.interpreted_thai:
+# 6. Interpreted Thai Output Display Field
+if st.session_state.interpreted_thai:
     st.markdown(f"<h2 style='text-align: center; color: #FF6600; font-size: 32px; font-weight: bold;'>{st.session_state.interpreted_thai}</h2>", unsafe_allow_html=True)
 else:
-    st.markdown("<p style='text-align: center; color: #888888; font-size: 15px;'>Press TRANSLATE to generate Thai phrase</p>", unsafe_allow_html=True)
+    st.markdown("<p style='text-align: center; color: #888888; font-size: 15px;'>Spoken Thai text will display here...</p>", unsafe_allow_html=True)
 
-# 8. Translate Button Action
-if centered_button("TRANSLATE", "btn_translate", type="primary"):
-    if spoken_audio and 'text' in spoken_audio and spoken_audio['text'].strip():
-        st.session_state.interpreted_thai = spoken_audio['text']
-        st.session_state.translation_error = False
-    else:
-        st.session_state.interpreted_thai = ""
-        st.session_state.translation_error = True
-    st.rerun()
+# 7. Integrated Translate / Microphone Button
+_, translate_col, _ = st.columns([1, 4, 1])
+with translate_col:
+    spoken_audio = mic_recorder(
+        start_prompt="🎙 TRANSLATE",
+        stop_prompt="⏹ Stop Recording",
+        key='translate_recorder',
+        use_container_width=True
+    )
+
+# Capture transcribed text into the output field without error states
+if spoken_audio and 'text' in spoken_audio and spoken_audio['text'].strip():
+    st.session_state.interpreted_thai = spoken_audio['text']
