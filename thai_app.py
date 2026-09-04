@@ -2,29 +2,25 @@ import streamlit as st
 from gtts import gTTS
 import io
 import base64
-from streamlit_mic_recorder import mic_recorder
-import speech_recognition as sr
 import random
+import streamlit.components.v1 as components
 
 st.set_page_config(layout="centered")
 
-# --- Custom CSS Styling & Forced Horizontal Layout ---
+# --- Custom Mobile CSS Styling ---
 st.markdown("""
     <style>
-    /* Force Light Theme */
     .stApp {
         background-color: #FFFFFF !important;
         color: #000000 !important;
     }
 
-    /* Shift whole page content upward */
     .block-container {
         padding-top: 1rem !important;
         padding-bottom: 0rem !important;
     }
 
-    /* Target all Streamlit buttons for clean single-line text */
-    div.stButton > button, div[data-testid="stCustomComponent"] button {
+    div.stButton > button {
         font-size: 15px !important;
         font-weight: bold !important;
         border-radius: 8px !important;
@@ -32,22 +28,18 @@ st.markdown("""
         white-space: nowrap !important;
     }
 
-    /* Orange Primary Buttons & Custom Mic Button Styling */
-    div.stButton > button[kind="primary"], div[data-testid="stCustomComponent"] button {
+    div.stButton > button[kind="primary"] {
         background-color: #FF6600 !important;
         color: #FFFFFF !important;
         border: none !important;
-        width: 100% !important;
     }
 
-    /* Navy Secondary Buttons */
     div.stButton > button[kind="secondary"] {
         background-color: #1A202C !important;
         color: #FFFFFF !important;
         border: none !important;
     }
 
-    /* FORCE HORIZONTAL ROW ON MOBILE: Prevent st.columns from stacking vertically */
     div[data-testid="stHorizontalBlock"] {
         display: flex !important;
         flex-direction: row !important;
@@ -60,7 +52,6 @@ st.markdown("""
         min-width: 0 !important;
     }
 
-    /* Reduce Vertical Gaps Between Blocks */
     div[data-testid="stVerticalBlock"] > div {
         margin-bottom: -10px !important;
         padding-bottom: 0px !important;
@@ -68,35 +59,30 @@ st.markdown("""
     </style>
 """, unsafe_allow_html=True)
 
-# Helper function to center single controls
 def centered_button(label, key, type="secondary"):
     _, col, _ = st.columns([1, 4, 1])
     with col:
         return st.button(label, key=key, type=type, use_container_width=True)
 
-# Dataset
 PHRASES_DB = [
     {"thai": "เลี้ยวขวาครับ", "english": "Turn right please."},
     {"thai": "ตรงไปแล้วเลี้ยวซ้าย", "english": "Go straight then turn left."},
     {"thai": "ขอโทษครับ", "english": "Excuse me."}
 ]
 
-# --- Initialize Session State ---
 if "phrase_index" not in st.session_state:
     st.session_state.phrase_index = 0
 if "reveal" not in st.session_state:
     st.session_state.reveal = False
-if "interpreted_thai" not in st.session_state:
-    st.session_state.interpreted_thai = ""
 
 current_phrase = PHRASES_DB[st.session_state.phrase_index]
 total = len(PHRASES_DB)
 
-# 1. Main Title & Main Thai Phrase Display
+# 1. Main Title & Display
 st.markdown("<h3 style='text-align: center; color: #000000; margin-top: 0px;'>Thai Listening and Reading</h3>", unsafe_allow_html=True)
 st.markdown(f"<h1 style='text-align: center; font-size: 40px; color: #000000; margin: 4px 0;'>{current_phrase['thai']}</h1>", unsafe_allow_html=True)
 
-# 2. English Hint Text under Main Phrase (Blue Text)
+# 2. English Hint
 if st.session_state.reveal:
     st.markdown(f"<p style='text-align: center; color: #0066CC; font-size: 20px; font-weight: bold; margin-bottom: 4px;'>{current_phrase['english']}</p>", unsafe_allow_html=True)
 else:
@@ -115,57 +101,90 @@ if centered_button("▶ Play Phrase", "btn_play", type="primary"):
     md_audio = f'<audio autoplay src="data:audio/mp3;base64,{b64_audio}"></audio>'
     st.markdown(md_audio, unsafe_allow_html=True)
 
-# 5. Navigation Buttons (Horizontal Layout)
+# 5. Navigation Buttons
 nav_col1, nav_col2, nav_col3 = st.columns([1, 1, 1])
 
 with nav_col1:
     if st.button("⬅ Prev", key="btn_prev", type="secondary", use_container_width=True):
         st.session_state.phrase_index = (st.session_state.phrase_index - 1) % total
         st.session_state.reveal = False
-        st.session_state.interpreted_thai = ""
         st.rerun()
 
 with nav_col2:
     if st.button("🔀 Rand", key="btn_rand", type="secondary", use_container_width=True):
         st.session_state.phrase_index = random.randint(0, total - 1)
         st.session_state.reveal = False
-        st.session_state.interpreted_thai = ""
         st.rerun()
 
 with nav_col3:
     if st.button("➡ Next", key="btn_next", type="secondary", use_container_width=True):
         st.session_state.phrase_index = (st.session_state.phrase_index + 1) % total
         st.session_state.reveal = False
-        st.session_state.interpreted_thai = ""
         st.rerun()
 
 st.divider()
 
-# 6. Interpreted Thai Output Display Field
-if st.session_state.interpreted_thai:
-    st.markdown(f"<h2 style='text-align: center; color: #FF6600; font-size: 32px; font-weight: bold;'>{st.session_state.interpreted_thai}</h2>", unsafe_allow_html=True)
-else:
-    st.markdown("<p style='text-align: center; color: #888888; font-size: 15px;'>Spoken Thai text will display here...</p>", unsafe_allow_html=True)
+# 6. Browser Native Speech-to-Text Component (Orange Display + Button)
+st_speech_html = """
+<div style="text-align: center; font-family: sans-serif;">
+    <div id="output" style="color: #FF6600; font-size: 30px; font-weight: bold; min-height: 45px; margin-bottom: 10px;">
+        Spoken Thai text will display here...
+    </div>
+    <button id="stt-btn" style="
+        background-color: #FF6600;
+        color: white;
+        font-size: 16px;
+        font-weight: bold;
+        border: none;
+        border-radius: 8px;
+        padding: 10px 0px;
+        width: 70%;
+        max-width: 280px;
+        cursor: pointer;
+    ">🎙 TRANSLATE</button>
+</div>
 
-# 7. Integrated Translate / Microphone Button
-_, translate_col, _ = st.columns([1, 4, 1])
-with translate_col:
-    spoken_audio = mic_recorder(
-        start_prompt="🎙 TRANSLATE",
-        stop_prompt="⏹ Stop Recording",
-        key='translate_recorder',
-        use_container_width=True
-    )
+<script>
+    const btn = document.getElementById('stt-btn');
+    const output = document.getElementById('output');
+    
+    const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+    
+    if (SpeechRecognition) {
+        const recognition = new SpeechRecognition();
+        recognition.lang = 'th-TH';
+        recognition.interimResults = false;
 
-# Process audio bytes with Speech Recognition for Thai language (th-TH)
-if spoken_audio and 'bytes' in spoken_audio and spoken_audio['bytes']:
-    recognizer = sr.Recognizer()
-    audio_file = io.BytesIO(spoken_audio['bytes'])
-    try:
-        with sr.AudioFile(audio_file) as source:
-            audio_data = recognizer.record(source)
-            text = recognizer.recognize_google(audio_data, language="th-TH")
-            st.session_state.interpreted_thai = text
-            st.rerun()
-    except Exception:
-        pass
+        btn.onclick = () => {
+            try {
+                recognition.start();
+                btn.innerText = "⏹ Listening...";
+                btn.style.backgroundColor = "#CC0000";
+            } catch(e) {
+                recognition.stop();
+            }
+        };
+
+        recognition.onresult = (event) => {
+            const transcript = event.results[0][0].transcript;
+            output.innerText = transcript;
+            btn.innerText = "🎙 TRANSLATE";
+            btn.style.backgroundColor = "#FF6600";
+        };
+
+        recognition.onerror = () => {
+            btn.innerText = "🎙 TRANSLATE";
+            btn.style.backgroundColor = "#FF6600";
+        };
+
+        recognition.onend = () => {
+            btn.innerText = "🎙 TRANSLATE";
+            btn.style.backgroundColor = "#FF6600";
+        };
+    } else {
+        output.innerText = "Speech Recognition not supported in browser";
+    }
+</script>
+"""
+
+components.html(st_speech_html, height=130)
