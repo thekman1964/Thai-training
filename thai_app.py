@@ -3,6 +3,7 @@ from gtts import gTTS
 import io
 import base64
 from streamlit_mic_recorder import mic_recorder
+import speech_recognition as sr
 import random
 
 st.set_page_config(layout="centered")
@@ -156,6 +157,15 @@ with translate_col:
         use_container_width=True
     )
 
-# Capture transcribed text into the output field without error states
-if spoken_audio and 'text' in spoken_audio and spoken_audio['text'].strip():
-    st.session_state.interpreted_thai = spoken_audio['text']
+# Process audio bytes with Speech Recognition for Thai language (th-TH)
+if spoken_audio and 'bytes' in spoken_audio and spoken_audio['bytes']:
+    recognizer = sr.Recognizer()
+    audio_file = io.BytesIO(spoken_audio['bytes'])
+    try:
+        with sr.AudioFile(audio_file) as source:
+            audio_data = recognizer.record(source)
+            text = recognizer.recognize_google(audio_data, language="th-TH")
+            st.session_state.interpreted_thai = text
+            st.rerun()
+    except Exception:
+        pass
