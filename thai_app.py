@@ -1,132 +1,126 @@
 import streamlit as st
 from gtts import gTTS
 import io
+import base64
 from streamlit_mic_recorder import mic_recorder
 import random
 
 st.set_page_config(layout="centered")
 
-# --- Mobile Compact Styling ---
+# --- Custom Mobile Layout & Button CSS ---
 st.markdown("""
     <style>
-    /* Force white background and zero out top margins */
-    .stApp { background-color: #FFFFFF !important; }
-    .block-container { 
-        padding-top: 1.5rem !important; 
-        padding-bottom: 0.5rem !important; 
-        max-width: 420px !important; 
+    /* Force Light Theme */
+    .stApp {
+        background-color: #FFFFFF !important;
+        color: #000000 !important;
     }
     
-    /* Compact half-width buttons with explicit light text */
+    /* Center and widen standard Streamlit buttons to avoid vertical text wrapping */
     div.stButton > button {
-        width: 60% !important;
-        margin: 0 auto !important;
-        display: block !important;
-        border-radius: 6px !important;
+        width: 70% !important;
+        max-width: 280px !important;
+        margin-left: auto !important;
+        margin-right: auto !important;
+        font-size: 20px !important;
         font-weight: bold !important;
-        font-size: 15px !important;
-        padding: 4px 8px !important;
-        background-color: #2D3748 !important;
-        color: #FFFFFF !important;
+        border-radius: 8px !important;
+        display: block !important;
+        padding: 8px 0px !important;
+        white-space: nowrap !important;
     }
 
-    /* Primary Orange Buttons (Play & Translate) */
+    /* Orange Primary Buttons */
     div.stButton > button[kind="primary"] {
         background-color: #FF6600 !important;
         color: #FFFFFF !important;
+        border: none !important;
     }
 
-    /* Orange Output Display Field at Bottom */
-    .thai-speech-box {
-        border: 2px solid #FF6600;
-        background-color: #FFF5EC;
-        border-radius: 6px;
-        color: #FF6600;
-        font-size: 20px;
-        font-weight: bold;
-        text-align: center;
-        padding: 6px;
-        margin: 6px 0;
+    /* Navy Secondary Buttons */
+    div.stButton > button[kind="secondary"] {
+        background-color: #1A202C !important;
+        color: #FFFFFF !important;
+        border: none !important;
+    }
+
+    /* Reduce Vertical Gaps Between Elements */
+    div[data-testid="stVerticalBlock"] > div {
+        margin-bottom: -8px !important;
+        padding-bottom: 0px !important;
     }
     </style>
 """, unsafe_allow_html=True)
 
-# Sample Phrase Database
+# Dataset
 PHRASES_DB = [
     {"thai": "เลี้ยวขวาครับ", "english": "Turn right please."},
     {"thai": "ตรงไปแล้วเลี้ยวซ้าย", "english": "Go straight then turn left."},
     {"thai": "ขอโทษครับ", "english": "Excuse me."}
 ]
 
-# Session State
 if "phrase_index" not in st.session_state:
     st.session_state.phrase_index = 0
 if "reveal" not in st.session_state:
     st.session_state.reveal = False
-if "tts_audio" not in st.session_state:
-    st.session_state.tts_audio = None
-if "translated_text" not in st.session_state:
-    st.session_state.translated_text = ""
 
 current_phrase = PHRASES_DB[st.session_state.phrase_index]
-total_phrases = len(PHRASES_DB)
+total = len(PHRASES_DB)
 
-# 1. Main Phrase Display
-st.markdown(f"<h1 style='text-align: center; font-size: 34px; color: #000000; margin-top: 0; margin-bottom: 2px;'>{current_phrase['thai']}</h1>", unsafe_allow_html=True)
+# 1. Main Thai Display
+st.markdown("<h2 style='text-align: center; color: #000000;'>Thai Listening and Reading</h2>", unsafe_allow_html=True)
+st.markdown(f"<h1 style='text-align: center; font-size: 44px; color: #000000; margin: 10px 0;'>{current_phrase['thai']}</h1>", unsafe_allow_html=True)
 
-# 2. English Translation (Blue & Bold when revealed)
 if st.session_state.reveal:
-    st.markdown(f"<p style='text-align: center; color: #0055FF; font-weight: bold; font-size: 18px; margin-bottom: 6px;'>{current_phrase['english']}</p>", unsafe_allow_html=True)
+    st.markdown(f"<p style='text-align: center; color: #333333; font-size: 20px;'>{current_phrase['english']}</p>", unsafe_allow_html=True)
 else:
-    st.markdown("<p style='text-align: center; color: #666666; font-size: 13px; margin-bottom: 6px;'>Click \"Reveal\" to view English translation</p>", unsafe_allow_html=True)
+    st.markdown("<p style='text-align: center; color: #777777; font-size: 16px;'>Click \"Reveal\" to view English translation</p>", unsafe_allow_html=True)
 
-# 3. Action Buttons
-if st.button("👁 Reveal", key="btn_reveal"):
+# 2. Reveal Button
+if st.button("👁 Reveal", key="btn_reveal", type="secondary"):
     st.session_state.reveal = not st.session_state.reveal
 
+# 3. Play Phrase (Triggers background HTML5 autoplay without visible audio player bar)
 if st.button("▶ Play Phrase", key="btn_play", type="primary"):
     tts = gTTS(text=current_phrase["thai"], lang='th')
     fp = io.BytesIO()
     tts.write_to_fp(fp)
-    st.session_state.tts_audio = fp.getvalue()
+    b64_audio = base64.b64encode(fp.getvalue()).decode()
+    md_audio = f'<audio autoplay src="data:audio/mp3;base64,{b64_audio}"></audio>'
+    st.markdown(md_audio, unsafe_allow_html=True)
 
-if st.session_state.tts_audio:
-    st.audio(st.session_state.tts_audio, format='audio/mp3')
-
-# 4. Microphone Input Toggle
+# 4. Microphone Input
 spoken_audio = mic_recorder(
     start_prompt="🎙 Speak On",
-    stop_prompt="⏹ Speak Off",
+    stop_prompt="⏹ Stop",
     key='recorder',
     use_container_width=True
 )
 
-# 5. Navigation Controls
-if st.button("⬅ Previous", key="btn_prev"):
-    st.session_state.phrase_index = (st.session_state.phrase_index - 1) % total_phrases
+# 5. Navigation Buttons
+if st.button("⬅ Previous", key="btn_prev", type="secondary"):
+    st.session_state.phrase_index = (st.session_state.phrase_index - 1) % total
     st.session_state.reveal = False
-    st.session_state.tts_audio = None
     st.rerun()
 
-if st.button("➡ Next", key="btn_next"):
-    st.session_state.phrase_index = (st.session_state.phrase_index + 1) % total_phrases
+if st.button("➡ Next", key="btn_next", type="secondary"):
+    st.session_state.phrase_index = (st.session_state.phrase_index + 1) % total
     st.session_state.reveal = False
-    st.session_state.tts_audio = None
     st.rerun()
 
-if st.button("🔀 Random", key="btn_rand"):
-    st.session_state.phrase_index = random.randint(0, total_phrases - 1)
+if st.button("🔀 Random", key="btn_rand", type="secondary"):
+    st.session_state.phrase_index = random.randint(0, total - 1)
     st.session_state.reveal = False
-    st.session_state.tts_audio = None
     st.rerun()
 
-# 6. Bottom Output Box & Orange Translate Button
-text_to_show = st.session_state.translated_text if st.session_state.translated_text else "Heard Thai Text / Translation"
+st.divider()
+
+# 6. Bottom Output Field
+text_to_show = current_phrase["english"]
 if spoken_audio and 'text' in spoken_audio and spoken_audio['text']:
     text_to_show = spoken_audio['text']
 
-st.markdown(f"<div class='thai-speech-box'>{text_to_show}</div>", unsafe_allow_html=True)
+st.markdown(f"<h2 style='text-align: center; color: #FF6600; font-size: 32px;'>{text_to_show}</h2>", unsafe_allow_html=True)
 
-if st.button("TRANSLATE", key="btn_translate", type="primary"):
-    st.session_state.translated_text = current_phrase['english']
-    st.rerun()
+# 7. Orange Translate Button
+st.button("TRANSLATE", key="btn_translate", type="primary")
