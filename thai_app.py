@@ -7,7 +7,7 @@ import random
 
 st.set_page_config(layout="centered")
 
-# --- Custom CSS Styling & Tight Layout Spacing ---
+# --- Custom CSS Styling & Forced Horizontal Layout ---
 st.markdown("""
     <style>
     /* Force Light Theme */
@@ -22,7 +22,7 @@ st.markdown("""
         padding-bottom: 0rem !important;
     }
 
-    /* Target all Streamlit buttons for clean single-line text and even height */
+    /* Target all Streamlit buttons for clean single-line text */
     div.stButton > button {
         font-size: 15px !important;
         font-weight: bold !important;
@@ -45,7 +45,20 @@ st.markdown("""
         border: none !important;
     }
 
-    /* Reduce Vertical Gaps Between Elements */
+    /* FORCE HORIZONTAL ROW ON MOBILE: Prevent st.columns from stacking vertically */
+    div[data-testid="stHorizontalBlock"] {
+        display: flex !important;
+        flex-direction: row !important;
+        flex-wrap: nowrap !important;
+        gap: 6px !important;
+    }
+
+    div[data-testid="stHorizontalBlock"] > div {
+        flex: 1 1 0px !important;
+        min-width: 0 !important;
+    }
+
+    /* Reduce Vertical Gaps Between Blocks */
     div[data-testid="stVerticalBlock"] > div {
         margin-bottom: -10px !important;
         padding-bottom: 0px !important;
@@ -53,7 +66,7 @@ st.markdown("""
     </style>
 """, unsafe_allow_html=True)
 
-# Helper function to center single full-width controls
+# Helper function to center single controls
 def centered_button(label, key, type="secondary"):
     _, col, _ = st.columns([1, 4, 1])
     with col:
@@ -83,7 +96,7 @@ total = len(PHRASES_DB)
 st.markdown("<h3 style='text-align: center; color: #000000; margin-top: 0px;'>Thai Listening and Reading</h3>", unsafe_allow_html=True)
 st.markdown(f"<h1 style='text-align: center; font-size: 40px; color: #000000; margin: 4px 0;'>{current_phrase['thai']}</h1>", unsafe_allow_html=True)
 
-# 2. English Hint Text under Main Phrase (In Blue Text)
+# 2. English Hint Text under Main Phrase (Blue Text)
 if st.session_state.reveal:
     st.markdown(f"<p style='text-align: center; color: #0066CC; font-size: 20px; font-weight: bold; margin-bottom: 4px;'>{current_phrase['english']}</p>", unsafe_allow_html=True)
 else:
@@ -112,7 +125,7 @@ with mic_col:
         use_container_width=True
     )
 
-# 6. Navigation Buttons (Previous, Random, Next displayed horizontally in order)
+# 6. Navigation Buttons (Forced horizontally: Prev | Rand | Next)
 nav_col1, nav_col2, nav_col3 = st.columns([1, 1, 1])
 
 with nav_col1:
