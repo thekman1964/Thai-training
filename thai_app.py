@@ -7,7 +7,7 @@ import random
 
 st.set_page_config(layout="centered")
 
-# --- Custom CSS Styling ---
+# --- Custom CSS Styling & Tight Layout Spacing ---
 st.markdown("""
     <style>
     /* Force Light Theme */
@@ -16,12 +16,18 @@ st.markdown("""
         color: #000000 !important;
     }
 
-    /* Target all Streamlit buttons for clean single-line text */
+    /* Shift whole page content upward by cutting default top padding */
+    .block-container {
+        padding-top: 1rem !important;
+        padding-bottom: 0rem !important;
+    }
+
+    /* Target all Streamlit buttons for clean single-line text and even height */
     div.stButton > button {
-        font-size: 18px !important;
+        font-size: 16px !important;
         font-weight: bold !important;
         border-radius: 8px !important;
-        padding: 10px 0px !important;
+        padding: 8px 0px !important;
         white-space: nowrap !important;
     }
 
@@ -39,15 +45,15 @@ st.markdown("""
         border: none !important;
     }
 
-    /* Reduce Vertical Gaps Between Elements */
+    /* Reduce Vertical Gaps Between Elements drastically */
     div[data-testid="stVerticalBlock"] > div {
-        margin-bottom: -6px !important;
+        margin-bottom: -10px !important;
         padding-bottom: 0px !important;
     }
     </style>
 """, unsafe_allow_html=True)
 
-# Helper function to center and scale buttons using native columns
+# Helper function to center single full-width controls
 def centered_button(label, key, type="secondary"):
     _, col, _ = st.columns([1, 4, 1])
     with col:
@@ -73,15 +79,15 @@ if "translation_error" not in st.session_state:
 current_phrase = PHRASES_DB[st.session_state.phrase_index]
 total = len(PHRASES_DB)
 
-# 1. Main Title & Main Thai Phrase Display
-st.markdown("<h2 style='text-align: center; color: #000000;'>Thai Listening and Reading</h2>", unsafe_allow_html=True)
-st.markdown(f"<h1 style='text-align: center; font-size: 42px; color: #000000; margin: 10px 0;'>{current_phrase['thai']}</h1>", unsafe_allow_html=True)
+# 1. Main Title & Main Thai Phrase Display (Shifted higher up)
+st.markdown("<h3 style='text-align: center; color: #000000; margin-top: 0px;'>Thai Listening and Reading</h3>", unsafe_allow_html=True)
+st.markdown(f"<h1 style='text-align: center; font-size: 40px; color: #000000; margin: 4px 0;'>{current_phrase['thai']}</h1>", unsafe_allow_html=True)
 
 # 2. English Hint Text under Main Phrase (In Blue Text)
 if st.session_state.reveal:
-    st.markdown(f"<p style='text-align: center; color: #0066CC; font-size: 22px; font-weight: bold;'>{current_phrase['english']}</p>", unsafe_allow_html=True)
+    st.markdown(f"<p style='text-align: center; color: #0066CC; font-size: 20px; font-weight: bold; margin-bottom: 4px;'>{current_phrase['english']}</p>", unsafe_allow_html=True)
 else:
-    st.markdown("<p style='text-align: center; color: #777777; font-size: 16px;'>Click \"Reveal\" to view English translation</p>", unsafe_allow_html=True)
+    st.markdown("<p style='text-align: center; color: #777777; font-size: 15px; margin-bottom: 4px;'>Click \"Reveal\" to view English translation</p>", unsafe_allow_html=True)
 
 # 3. Reveal Button
 if centered_button("👁 Reveal", "btn_reveal", type="secondary"):
@@ -106,37 +112,42 @@ with mic_col:
         use_container_width=True
     )
 
-# 6. Navigation Buttons
-if centered_button("⬅ Previous", "btn_prev", type="secondary"):
-    st.session_state.phrase_index = (st.session_state.phrase_index - 1) % total
-    st.session_state.reveal = False
-    st.session_state.interpreted_thai = ""
-    st.session_state.translation_error = False
-    st.rerun()
+# 6. Navigation Buttons (Previous, Next, Random side-by-side on one level)
+nav_col1, nav_col2, nav_col3 = st.columns([1, 1, 1])
 
-if centered_button("➡ Next", "btn_next", type="secondary"):
-    st.session_state.phrase_index = (st.session_state.phrase_index + 1) % total
-    st.session_state.reveal = False
-    st.session_state.interpreted_thai = ""
-    st.session_state.translation_error = False
-    st.rerun()
+with nav_col1:
+    if st.button("⬅ Prev", key="btn_prev", type="secondary", use_container_width=True):
+        st.session_state.phrase_index = (st.session_state.phrase_index - 1) % total
+        st.session_state.reveal = False
+        st.session_state.interpreted_thai = ""
+        st.session_state.translation_error = False
+        st.rerun()
 
-if centered_button("🔀 Random", "btn_rand", type="secondary"):
-    st.session_state.phrase_index = random.randint(0, total - 1)
-    st.session_state.reveal = False
-    st.session_state.interpreted_thai = ""
-    st.session_state.translation_error = False
-    st.rerun()
+with nav_col2:
+    if st.button("➡ Next", key="btn_next", type="secondary", use_container_width=True):
+        st.session_state.phrase_index = (st.session_state.phrase_index + 1) % total
+        st.session_state.reveal = False
+        st.session_state.interpreted_thai = ""
+        st.session_state.translation_error = False
+        st.rerun()
+
+with nav_col3:
+    if st.button("🔀 Rand", key="btn_rand", type="secondary", use_container_width=True):
+        st.session_state.phrase_index = random.randint(0, total - 1)
+        st.session_state.reveal = False
+        st.session_state.interpreted_thai = ""
+        st.session_state.translation_error = False
+        st.rerun()
 
 st.divider()
 
 # 7. Interpreted Thai Output Display Field
 if st.session_state.translation_error:
-    st.markdown("<h2 style='text-align: center; color: #CC0000; font-size: 32px; font-weight: bold;'>Not Understood</h2>", unsafe_allow_html=True)
+    st.markdown("<h2 style='text-align: center; color: #CC0000; font-size: 28px; font-weight: bold;'>Not Understood</h2>", unsafe_allow_html=True)
 elif st.session_state.interpreted_thai:
-    st.markdown(f"<h2 style='text-align: center; color: #FF6600; font-size: 36px; font-weight: bold;'>{st.session_state.interpreted_thai}</h2>", unsafe_allow_html=True)
+    st.markdown(f"<h2 style='text-align: center; color: #FF6600; font-size: 32px; font-weight: bold;'>{st.session_state.interpreted_thai}</h2>", unsafe_allow_html=True)
 else:
-    st.markdown("<p style='text-align: center; color: #888888; font-size: 16px;'>Press TRANSLATE to generate Thai phrase</p>", unsafe_allow_html=True)
+    st.markdown("<p style='text-align: center; color: #888888; font-size: 15px;'>Press TRANSLATE to generate Thai phrase</p>", unsafe_allow_html=True)
 
 # 8. Translate Button Action
 if centered_button("TRANSLATE", "btn_translate", type="primary"):
