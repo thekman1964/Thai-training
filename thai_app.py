@@ -16,7 +16,7 @@ st.markdown("""
         color: #000000 !important;
     }
 
-    /* Shift whole page content upward by cutting default top padding */
+    /* Shift whole page content upward */
     .block-container {
         padding-top: 1rem !important;
         padding-bottom: 0rem !important;
@@ -24,7 +24,7 @@ st.markdown("""
 
     /* Target all Streamlit buttons for clean single-line text and even height */
     div.stButton > button {
-        font-size: 16px !important;
+        font-size: 15px !important;
         font-weight: bold !important;
         border-radius: 8px !important;
         padding: 8px 0px !important;
@@ -45,7 +45,7 @@ st.markdown("""
         border: none !important;
     }
 
-    /* Reduce Vertical Gaps Between Elements drastically */
+    /* Reduce Vertical Gaps Between Elements */
     div[data-testid="stVerticalBlock"] > div {
         margin-bottom: -10px !important;
         padding-bottom: 0px !important;
@@ -79,7 +79,7 @@ if "translation_error" not in st.session_state:
 current_phrase = PHRASES_DB[st.session_state.phrase_index]
 total = len(PHRASES_DB)
 
-# 1. Main Title & Main Thai Phrase Display (Shifted higher up)
+# 1. Main Title & Main Thai Phrase Display
 st.markdown("<h3 style='text-align: center; color: #000000; margin-top: 0px;'>Thai Listening and Reading</h3>", unsafe_allow_html=True)
 st.markdown(f"<h1 style='text-align: center; font-size: 40px; color: #000000; margin: 4px 0;'>{current_phrase['thai']}</h1>", unsafe_allow_html=True)
 
@@ -112,7 +112,7 @@ with mic_col:
         use_container_width=True
     )
 
-# 6. Navigation Buttons (Previous, Next, Random side-by-side on one level)
+# 6. Navigation Buttons (Previous, Random, Next displayed horizontally in order)
 nav_col1, nav_col2, nav_col3 = st.columns([1, 1, 1])
 
 with nav_col1:
@@ -124,16 +124,16 @@ with nav_col1:
         st.rerun()
 
 with nav_col2:
-    if st.button("➡ Next", key="btn_next", type="secondary", use_container_width=True):
-        st.session_state.phrase_index = (st.session_state.phrase_index + 1) % total
+    if st.button("🔀 Rand", key="btn_rand", type="secondary", use_container_width=True):
+        st.session_state.phrase_index = random.randint(0, total - 1)
         st.session_state.reveal = False
         st.session_state.interpreted_thai = ""
         st.session_state.translation_error = False
         st.rerun()
 
 with nav_col3:
-    if st.button("🔀 Rand", key="btn_rand", type="secondary", use_container_width=True):
-        st.session_state.phrase_index = random.randint(0, total - 1)
+    if st.button("➡ Next", key="btn_next", type="secondary", use_container_width=True):
+        st.session_state.phrase_index = (st.session_state.phrase_index + 1) % total
         st.session_state.reveal = False
         st.session_state.interpreted_thai = ""
         st.session_state.translation_error = False
