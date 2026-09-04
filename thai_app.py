@@ -36,7 +36,7 @@ st.markdown("""
         margin-bottom: 10px;
     }
     </style>
-""", unsafe_allow_html=e)
+""", unsafe_allow_html=True)
 
 st.title("Thai Listening and Reading")
 
