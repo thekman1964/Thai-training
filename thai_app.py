@@ -4,31 +4,47 @@ import io
 from streamlit_mic_recorder import mic_recorder
 import random
 
-# Force page configuration
+# Force page configuration to centered layout
 st.set_page_config(layout="centered")
 
-# --- Custom Styling: Clean Light Theme ---
+# --- Custom Styling: Compact Single-Screen Layout ---
 st.markdown("""
     <style>
-    /* Clean background */
+    /* Clean white background and remove top/bottom padding */
     .stApp {
         background-color: #FFFFFF;
     }
+    .block-container {
+        padding-top: 1rem !important;
+        padding-bottom: 1rem !important;
+        max-width: 500px !important;
+    }
     
-    /* Ensure readable text color on buttons */
+    /* Compact button styling */
     div.stButton > button {
-        border-radius: 8px;
-        font-weight: bold;
+        border-radius: 8px !important;
+        font-weight: bold !important;
+        padding: 0.35rem 0.5rem !important;
     }
 
-    /* Orange output text for interpreted speech */
-    .thai-speech-output {
+    /* Reduce vertical padding across blocks */
+    div[data-testid="stVerticalBlock"] > div {
+        margin-bottom: -8px !important;
+        padding-bottom: 0 !important;
+    }
+
+    /* Custom box for translated Thai speech text */
+    .thai-speech-box {
+        background-color: #FFF5EC;
+        border: 2px solid #FF6600;
+        border-radius: 8px;
         color: #FF6600;
-        font-size: 32px;
+        font-size: 26px;
         font-weight: bold;
         text-align: center;
-        margin-top: 15px;
-        margin-bottom: 15px;
+        padding: 10px;
+        margin-top: 10px;
+        margin-bottom: 10px;
     }
     </style>
 """, unsafe_allow_html=True)
@@ -47,8 +63,6 @@ if "reveal" not in st.session_state:
     st.session_state.reveal = False
 if "tts_audio" not in st.session_state:
     st.session_state.tts_audio = None
-if 'translated' not in st.session_state:
-    st.session_state.translated = False
 
 current_phrase = PHRASES_DB[st.session_state.phrase_index]
 total_phrases = len(PHRASES_DB)
@@ -69,20 +83,18 @@ def random_phrase():
     st.session_state.reveal = False
     st.session_state.tts_audio = None
 
-# --- APP LAYOUT ---
+# --- COMPACT APP LAYOUT ---
 
-st.title("Thai Listening and Reading")
+# 1. Main Phrase Display (Moved right to top)
+st.markdown(f"<h1 style='text-align: center; font-size: 38px; color: #000000; margin-top: 0px; margin-bottom: 2px;'>{current_phrase['thai']}</h1>", unsafe_allow_html=True)
 
-# Main Phrase Display Area
-st.markdown(f"<h1 style='text-align: center; font-size: 40px; color: #000000; margin-bottom: 5px;'>{current_phrase['thai']}</h1>", unsafe_allow_html=True)
-
-# English Translation / Hint
+# 2. English Translation / Hint
 if st.session_state.reveal:
-    st.markdown(f"<p style='text-align: center; font-size: 20px; color: #000000;'>{current_phrase['english']}</p>", unsafe_allow_html=True)
+    st.markdown(f"<p style='text-align: center; font-size: 18px; color: #000000; margin-bottom: 8px;'>{current_phrase['english']}</p>", unsafe_allow_html=True)
 else:
-    st.markdown("<p style='text-align: center; color: #555555; font-size: 16px;'>Click \"Reveal\" to view English translation</p>", unsafe_allow_html=True)
+    st.markdown("<p style='text-align: center; color: #666666; font-size: 14px; margin-bottom: 8px;'>Click \"Reveal\" to view English translation</p>", unsafe_allow_html=True)
 
-# Reveal & Play Phrase Buttons
+# 3. Reveal & Play Buttons Side-by-Side
 col1, col2 = st.columns(2)
 with col1:
     if st.button("👁 Reveal", key="btn_reveal", use_container_width=True):
@@ -98,34 +110,24 @@ with col2:
 if st.session_state.tts_audio:
     st.audio(st.session_state.tts_audio, format='audio/mp3')
 
-st.markdown("---")
-
-# Microphone Input Section
-st.markdown("<h4 style='text-align: center;'>Microphone Input</h4>", unsafe_allow_html=True)
+# 4. Spoken Input Output Field (Positioned directly above recording button)
 spoken_audio = mic_recorder(
-    start_prompt="🎙 Start Speaking",
-    stop_prompt="⏹ Stop Recording",
+    start_prompt="🎙 Speak On",
+    stop_prompt="⏹ Speak Off",
     key='recorder',
     use_container_width=True
 )
 
-# Interpreted Speech Output
 text_to_show = "Heard Thai Text Goes Here..."
 if spoken_audio and 'text' in spoken_audio and spoken_audio['text']:
     text_to_show = spoken_audio['text']
 
-st.markdown(f"<div class='thai-speech-output'>{text_to_show}</div>", unsafe_allow_html=True)
+st.markdown(f"<div class='thai-speech-box'>{text_to_show}</div>", unsafe_allow_html=True)
 
-# Translate Button
-if st.button("TRANSLATE", key="btn_translate", type="primary", use_container_width=True):
-    st.session_state.translated = True
-
-st.markdown("---")
-
-# Navigation Buttons
+# 5. Bottom Navigation Bar
 nav1, nav2, nav3 = st.columns(3)
 with nav1:
-    if st.button("⬅ Previous", key="btn_prev", use_container_width=True):
+    if st.button("⬅ Prev", key="btn_prev", use_container_width=True):
         prev_phrase()
         st.rerun()
 
