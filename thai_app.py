@@ -16,7 +16,7 @@ st.markdown("""
     }
 
     .block-container {
-        padding-top: 1rem !important;
+        padding-top: 0.5rem !important;
         padding-bottom: 0rem !important;
     }
 
@@ -77,6 +77,18 @@ if "reveal" not in st.session_state:
 
 current_phrase = PHRASES_DB[st.session_state.phrase_index]
 total = len(PHRASES_DB)
+
+# 0. Waving Thailand Flag Header Image
+st.markdown(
+    """
+    <div style="text-align: center; margin-bottom: 5px;">
+        <img src="https://upload.wikimedia.org/wikipedia/commons/a/a9/Flag_of_Thailand.svg" 
+             alt="Thailand Flag" 
+             style="width: 90px; height: auto; border-radius: 4px; box-shadow: 0px 2px 5px rgba(0,0,0,0.2);">
+    </div>
+    """,
+    unsafe_allow_html=True
+)
 
 # 1. Main Title & Display
 st.markdown("<h3 style='text-align: center; color: #000000; margin-top: 0px;'>Thai Listening and Reading</h3>", unsafe_allow_html=True)
