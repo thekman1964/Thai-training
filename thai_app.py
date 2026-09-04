@@ -1,90 +1,112 @@
 import streamlit as st
 from gtts import gTTS
 import io
-from streamlit_mic_recorder import speech_to_text
+from googletrans import Translator
+from streamlit_mic_recorder import mic_recorder
 import random
 
+translator = Translator()
+
+# Force page configuration
 st.set_page_config(layout="centered")
 
-# --- Database ---
-PHRASES_DB = [
+# --- Custom Styling for Forced Mobile Sizing ---
+st.markdown("""
+    <style>
+    /* Force mobile container width limit */
+    .element-container, .stButton {
+        max-width: 50% !important;
+        margin-left: auto !important;
+        margin-right: auto !important;
+    }
+    div.stButton > button {
+        width: 100% !important;
+        font-size: 20px !important;
+        font-weight: bold !important;
+        padding: 10px 0px !important;
+        border-radius: 8px !important;
+    }
+    div.stButton > button[kind="primary"] {
+        background-color: #FF6600 !important;
+        color: white !important;
+        border: none !important;
+    }
+    </style>
+""", unsafe_allow_html=True)
+
+# Sample Phrase Database
+PHRASES = [
     {"thai": "เลี้ยวขวาครับ", "english": "Turn right please."},
-    {"thai": "ตรงไปแล้วเลี้ยวซ้าย", "english": "Go straight then turn left."},
-    {"thai": "ขอโทษครับ", "english": "Excuse me."}
+    {"thai": "ตรงไปแล้วเลี้ยวซ้าย", "english": "Go straight then turn left."}
 ]
 
 if "phrase_index" not in st.session_state:
     st.session_state.phrase_index = 0
 if "reveal" not in st.session_state:
     st.session_state.reveal = False
+if "translated_text" not in st.session_state:
+    st.session_state.translated_text = ""
 
-current_phrase = PHRASES_DB[st.session_state.phrase_index]
-total = len(PHRASES_DB)
+current = PHRASES[st.session_state.phrase_index]
 
-# --- Header ---
-st.markdown("<h2 style='text-align: center; color: #000000; margin-bottom: 0px;'>Thai Listening and Reading</h2>", unsafe_allow_html=True)
+# Header
+st.markdown("<h2 style='text-align: center;'>Thai Listening and Reading</h2>", unsafe_allow_html=True)
 
-# --- Main Phrase Box ---
-st.markdown(f"<h1 style='text-align: center; font-size: 48px; color: #000000; margin-top: 10px; margin-bottom: 0px;'>{current_phrase['thai']}</h1>", unsafe_allow_html=True)
+# Main Thai Phrase Display
+st.markdown(f"<h1 style='text-align: center; font-size: 42px;'>{current['thai']}</h1>", unsafe_allow_html=True)
 
 if st.session_state.reveal:
-    st.markdown(f"<p style='text-align: center; color: #333333; font-size: 20px;'>{current_phrase['english']}</p>", unsafe_allow_html=True)
+    st.markdown(f"<p style='text-align: center;'>{current['english']}</p>", unsafe_allow_html=True)
 else:
-    st.markdown("<p style='text-align: center; color: #888888; font-size: 16px;'>Click \"Reveal\" to view English translation</p>", unsafe_allow_html=True)
-
-# Helper function: Creates half-width centered layout via native columns
-def half_width_col():
-    _, col, _ = st.columns([1, 2, 1])
-    return col
+    st.markdown("<p style='text-align: center; color: gray;'>Click \"Reveal\" to view English translation</p>", unsafe_allow_html=True)
 
 # 1. Reveal Button
-with half_width_col():
-    if st.button("👁 Reveal", use_container_width=True):
-        st.session_state.reveal = not st.session_state.reveal
+if st.button("👁 Reveal", key="btn_reveal"):
+    st.session_state.reveal = not st.session_state.reveal
 
 # 2. Play Phrase Button
-with half_width_col():
-    if st.button("▶ Play Phrase", type="primary", use_container_width=True):
-        tts = gTTS(text=current_phrase["thai"], lang='th')
-        fp = io.BytesIO()
-        tts.write_to_fp(fp)
-        st.audio(fp, format='audio/mp3')
+if st.button("▶ Play Phrase", key="btn_play"):
+    tts = gTTS(text=current["thai"], lang='th')
+    fp = io.BytesIO()
+    tts.write_to_fp(fp)
+    st.audio(fp, format='audio/mp3')
 
-# 3. Mic Recording
-with half_width_col():
-    spoken_text = speech_to_text(
-        language='th', 
-        start_prompt="🎙 Start Speaking", 
-        stop_prompt="⏹ Stop", 
-        key='speech', 
-        use_container_width=True
-    )
+# 3. Speech Audio Recorder (Start & Stop)
+st.markdown("<p style='text-align: center; font-weight: bold;'>Voice Input:</p>", unsafe_allow_html=True)
+audio_record = mic_recorder(
+    start_prompt="🎙 Start Speaking",
+    stop_prompt="⏹ Stop Speaking",
+    key='recorder'
+)
 
-# 4. Navigation Buttons (Previous, Next, Random)
-with half_width_col():
-    if st.button("⬅ Previous", use_container_width=True):
-        st.session_state.phrase_index = (st.session_state.phrase_index - 1) % total
-        st.session_state.reveal = False
+# 4. Navigation Buttons
+if st.button("⬅ Previous", key="btn_prev"):
+    st.session_state.phrase_index = (st.session_state.phrase_index - 1) % len(PHRASES)
+    st.session_state.reveal = False
+    st.rerun()
+
+if st.button("➡ Next", key="btn_next"):
+    st.session_state.phrase_index = (st.session_state.phrase_index + 1) % len(PHRASES)
+    st.session_state.reveal = False
+    st.rerun()
+
+if st.button("🔀 Random", key="btn_rand"):
+    st.session_state.phrase_index = random.randint(0, len(PHRASES) - 1)
+    st.session_state.reveal = False
+    st.rerun()
+
+st.divider()
+
+# --- Orange Output Display & Translation ---
+display_text = current["thai"] if not st.session_state.translated_text else st.session_state.translated_text
+st.markdown(f"<h1 style='text-align: center; color: #FF6600; font-size: 40px;'>{display_text}</h1>", unsafe_allow_html=True)
+
+# 5. Translate Button
+if st.button("TRANSLATE", key="btn_trans", type="primary"):
+    try:
+        res = translator.translate(current["thai"], src='th', dest='en')
+        st.session_state.translated_text = res.text
         st.rerun()
-
-with half_width_col():
-    if st.button("➡ Next", use_container_width=True):
-        st.session_state.phrase_index = (st.session_state.phrase_index + 1) % total
-        st.session_state.reveal = False
+    except Exception:
+        st.session_state.translated_text = "Cannot Understand"
         st.rerun()
-
-with half_width_col():
-    if st.button("🔀 Random", use_container_width=True):
-        st.session_state.phrase_index = random.randint(0, total - 1)
-        st.session_state.reveal = False
-        st.rerun()
-
-st.markdown("<hr style='margin-top: 15px; margin-bottom: 15px;'>", unsafe_allow_html=True)
-
-# --- Bottom Section: Heard Thai Text in Orange ---
-text_to_show = spoken_text if spoken_text else "Cannot Understand"
-st.markdown(f"<h1 style='text-align: center; font-size: 44px; color: #FF6600; margin-top: 5px; margin-bottom: 10px;'>{text_to_show}</h1>", unsafe_allow_html=True)
-
-# 5. Orange Translate Button
-with half_width_col():
-    st.button("TRANSLATE", type="primary", use_container_width=True)
