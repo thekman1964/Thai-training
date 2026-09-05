@@ -3,6 +3,7 @@ from gtts import gTTS
 import io
 import base64
 import random
+import time
 import streamlit.components.v1 as components
 
 st.set_page_config(layout="centered", page_title="Thai Practice")
@@ -111,14 +112,28 @@ else:
 if centered_button("👁 Reveal", "btn_reveal", type="secondary"):
     st.session_state.reveal = not st.session_state.reveal
 
-# 4. Play Phrase Button
+# 4. Play Phrase Button (Fixed for repeated clicks using unique timestamp injection)
 if centered_button("▶ Play Phrase", "btn_play", type="primary"):
     tts = gTTS(text=current_phrase["thai"], lang='th')
     fp = io.BytesIO()
     tts.write_to_fp(fp)
     b64_audio = base64.b64encode(fp.getvalue()).decode()
-    md_audio = f'<audio autoplay src="data:audio/mp3;base64,{b64_audio}"></audio>'
-    st.markdown(md_audio, unsafe_allow_html=True)
+    
+    # Generate unique timestamp key to force immediate playback on every press
+    audio_key = int(time.time() * 1000)
+    audio_html = f"""
+    <audio id="audio_{audio_key}" autoplay>
+        <source src="data:audio/mp3;base64,{b64_audio}" type="audio/mp3">
+    </audio>
+    <script>
+        var audio = document.getElementById('audio_{audio_key}');
+        if(audio) {{
+            audio.currentTime = 0;
+            audio.play();
+        }}
+    </script>
+    """
+    components.html(audio_html, height=0)
 
 # 5. Navigation Buttons
 nav_col1, nav_col2, nav_col3 = st.columns([1, 1, 1])
