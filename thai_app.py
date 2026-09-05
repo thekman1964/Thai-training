@@ -42,20 +42,22 @@ st.markdown("""
         margin-bottom: 2px !important;
     }
 
+    /* PRIMARY BUTTONS (PHRASE, TRANSLATE) */
     div.stButton > button[kind="primary"] {
         background-color: #FF6600 !important;
         color: #FFFFFF !important;
         border: none !important;
     }
 
+    /* SECONDARY BUTTONS (REVEAL, BACK, NEXT) */
     div.stButton > button[kind="secondary"] {
         background-color: #1A202C !important;
         color: #FFFFFF !important;
         border: none !important;
     }
 
-    /* Target RANDOM button specifically: Green background with Black text */
-    div.stButton > button[data-testid="baseButton-secondaryRandom"] {
+    /* FORCE RANDOM BUTTON (2nd column in 3-button row) TO BE GREEN WITH BLACK TEXT */
+    div[data-testid="stHorizontalBlock"] > div:nth-child(2) button {
         background-color: #28A745 !important;
         color: #000000 !important;
         border: none !important;
@@ -199,7 +201,7 @@ with nav_col1:
         st.rerun()
 
 with nav_col2:
-    if st.button("RANDOM", key="secondaryRandom", type="secondary", use_container_width=True):
+    if st.button("RANDOM", key="btn_rand", type="secondary", use_container_width=True):
         st.session_state.phrase_index = random.randint(0, total - 1)
         st.session_state.reveal = False
         st.session_state.auto_play = True
