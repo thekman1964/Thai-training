@@ -94,7 +94,7 @@ st.markdown("""
         margin-top: 15px;
     }
     </style>
-""", unsafe_allowed_code_value=True)
+""", unsafe_allow_html=True)
 
 # App Title & Header
 st.markdown("<h2 style='text-align: center;'>🇹🇭<br>Thai Listening and Reading</h2>", unsafe_allow_html=True)
