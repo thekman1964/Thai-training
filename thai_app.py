@@ -54,6 +54,13 @@ st.markdown("""
         border: none !important;
     }
 
+    /* Target RANDOM button specifically: Green background with Black text */
+    div.stButton > button[data-testid="baseButton-secondaryRandom"] {
+        background-color: #28A745 !important;
+        color: #000000 !important;
+        border: none !important;
+    }
+
     /* FORCE HORIZONTAL ROW ON MOBILE */
     div[data-testid="stHorizontalBlock"] {
         display: flex !important;
@@ -192,7 +199,7 @@ with nav_col1:
         st.rerun()
 
 with nav_col2:
-    if st.button("RANDOM", key="btn_rand", type="secondary", use_container_width=True):
+    if st.button("RANDOM", key="secondaryRandom", type="secondary", use_container_width=True):
         st.session_state.phrase_index = random.randint(0, total - 1)
         st.session_state.reveal = False
         st.session_state.auto_play = True
@@ -207,15 +214,15 @@ with nav_col3:
 
 st.divider()
 
-# 6. Integrated Speech-to-Text Component (Matching 32px Orange Font & 20px Blue Translation Font)
+# 6. Integrated Speech-to-Text Component
 st_speech_html = f"""
 <div style="text-align: center; font-family: sans-serif;">
-    <!-- Spoken Thai Output (Matches main phrase size at 32px) -->
+    <!-- Spoken Thai Output -->
     <div id="output" style="color: #FF6600; font-size: 32px; font-weight: bold; min-height: 40px; margin-bottom: 2px;">
         Spoken Thai text...
     </div>
     
-    <!-- English Translation Output (Matches top reveal text at 20px) -->
+    <!-- English Translation Output -->
     <div id="translation" style="color: #0066CC; font-size: 20px; font-weight: bold; min-height: 28px; margin-bottom: 6px;">
         English translation...
     </div>
