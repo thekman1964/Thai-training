@@ -5,27 +5,36 @@ import base64
 import random
 import streamlit.components.v1 as components
 
-st.set_page_config(layout="centered")
+st.set_page_config(layout="centered", page_title="Thai Practice")
 
 # --- Custom Mobile CSS Styling ---
 st.markdown("""
     <style>
+    /* Hide top Streamlit header bar, main menu, and footer (Red Box area) */
+    #MainMenu {visibility: hidden;}
+    header {visibility: hidden;}
+    footer {visibility: hidden;}
+    div[data-testid="stHeader"] {display: none;}
+
     .stApp {
         background-color: #FFFFFF !important;
         color: #000000 !important;
     }
 
     .block-container {
-        padding-top: 0.5rem !important;
+        padding-top: 1rem !important;
         padding-bottom: 0rem !important;
     }
 
+    /* Target all Streamlit buttons for clean single-line text and vertical spacing */
     div.stButton > button {
         font-size: 15px !important;
         font-weight: bold !important;
         border-radius: 8px !important;
         padding: 8px 0px !important;
         white-space: nowrap !important;
+        margin-top: 6px !important;
+        margin-bottom: 6px !important;
     }
 
     div.stButton > button[kind="primary"] {
@@ -40,21 +49,19 @@ st.markdown("""
         border: none !important;
     }
 
+    /* FORCE HORIZONTAL ROW ON MOBILE: Prevent st.columns from stacking vertically */
     div[data-testid="stHorizontalBlock"] {
         display: flex !important;
         flex-direction: row !important;
         flex-wrap: nowrap !important;
         gap: 6px !important;
+        margin-top: 8px !important;
+        margin-bottom: 8px !important;
     }
 
     div[data-testid="stHorizontalBlock"] > div {
         flex: 1 1 0px !important;
         min-width: 0 !important;
-    }
-
-    div[data-testid="stVerticalBlock"] > div {
-        margin-bottom: -10px !important;
-        padding-bottom: 0px !important;
     }
     </style>
 """, unsafe_allow_html=True)
@@ -81,10 +88,10 @@ total = len(PHRASES_DB)
 # 0. Waving Thailand Flag Header Image
 st.markdown(
     """
-    <div style="text-align: center; margin-bottom: 5px;">
+    <div style="text-align: center; margin-top: 10px; margin-bottom: 10px;">
         <img src="https://upload.wikimedia.org/wikipedia/commons/a/a9/Flag_of_Thailand.svg" 
              alt="Thailand Flag" 
-             style="width: 90px; height: auto; border-radius: 4px; box-shadow: 0px 2px 5px rgba(0,0,0,0.2);">
+             style="width: 80px; height: 53px; display: inline-block; border-radius: 4px; box-shadow: 0px 2px 5px rgba(0,0,0,0.2);">
     </div>
     """,
     unsafe_allow_html=True
@@ -92,13 +99,13 @@ st.markdown(
 
 # 1. Main Title & Display
 st.markdown("<h3 style='text-align: center; color: #000000; margin-top: 0px;'>Thai Listening and Reading</h3>", unsafe_allow_html=True)
-st.markdown(f"<h1 style='text-align: center; font-size: 40px; color: #000000; margin: 4px 0;'>{current_phrase['thai']}</h1>", unsafe_allow_html=True)
+st.markdown(f"<h1 style='text-align: center; font-size: 40px; color: #000000; margin: 8px 0;'>{current_phrase['thai']}</h1>", unsafe_allow_html=True)
 
 # 2. English Hint
 if st.session_state.reveal:
-    st.markdown(f"<p style='text-align: center; color: #0066CC; font-size: 20px; font-weight: bold; margin-bottom: 4px;'>{current_phrase['english']}</p>", unsafe_allow_html=True)
+    st.markdown(f"<p style='text-align: center; color: #0066CC; font-size: 20px; font-weight: bold; margin-bottom: 12px;'>{current_phrase['english']}</p>", unsafe_allow_html=True)
 else:
-    st.markdown("<p style='text-align: center; color: #777777; font-size: 15px; margin-bottom: 4px;'>Click \"Reveal\" to view English translation</p>", unsafe_allow_html=True)
+    st.markdown("<p style='text-align: center; color: #777777; font-size: 15px; margin-bottom: 12px;'>Click \"Reveal\" to view English translation</p>", unsafe_allow_html=True)
 
 # 3. Reveal Button
 if centered_button("👁 Reveal", "btn_reveal", type="secondary"):
@@ -139,7 +146,7 @@ st.divider()
 # 6. Browser Native Speech-to-Text Component (Orange Display + Button)
 st_speech_html = """
 <div style="text-align: center; font-family: sans-serif;">
-    <div id="output" style="color: #FF6600; font-size: 30px; font-weight: bold; min-height: 45px; margin-bottom: 10px;">
+    <div id="output" style="color: #FF6600; font-size: 30px; font-weight: bold; min-height: 45px; margin-bottom: 12px;">
         Spoken Thai text will display here...
     </div>
     <button id="stt-btn" style="
@@ -199,4 +206,4 @@ st_speech_html = """
 </script>
 """
 
-components.html(st_speech_html, height=130)
+components.html(st_speech_html, height=140)
