@@ -34,41 +34,47 @@ st.markdown("""
     /* Universal styling for all native Streamlit buttons */
     div.stButton > button {
         width: 100% !important;
-        height: 40px !important;
-        font-weight: 900 !important;
-        font-size: 14px !important;
+        height: 42px !important;
+        font-weight: 700 !important;
+        font-size: 15px !important;
         border-radius: 6px !important;
-        border: 3px solid #000000 !important;
+        border: none !important;
         box-sizing: border-box !important;
         cursor: pointer !important;
         padding: 0px !important;
-        line-height: 34px !important;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
     }
 
-    /* Individual Color Themes via Key Selectors */
-    div.stButton > button[key="btn_reveal"] {
-        background-color: #0066CC !important;
+    /* Target specific rows using vertical block structure */
+    /* Row 1: REVEAL (Blue) */
+    div[data-testid="stVerticalBlock"] > div:nth-child(5) button {
+        background-color: #0B60B0 !important;
         color: #FFFFFF !important;
     }
 
-    div.stButton > button[key="btn_phrase"] {
-        background-color: #FF6600 !important;
+    /* Row 2: PHRASE (Orange) */
+    div[data-testid="stVerticalBlock"] > div:nth-child(6) button {
+        background-color: #FF6B00 !important;
         color: #FFFFFF !important;
     }
 
-    div.stButton > button[key="btn_back"], 
-    div.stButton > button[key="btn_next"] {
+    /* Row 3: BACK, RANDOM, NEXT (Dark, Green, Dark) */
+    div[data-testid="stVerticalBlock"] > div:nth-child(7) div[data-testid="stColumn"]:nth-child(1) button {
+        background-color: #1A202C !important;
+        color: #FFFFFF !important;
+    }
+    div[data-testid="stVerticalBlock"] > div:nth-child(7) div[data-testid="stColumn"]:nth-child(2) button {
+        background-color: #28A745 !important;
+        color: #FFFFFF !important;
+    }
+    div[data-testid="stVerticalBlock"] > div:nth-child(7) div[data-testid="stColumn"]:nth-child(3) button {
         background-color: #1A202C !important;
         color: #FFFFFF !important;
     }
 
-    div.stButton > button[key="btn_random"] {
-        background-color: #28A745 !important;
-        color: #FFFFFF !important;
-    }
-
     hr {
-        margin: 6px 0px !important;
+        margin: 10px 0px !important;
     }
     </style>
 """, unsafe_allow_html=True)
@@ -154,28 +160,28 @@ st.markdown(
 
 # 1. Title & Phrase Display
 st.markdown("<h4 style='text-align: center; color: #000000; margin: 0px;'>Thai Listening and Reading</h4>", unsafe_allow_html=True)
-st.markdown(f"<h2 style='text-align: center; font-size: 32px; color: #000000; margin: 2px 0;'>{current_phrase['thai']}</h2>", unsafe_allow_html=True)
+st.markdown(f"<h2 style='text-align: center; font-size: 32px; color: #000000; margin: 4px 0;'>{current_phrase['thai']}</h2>", unsafe_allow_html=True)
 
 # 2. English Hint Display
 if st.session_state.reveal:
-    st.markdown(f"<p style='text-align: center; color: #0066CC; font-size: 20px; font-weight: bold; margin-bottom: 4px;'>{current_phrase['english']}</p>", unsafe_allow_html=True)
+    st.markdown(f"<p style='text-align: center; color: #0066CC; font-size: 20px; font-weight: bold; margin-bottom: 8px;'>{current_phrase['english']}</p>", unsafe_allow_html=True)
 else:
-    st.markdown("<p style='text-align: center; color: #777777; font-size: 13px; margin-bottom: 4px;'>Click \"REVEAL\" to view English translation</p>", unsafe_allow_html=True)
+    st.markdown("<p style='text-align: center; color: #777777; font-size: 13px; margin-bottom: 8px;'>Click \"REVEAL\" to view English translation</p>", unsafe_allow_html=True)
 
 # Trigger audio playback if requested
 if st.session_state.auto_play:
     play_thai_audio(current_phrase["thai"])
     st.session_state.auto_play = False
 
-# 3. Native Streamlit Buttons with Exact Column Grid Matching
-# Row 1: REVEAL
+# 3. Action & Navigation Buttons Matrix
+# Row 1: REVEAL (Sized identically to RANDOM in center column)
 c1, c2, c3 = st.columns([1, 1, 1])
 with c2:
     if st.button("REVEAL", key="btn_reveal", use_container_width=True):
         st.session_state.reveal = not st.session_state.reveal
         st.rerun()
 
-# Row 2: PHRASE
+# Row 2: PHRASE (Sized identically to RANDOM in center column)
 c1, c2, c3 = st.columns([1, 1, 1])
 with c2:
     if st.button("PHRASE", key="btn_phrase", use_container_width=True):
@@ -209,47 +215,49 @@ st.divider()
 # 4. Speech Recognition Section
 st_speech_html = f"""
 <div style="text-align: center; font-family: sans-serif;">
-    <div id="output" style="color: #FF6600; font-size: 32px; font-weight: bold; min-height: 40px; margin-bottom: 2px;">
+    <div id="output" style="color: #FF6B00; font-size: 32px; font-weight: bold; min-height: 40px; margin-bottom: 2px;">
         Spoken Thai text...
     </div>
     
-    <div id="translation" style="color: #0066CC; font-size: 20px; font-weight: bold; min-height: 28px; margin-bottom: 6px;">
+    <div id="translation" style="color: #0066CC; font-size: 20px; font-weight: bold; min-height: 28px; margin-bottom: 8px;">
         English translation...
     </div>
     
     <button id="stt-btn" style="
-        background-color: #FF6600 !important;
+        background-color: #FF6B00 !important;
         color: #FFFFFF !important;
         font-size: 14px !important;
-        font-weight: 900 !important;
-        border: 3px solid #000000 !important;
+        font-weight: 700 !important;
+        border: none !important;
         border-radius: 6px !important;
-        height: 40px !important;
-        line-height: 34px !important;
+        height: 42px !important;
+        line-height: 42px !important;
         padding: 0px !important;
         width: 100% !important;
         cursor: pointer !important;
         margin-bottom: 12px !important;
         box-sizing: border-box !important;
+        text-transform: uppercase;
     ">TRANSLATE</button>
     <br>
 
     <button id="speak-btn" style="
         background-color: #FFFFFF !important;
-        color: #FF6600 !important;
-        border: 3px solid #FF6600 !important;
+        color: #FF6B00 !important;
+        border: 2px solid #FF6B00 !important;
         font-size: 13px !important;
-        font-weight: 900 !important;
+        font-weight: 700 !important;
         border-radius: 6px !important;
-        height: 40px !important;
-        line-height: 34px !important;
+        height: 42px !important;
+        line-height: 38px !important;
         padding: 0px !important;
         width: 100% !important;
         cursor: pointer !important;
         box-sizing: border-box !important;
+        text-transform: uppercase;
     ">HEAR SPOKEN THAI TEXT</button>
 
-    <div style="margin-top: 10px; font-size: 12px; color: #555555; line-height: 1.4;">
+    <div style="margin-top: 12px; font-size: 12px; color: #555555; line-height: 1.4;">
         <div><b>Available Records:</b> {total}</div>
         <div><b>Spreadsheet Last Updated:</b> {SHEET_LAST_UPDATED}</div>
     </div>
@@ -306,19 +314,19 @@ st_speech_html = f"""
             const transcript = event.results[0][0].transcript;
             output.innerText = transcript;
             btn.innerText = "TRANSLATE";
-            btn.style.backgroundColor = "#FF6600";
+            btn.style.backgroundColor = "#FF6B00";
             
             translateText(transcript);
         }};
 
         recognition.onerror = () => {{
             btn.innerText = "TRANSLATE";
-            btn.style.backgroundColor = "#FF6600";
+            btn.style.backgroundColor = "#FF6B00";
         }};
 
         recognition.onend = () => {{
             btn.innerText = "TRANSLATE";
-            btn.style.backgroundColor = "#FF6600";
+            btn.style.backgroundColor = "#FF6B00";
         }};
     }} else {{
         output.innerText = "Speech Recognition not supported in browser";
