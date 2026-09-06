@@ -10,7 +10,7 @@ import streamlit.components.v1 as components
 
 st.set_page_config(layout="centered", page_title="Thai Practice")
 
-# --- Mobile Compact CSS Styling ---
+# --- Mobile Compact & Universal Button Styling ---
 st.markdown("""
     <style>
     /* Hide top Streamlit header bar, main menu, and footer */
@@ -31,45 +31,43 @@ st.markdown("""
         padding-right: 0.5rem !important;
     }
 
-    /* Target all Streamlit buttons for clean text */
+    /* Base Streamlit Button Heights & Font Sizes */
     div.stButton > button {
         font-size: 14px !important;
         font-weight: bold !important;
         border-radius: 6px !important;
-        padding: 6px 0px !important;
         height: 32px !important;
-        line-height: 1 !important;
+        min-height: 32px !important;
+        padding: 0px !important;
+        line-height: 32px !important;
         white-space: nowrap !important;
         margin-top: 2px !important;
         margin-bottom: 2px !important;
-    }
-
-    /* Primary Button: Orange (#FF6600) */
-    div.stButton > button[kind="primary"] {
-        background-color: #FF6600 !important;
-        color: #FFFFFF !important;
         border: none !important;
     }
 
-    /* Secondary Button: Dark Blue/Dark Slate (#1A202C) */
-    div.stButton > button[kind="secondary"] {
-        background-color: #1A202C !important;
-        color: #FFFFFF !important;
-        border: none !important;
-    }
-
-    /* REVEAL Button: Blue (#0066CC) */
-    div.stButton > button[key="btn_reveal"] {
+    /* Target REVEAL Button (Blue) via Wrapper Container */
+    div.btn-blue div.stButton > button {
         background-color: #0066CC !important;
         color: #FFFFFF !important;
-        border: none !important;
     }
 
-    /* RANDOM Button: Green (#28A745) */
-    div.stButton > button[key="btn_rand"] {
+    /* Target PHRASE Button (Orange) via Wrapper Container */
+    div.btn-orange div.stButton > button {
+        background-color: #FF6600 !important;
+        color: #FFFFFF !important;
+    }
+
+    /* Target RANDOM Button (Green) via Wrapper Container */
+    div.btn-green div.stButton > button {
         background-color: #28A745 !important;
         color: #FFFFFF !important;
-        border: none !important;
+    }
+
+    /* Target Navigation Buttons (Dark Slate) */
+    div.btn-dark div.stButton > button {
+        background-color: #1A202C !important;
+        color: #FFFFFF !important;
     }
 
     /* FORCE HORIZONTAL ROW ON MOBILE */
@@ -185,14 +183,18 @@ else:
 # 3. REVEAL Button (Blue)
 _, col_rev, _ = st.columns([1, 4, 1])
 with col_rev:
+    st.markdown('<div class="btn-blue">', unsafe_allow_html=True)
     if st.button("REVEAL", key="btn_reveal", use_container_width=True):
         st.session_state.reveal = not st.session_state.reveal
+    st.markdown('</div>', unsafe_allow_html=True)
 
 # 4. PHRASE Button (Orange)
 _, col_play, _ = st.columns([1, 4, 1])
 with col_play:
-    if st.button("PHRASE", key="btn_play", type="primary", use_container_width=True):
+    st.markdown('<div class="btn-orange">', unsafe_allow_html=True)
+    if st.button("PHRASE", key="btn_play", use_container_width=True):
         play_thai_audio(current_phrase["thai"])
+    st.markdown('</div>', unsafe_allow_html=True)
 
 # Trigger audio playback if requested by Navigation
 if st.session_state.auto_play:
@@ -203,29 +205,35 @@ if st.session_state.auto_play:
 nav_col1, nav_col2, nav_col3 = st.columns([1, 1, 1])
 
 with nav_col1:
-    if st.button("BACK", key="btn_prev", type="secondary", use_container_width=True):
+    st.markdown('<div class="btn-dark">', unsafe_allow_html=True)
+    if st.button("BACK", key="btn_prev", use_container_width=True):
         st.session_state.phrase_index = (st.session_state.phrase_index - 1) % total
         st.session_state.reveal = False
         st.session_state.auto_play = True
         st.rerun()
+    st.markdown('</div>', unsafe_allow_html=True)
 
 with nav_col2:
+    st.markdown('<div class="btn-green">', unsafe_allow_html=True)
     if st.button("RANDOM", key="btn_rand", use_container_width=True):
         st.session_state.phrase_index = random.randint(0, total - 1)
         st.session_state.reveal = False
         st.session_state.auto_play = True
         st.rerun()
+    st.markdown('</div>', unsafe_allow_html=True)
 
 with nav_col3:
-    if st.button("NEXT", key="btn_next", type="secondary", use_container_width=True):
+    st.markdown('<div class="btn-dark">', unsafe_allow_html=True)
+    if st.button("NEXT", key="btn_next", use_container_width=True):
         st.session_state.phrase_index = (st.session_state.phrase_index + 1) % total
         st.session_state.reveal = False
         st.session_state.auto_play = True
         st.rerun()
+    st.markdown('</div>', unsafe_allow_html=True)
 
 st.divider()
 
-# 6. Speech Recognition + Translate + "HEAR SPOKEN THAI TEXT" Button
+# 6. Speech Recognition + Translate + "HEAR SPOKEN THAI TEXT" Button (Embedded CSS for Component iFrame)
 st_speech_html = f"""
 <div style="text-align: center; font-family: sans-serif;">
     <!-- Spoken Thai Output (32px Orange) -->
@@ -238,38 +246,40 @@ st_speech_html = f"""
         English translation...
     </div>
     
-    <!-- TRANSLATE Button (Solid Orange - Matched 32px Height) -->
+    <!-- TRANSLATE Button (Solid Orange - Explicit 32px Height) -->
     <button id="stt-btn" style="
-        background-color: #FF6600;
-        color: white;
-        font-size: 14px;
-        font-weight: bold;
-        border: none;
-        border-radius: 6px;
-        height: 32px;
-        padding: 6px 0px;
-        width: 70%;
-        max-width: 260px;
-        cursor: pointer;
-        margin-bottom: 6px;
-        box-sizing: border-box;
+        background-color: #FF6600 !important;
+        color: #FFFFFF !important;
+        font-size: 14px !important;
+        font-weight: bold !important;
+        border: none !important;
+        border-radius: 6px !important;
+        height: 32px !important;
+        line-height: 32px !important;
+        padding: 0px !important;
+        width: 70% !important;
+        max-width: 260px !important;
+        cursor: pointer !important;
+        margin-bottom: 6px !important;
+        box-sizing: border-box !important;
     ">TRANSLATE</button>
     <br>
 
-    <!-- HEAR SPOKEN THAI TEXT Button (White with Orange Border - Matched 32px Height) -->
+    <!-- HEAR SPOKEN THAI TEXT Button (White with Orange Border - Explicit 32px Height) -->
     <button id="speak-btn" style="
-        background-color: #FFFFFF;
-        color: #FF6600;
-        border: 2px solid #FF6600;
-        font-size: 13px;
-        font-weight: bold;
-        border-radius: 6px;
-        height: 32px;
-        padding: 4px 0px;
-        width: 75%;
-        max-width: 280px;
-        cursor: pointer;
-        box-sizing: border-box;
+        background-color: #FFFFFF !important;
+        color: #FF6600 !important;
+        border: 2px solid #FF6600 !important;
+        font-size: 13px !important;
+        font-weight: bold !important;
+        border-radius: 6px !important;
+        height: 32px !important;
+        line-height: 28px !important;
+        padding: 0px !important;
+        width: 75% !important;
+        max-width: 280px !important;
+        cursor: pointer !important;
+        box-sizing: border-box !important;
     ">HEAR SPOKEN THAI TEXT</button>
 
     <!-- Spreadsheet Stats Fields -->
