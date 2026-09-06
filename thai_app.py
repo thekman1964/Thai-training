@@ -10,7 +10,7 @@ import streamlit.components.v1 as components
 
 st.set_page_config(layout="centered", page_title="Thai Practice")
 
-# Hide default Streamlit padding & headers
+# --- GLOBAL APP STYLING ---
 st.markdown("""
     <style>
     #MainMenu {visibility: hidden;}
@@ -27,6 +27,7 @@ st.markdown("""
     </style>
 """, unsafe_allow_html=True)
 
+# --- LOAD DATASET ---
 @st.cache_data(ttl=600)
 def load_phrases_with_meta():
     sheet_id = "1_vMSPtMo3-JD2qARp4zwrcvNrhEuSKHQVEOT1IMwgFw"
@@ -61,28 +62,11 @@ def load_phrases_with_meta():
 PHRASES_DB, SHEET_LAST_UPDATED = load_phrases_with_meta()
 total = len(PHRASES_DB)
 
+# Initialize Session State
 if "phrase_index" not in st.session_state:
     st.session_state.phrase_index = 0
 if "reveal" not in st.session_state:
     st.session_state.reveal = False
-
-# Handle button trigger signals
-query_params = st.query_params
-if "action" in query_params:
-    act = query_params["action"]
-    if act == "reveal":
-        st.session_state.reveal = not st.session_state.reveal
-    elif act == "back":
-        st.session_state.phrase_index = (st.session_state.phrase_index - 1) % total
-        st.session_state.reveal = False
-    elif act == "rand":
-        st.session_state.phrase_index = random.randint(0, total - 1)
-        st.session_state.reveal = False
-    elif act == "next":
-        st.session_state.phrase_index = (st.session_state.phrase_index + 1) % total
-        st.session_state.reveal = False
-    st.query_params.clear()
-    st.rerun()
 
 current_phrase = PHRASES_DB[st.session_state.phrase_index]
 
@@ -112,105 +96,93 @@ fp = io.BytesIO()
 tts.write_to_fp(fp)
 b64_audio = base64.b64encode(fp.getvalue()).decode()
 
-# Render Raw HTML Control Panel (Guarantees Visibility & Crisp Text)
+# --- CUSTOM STREAMLIT COMPONENT FOR CONTROL BUTTONS ---
 controls_html = f"""
-<div style="width: 100%; font-family: system-ui, -apple-system, sans-serif; box-sizing: border-box;">
-    <button onclick="nav('reveal')" style="
-        background-color: #0066CC !important;
-        color: #FFFFFF !important;
-        font-size: 15px !important;
-        font-weight: 800 !important;
-        border: none !important;
-        border-radius: 6px !important;
-        height: 44px !important;
-        width: 100% !important;
-        cursor: pointer !important;
-        margin-bottom: 8px !important;
-        box-shadow: 0px 2px 4px rgba(0,0,0,0.15);
-    ">REVEAL</button>
-
-    <button onclick="playAudio()" style="
-        background-color: #FF6600 !important;
-        color: #FFFFFF !important;
-        font-size: 15px !important;
-        font-weight: 800 !important;
-        border: none !important;
-        border-radius: 6px !important;
-        height: 44px !important;
-        width: 100% !important;
-        cursor: pointer !important;
-        margin-bottom: 8px !important;
-        box-shadow: 0px 2px 4px rgba(0,0,0,0.15);
-    ">PHRASE</button>
-
-    <div style="display: flex; gap: 6px; width: 100%;">
-        <button onclick="nav('back')" style="
-            flex: 1;
-            background-color: #1A202C !important;
+<!DOCTYPE html>
+<html>
+<head>
+    <style>
+        body {{ margin: 0; padding: 0; background: transparent; font-family: system-ui, -apple-system, sans-serif; }}
+        .btn {{
             color: #FFFFFF !important;
-            font-size: 14px !important;
+            font-size: 15px !important;
             font-weight: 800 !important;
             border: none !important;
             border-radius: 6px !important;
             height: 44px !important;
             cursor: pointer !important;
             box-shadow: 0px 2px 4px rgba(0,0,0,0.15);
-        ">BACK</button>
+            display: block;
+            width: 100%;
+        }}
+        .btn-reveal {{ background-color: #0066CC !important; margin-bottom: 8px; }}
+        .btn-phrase {{ background-color: #FF6600 !important; margin-bottom: 8px; }}
+        .row {{ display: flex; gap: 6px; width: 100%; }}
+        .btn-dark {{ background-color: #1A202C !important; flex: 1; }}
+        .btn-green {{ background-color: #28A745 !important; flex: 1; }}
+    </style>
+</head>
+<body>
+    <button class="btn btn-reveal" onclick="sendAction('reveal')">REVEAL</button>
+    <button class="btn btn-phrase" onclick="playAudio()">PHRASE</button>
 
-        <button onclick="nav('rand')" style="
-            flex: 1;
-            background-color: #28A745 !important;
-            color: #FFFFFF !important;
-            font-size: 14px !important;
-            font-weight: 800 !important;
-            border: none !important;
-            border-radius: 6px !important;
-            height: 44px !important;
-            cursor: pointer !important;
-            box-shadow: 0px 2px 4px rgba(0,0,0,0.15);
-        ">RANDOM</button>
-
-        <button onclick="nav('next')" style="
-            flex: 1;
-            background-color: #1A202C !important;
-            color: #FFFFFF !important;
-            font-size: 14px !important;
-            font-weight: 800 !important;
-            border: none !important;
-            border-radius: 6px !important;
-            height: 44px !important;
-            cursor: pointer !important;
-            box-shadow: 0px 2px 4px rgba(0,0,0,0.15);
-        ">NEXT</button>
+    <div class="row">
+        <button class="btn btn-dark" onclick="sendAction('back')">BACK</button>
+        <button class="btn btn-green" onclick="sendAction('rand')">RANDOM</button>
+        <button class="btn btn-dark" onclick="sendAction('next')">NEXT</button>
     </div>
 
     <audio id="tts-player" style="display:none;">
         <source src="data:audio/mp3;base64,{b64_audio}" type="audio/mp3">
     </audio>
-</div>
 
-<script>
-    function nav(action) {{
-        const targetUrl = new URL(window.parent.location.href);
-        targetUrl.searchParams.set("action", action);
-        window.parent.location.href = targetUrl.href;
-    }}
-
-    function playAudio() {{
-        const audio = document.getElementById('tts-player');
-        if (audio) {{
-            audio.currentTime = 0;
-            audio.play();
+    <script>
+        // Official Streamlit postMessage API
+        function sendAction(val) {{
+            window.parent.postMessage({{
+                isStreamlitMessage: true,
+                type: "streamlit:setComponentValue",
+                value: val + "_" + Date.now() // Unique payload triggers Python state update
+            }}, "*");
         }}
-    }}
-</script>
+
+        function playAudio() {{
+            const audio = document.getElementById('tts-player');
+            if (audio) {{
+                audio.currentTime = 0;
+                audio.play();
+            }}
+        }}
+    </script>
+</body>
+</html>
 """
 
-components.html(controls_html, height=160)
+# Capture component output
+action_signal = components.html(controls_html, height=155)
+
+# Update Python Session State when a signal is received
+if action_signal:
+    action = action_signal.split("_")[0]
+    if action == "reveal":
+        st.session_state.reveal = not st.session_state.reveal
+        st.rerun()
+    elif action == "back":
+        st.session_state.phrase_index = (st.session_state.phrase_index - 1) % total
+        st.session_state.reveal = False
+        st.rerun()
+    elif action == "rand":
+        st.session_state.phrase_index = random.randint(0, total - 1)
+        st.session_state.reveal = False
+        st.rerun()
+    elif action == "next":
+        st.session_state.phrase_index = (st.session_state.phrase_index + 1) % total
+        st.session_state.reveal = False
+        st.rerun()
 
 st.markdown("<hr style='margin: 8px 0;'>", unsafe_allow_html=True)
 
-# Speech Recognition & Translation
+# --- SPEECH RECOGNITION & TRANSLATION SECTION ---
 st_speech_html = f"""
 <div style="text-align: center; font-family: system-ui, -apple-system, sans-serif;">
     <div id="output" style="color: #FF6600; font-size: 32px; font-weight: bold; min-height: 40px; margin-bottom: 2px;">
