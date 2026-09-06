@@ -10,19 +10,72 @@ import streamlit.components.v1 as components
 
 st.set_page_config(layout="centered", page_title="Thai Practice")
 
-# --- GLOBAL APP STYLING ---
+# --- GLOBAL STYLING & CLEANUP ---
 st.markdown("""
     <style>
     #MainMenu {visibility: hidden;}
     header {visibility: hidden;}
     footer {visibility: hidden;}
     div[data-testid="stHeader"] {display: none;}
-    .stApp { background-color: #FFFFFF !important; }
+
+    .stApp {
+        background-color: #FFFFFF !important;
+        color: #000000 !important;
+    }
+
     .block-container {
         padding-top: 0.2rem !important;
         padding-bottom: 0rem !important;
         padding-left: 0.5rem !important;
         padding-right: 0.5rem !important;
+    }
+
+    /* Keep 3 columns strictly in 1 row on mobile */
+    div[data-testid="stHorizontalBlock"] {
+        display: flex !important;
+        flex-direction: row !important;
+        flex-wrap: nowrap !important;
+        width: 100% !important;
+        gap: 6px !important;
+    }
+
+    div[data-testid="stColumn"] {
+        flex: 1 1 0% !important;
+        min-width: 0 !important;
+        width: auto !important;
+    }
+
+    /* Universal styling for standard Streamlit buttons */
+    div[data-testid="stButton"] > button {
+        width: 100% !important;
+        height: 44px !important;
+        border-radius: 6px !important;
+        border: none !important;
+        box-shadow: 0px 2px 4px rgba(0,0,0,0.2) !important;
+    }
+
+    /* Force text styling inside buttons */
+    div[data-testid="stButton"] > button p {
+        color: #FFFFFF !important;
+        font-size: 15px !important;
+        font-weight: 900 !important;
+    }
+
+    /* Distinct color mapping by matching button text labels */
+    div[data-testid="stButton"] > button:has(p:contains("REVEAL")) {
+        background-color: #0066CC !important;
+    }
+    div[data-testid="stButton"] > button:has(p:contains("PHRASE")) {
+        background-color: #FF6600 !important;
+    }
+    div[data-testid="stButton"] > button:has(p:contains("BACK")) {
+        background-color: #1A202C !important;
+    }
+    div[data-testid="stButton"] > button:has(p:contains("RANDOM")) {
+        background-color: #28A745 !important;
+    }
+    div[data-testid="stButton"] > button:has(p:contains("NEXT")) {
+        background-color: #1A202C !important;
     }
     </style>
 """, unsafe_allow_html=True)
@@ -67,10 +120,12 @@ if "phrase_index" not in st.session_state:
     st.session_state.phrase_index = 0
 if "reveal" not in st.session_state:
     st.session_state.reveal = False
+if "play_audio" not in st.session_state:
+    st.session_state.play_audio = False
 
 current_phrase = PHRASES_DB[st.session_state.phrase_index]
 
-# Header Flag Image
+# Flag Header
 st.markdown(
     """
     <div style="text-align: center; margin-top: 2px; margin-bottom: 2px;">
@@ -90,95 +145,44 @@ if st.session_state.reveal:
 else:
     st.markdown("<p style='text-align: center; color: #777777; font-size: 13px; margin-bottom: 4px;'>Click \"REVEAL\" to view English translation</p>", unsafe_allow_html=True)
 
-# Generate TTS Audio
-tts = gTTS(text=current_phrase["thai"], lang='th')
-fp = io.BytesIO()
-tts.write_to_fp(fp)
-b64_audio = base64.b64encode(fp.getvalue()).decode()
-
-# --- CUSTOM STREAMLIT COMPONENT FOR CONTROL BUTTONS ---
-controls_html = f"""
-<!DOCTYPE html>
-<html>
-<head>
-    <style>
-        body {{ margin: 0; padding: 0; background: transparent; font-family: system-ui, -apple-system, sans-serif; }}
-        .btn {{
-            color: #FFFFFF !important;
-            font-size: 15px !important;
-            font-weight: 800 !important;
-            border: none !important;
-            border-radius: 6px !important;
-            height: 44px !important;
-            cursor: pointer !important;
-            box-shadow: 0px 2px 4px rgba(0,0,0,0.15);
-            display: block;
-            width: 100%;
-        }}
-        .btn-reveal {{ background-color: #0066CC !important; margin-bottom: 8px; }}
-        .btn-phrase {{ background-color: #FF6600 !important; margin-bottom: 8px; }}
-        .row {{ display: flex; gap: 6px; width: 100%; }}
-        .btn-dark {{ background-color: #1A202C !important; flex: 1; }}
-        .btn-green {{ background-color: #28A745 !important; flex: 1; }}
-    </style>
-</head>
-<body>
-    <button class="btn btn-reveal" onclick="sendAction('reveal')">REVEAL</button>
-    <button class="btn btn-phrase" onclick="playAudio()">PHRASE</button>
-
-    <div class="row">
-        <button class="btn btn-dark" onclick="sendAction('back')">BACK</button>
-        <button class="btn btn-green" onclick="sendAction('rand')">RANDOM</button>
-        <button class="btn btn-dark" onclick="sendAction('next')">NEXT</button>
-    </div>
-
-    <audio id="tts-player" style="display:none;">
+# Audio Playback Handling
+if st.session_state.play_audio:
+    tts = gTTS(text=current_phrase["thai"], lang='th')
+    fp = io.BytesIO()
+    tts.write_to_fp(fp)
+    b64_audio = base64.b64encode(fp.getvalue()).decode()
+    
+    audio_html = f"""
+    <audio autoplay style="display:none;">
         <source src="data:audio/mp3;base64,{b64_audio}" type="audio/mp3">
     </audio>
+    """
+    components.html(audio_html, height=0)
+    st.session_state.play_audio = False
 
-    <script>
-        // Official Streamlit postMessage API
-        function sendAction(val) {{
-            window.parent.postMessage({{
-                isStreamlitMessage: true,
-                type: "streamlit:setComponentValue",
-                value: val + "_" + Date.now() // Unique payload triggers Python state update
-            }}, "*");
-        }}
+# --- NATIVE STREAMLIT BUTTONS (GUARANTEED WORKING STATE & STYLING) ---
+if st.button("REVEAL", use_container_width=True):
+    st.session_state.reveal = not st.session_state.reveal
 
-        function playAudio() {{
-            const audio = document.getElementById('tts-player');
-            if (audio) {{
-                audio.currentTime = 0;
-                audio.play();
-            }}
-        }}
-    </script>
-</body>
-</html>
-"""
+if st.button("PHRASE", use_container_width=True):
+    st.session_state.play_audio = True
 
-# Capture component output
-action_signal = components.html(controls_html, height=155)
+col_back, col_rand, col_next = st.columns(3)
 
-# Update Python Session State when a signal is received
-if action_signal:
-    action = action_signal.split("_")[0]
-    if action == "reveal":
-        st.session_state.reveal = not st.session_state.reveal
-        st.rerun()
-    elif action == "back":
+with col_back:
+    if st.button("BACK", use_container_width=True):
         st.session_state.phrase_index = (st.session_state.phrase_index - 1) % total
         st.session_state.reveal = False
-        st.rerun()
-    elif action == "rand":
+
+with col_rand:
+    if st.button("RANDOM", use_container_width=True):
         st.session_state.phrase_index = random.randint(0, total - 1)
         st.session_state.reveal = False
-        st.rerun()
-    elif action == "next":
+
+with col_next:
+    if st.button("NEXT", use_container_width=True):
         st.session_state.phrase_index = (st.session_state.phrase_index + 1) % total
         st.session_state.reveal = False
-        st.rerun()
 
 st.markdown("<hr style='margin: 8px 0;'>", unsafe_allow_html=True)
 
