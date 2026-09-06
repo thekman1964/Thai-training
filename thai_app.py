@@ -31,7 +31,7 @@ st.markdown("""
         padding-right: 0.5rem !important;
     }
 
-    /* Base Styling for All Streamlit Buttons (Increased height by 25% to 40px) */
+    /* Base Styling for All Streamlit Buttons */
     div.stButton > button {
         font-size: 14px !important;
         font-weight: bold !important;
@@ -226,7 +226,7 @@ with nav_col3:
 
 st.divider()
 
-# 6. Speech Recognition + Translate + "HEAR SPOKEN THAI TEXT" Button (40px Height)
+# 6. Speech Recognition + Translate + "HEAR SPOKEN THAI TEXT" Button
 st_speech_html = f"""
 <div style="text-align: center; font-family: sans-serif;">
     <!-- Spoken Thai Output -->
@@ -239,7 +239,7 @@ st_speech_html = f"""
         English translation...
     </div>
     
-    <!-- TRANSLATE Button (Increased height to 40px) -->
+    <!-- TRANSLATE Button (Reduced width by 30% to 49%, doubled bottom margin to 12px) -->
     <button id="stt-btn" style="
         background-color: #FF6600 !important;
         color: #FFFFFF !important;
@@ -250,15 +250,15 @@ st_speech_html = f"""
         height: 40px !important;
         line-height: 40px !important;
         padding: 0px !important;
-        width: 70% !important;
+        width: 49% !important;
         max-width: 260px !important;
         cursor: pointer !important;
-        margin-bottom: 6px !important;
+        margin-bottom: 12px !important;
         box-sizing: border-box !important;
     ">TRANSLATE</button>
     <br>
 
-    <!-- HEAR SPOKEN THAI TEXT Button (Increased height to 40px) -->
+    <!-- HEAR SPOKEN THAI TEXT Button (Matching revised 49% width) -->
     <button id="speak-btn" style="
         background-color: #FFFFFF !important;
         color: #FF6600 !important;
@@ -269,8 +269,8 @@ st_speech_html = f"""
         height: 40px !important;
         line-height: 36px !important;
         padding: 0px !important;
-        width: 75% !important;
-        max-width: 280px !important;
+        width: 49% !important;
+        max-width: 260px !important;
         cursor: pointer !important;
         box-sizing: border-box !important;
     ">HEAR SPOKEN THAI TEXT</button>
@@ -353,4 +353,4 @@ st_speech_html = f"""
 </script>
 """
 
-components.html(st_speech_html, height=250)
+components.html(st_speech_html, height=260)
