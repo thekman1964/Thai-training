@@ -10,7 +10,7 @@ import streamlit.components.v1 as components
 
 st.set_page_config(layout="centered", page_title="Thai Practice")
 
-# Hide standard Streamlit header/footer padding without breaking buttons
+# Hide default Streamlit elements
 st.markdown("""
     <style>
     #MainMenu {visibility: hidden;}
@@ -30,7 +30,7 @@ st.markdown("""
         padding-right: 0.5rem !important;
     }
 
-    /* Force 3 columns on mobile screens */
+    /* Force 3 columns side-by-side on mobile */
     div[data-testid="stHorizontalBlock"] {
         display: flex !important;
         flex-direction: row !important;
@@ -43,6 +43,29 @@ st.markdown("""
         flex: 1 1 0% !important;
         min-width: 0 !important;
         width: auto !important;
+    }
+
+    /* Uniform button dimensions */
+    div[data-testid="stButton"] > button {
+        width: 100% !important;
+        height: 42px !important;
+        font-size: 14px !important;
+        font-weight: 900 !important;
+        border-radius: 6px !important;
+        padding: 0px !important;
+        white-space: nowrap !important;
+        margin: 2px 0px !important;
+        cursor: pointer !important;
+        border: none !important;
+    }
+
+    div[data-testid="stButton"] > button p {
+        color: #FFFFFF !important;
+        font-weight: 900 !important;
+    }
+
+    hr {
+        margin: 6px 0px !important;
     }
     </style>
 """, unsafe_allow_html=True)
@@ -69,7 +92,7 @@ def play_thai_audio(text):
     """
     components.html(audio_html, height=0)
 
-# Fetch phrases from Google Sheet along with metadata
+# Load dataset
 @st.cache_data(ttl=600)
 def load_phrases_with_meta():
     sheet_id = "1_vMSPtMo3-JD2qARp4zwrcvNrhEuSKHQVEOT1IMwgFw"
@@ -104,7 +127,7 @@ def load_phrases_with_meta():
 PHRASES_DB, SHEET_LAST_UPDATED = load_phrases_with_meta()
 total = len(PHRASES_DB)
 
-# Initialize Session State
+# Session State
 if "phrase_index" not in st.session_state:
     st.session_state.phrase_index = 0
 if "reveal" not in st.session_state:
@@ -126,36 +149,34 @@ st.markdown(
     unsafe_allow_html=True
 )
 
-# Title & Main Thai Phrase Display
+# Display text
 st.markdown("<h4 style='text-align: center; color: #000000; margin: 0px;'>Thai Listening and Reading</h4>", unsafe_allow_html=True)
 st.markdown(f"<h2 style='text-align: center; font-size: 32px; color: #000000; margin: 2px 0;'>{current_phrase['thai']}</h2>", unsafe_allow_html=True)
 
-# English Translation Display
 if st.session_state.reveal:
     st.markdown(f"<p style='text-align: center; color: #0066CC; font-size: 20px; font-weight: bold; margin-bottom: 4px;'>{current_phrase['english']}</p>", unsafe_allow_html=True)
 else:
     st.markdown("<p style='text-align: center; color: #777777; font-size: 13px; margin-bottom: 4px;'>Click \"REVEAL\" to view English translation</p>", unsafe_allow_html=True)
 
-# Trigger auto audio play if activated
 if st.session_state.auto_play:
     play_thai_audio(current_phrase["thai"])
     st.session_state.auto_play = False
 
-# --- NATIVE STREAMLIT BUTTON CONTROLS ---
+# --- BUTTON CONTROLS WITH DIRECT INLINE STYLING ---
 
-# Row 1: REVEAL
-if st.button("REVEAL", key="btn_reveal", use_container_width=True, type="primary"):
+st.html("<style>div[data-testid='stButton']:has(#btn_reveal) button { background-color: #0066CC !important; }</style>")
+if st.button("REVEAL", key="btn_reveal", use_container_width=True):
     st.session_state.reveal = not st.session_state.reveal
     st.rerun()
 
-# Row 2: PHRASE
+st.html("<style>div[data-testid='stButton']:has(#btn_phrase) button { background-color: #FF6600 !important; }</style>")
 if st.button("PHRASE", key="btn_phrase", use_container_width=True):
     play_thai_audio(current_phrase["thai"])
 
-# Row 3: BACK, RANDOM, NEXT (3 Columns Side-by-Side)
 col_back, col_rand, col_next = st.columns(3)
 
 with col_back:
+    st.html("<style>div[data-testid='stButton']:has(#btn_back) button { background-color: #1A202C !important; }</style>")
     if st.button("BACK", key="btn_back", use_container_width=True):
         st.session_state.phrase_index = (st.session_state.phrase_index - 1) % total
         st.session_state.reveal = False
@@ -163,6 +184,7 @@ with col_back:
         st.rerun()
 
 with col_rand:
+    st.html("<style>div[data-testid='stButton']:has(#btn_rand) button { background-color: #28A745 !important; }</style>")
     if st.button("RANDOM", key="btn_rand", use_container_width=True):
         st.session_state.phrase_index = random.randint(0, total - 1)
         st.session_state.reveal = False
@@ -170,6 +192,7 @@ with col_rand:
         st.rerun()
 
 with col_next:
+    st.html("<style>div[data-testid='stButton']:has(#btn_next) button { background-color: #1A202C !important; }</style>")
     if st.button("NEXT", key="btn_next", use_container_width=True):
         st.session_state.phrase_index = (st.session_state.phrase_index + 1) % total
         st.session_state.reveal = False
@@ -178,7 +201,7 @@ with col_next:
 
 st.divider()
 
-# --- SPEECH RECOGNITION & TRANSLATION SECTION ---
+# --- SPEECH RECOGNITION & TRANSLATION ---
 st_speech_html = f"""
 <div style="text-align: center; font-family: sans-serif;">
     <div id="output" style="color: #FF6600; font-size: 32px; font-weight: bold; min-height: 40px; margin-bottom: 2px;">
