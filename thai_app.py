@@ -62,29 +62,29 @@ st.markdown("""
     }
 
     /* REVEAL Button - Blue Border */
-    div.stButton > button[key="btn_reveal"] {
+    .btn-reveal div.stButton > button {
         background-color: #0066CC !important;
         color: #FFFFFF !important;
         border: 4px solid #0066CC !important;
     }
 
     /* PHRASE Button - Orange Border */
-    div.stButton > button[key="btn_phrase"] {
+    .btn-phrase div.stButton > button {
         background-color: #FF6600 !important;
         color: #FFFFFF !important;
         border: 4px solid #FF6600 !important;
     }
 
     /* RANDOM Button - Green Border */
-    div.stButton > button[key="btn_rand"] {
+    .btn-rand div.stButton > button {
         background-color: #28A745 !important;
         color: #FFFFFF !important;
         border: 4px solid #28A745 !important;
     }
 
     /* BACK & NEXT Buttons - Black Border */
-    div.stButton > button[key="btn_back"],
-    div.stButton > button[key="btn_next"] {
+    .btn-back div.stButton > button,
+    .btn-next div.stButton > button {
         background-color: #1A202C !important;
         color: #FFFFFF !important;
         border: 4px solid #000000 !important;
@@ -190,43 +190,53 @@ if st.session_state.auto_play:
     play_thai_audio(current_phrase["thai"])
     st.session_state.auto_play = False
 
-# --- BUTTONS WITH COLORED BORDERS ---
+# --- BUTTONS WITH INDIVIDUAL CSS CLASS WRAPPERS ---
 
 # Row 1: REVEAL
 c1, c2, c3 = st.columns([1, 1, 1])
 with c2:
-    if st.button("REVEAL", key="btn_reveal", use_container_width=True):
-        st.session_state.reveal = not st.session_state.reveal
-        st.rerun()
+    with st.container():
+        st.html('<div class="btn-reveal"></div>')
+        if st.button("REVEAL", key="btn_reveal", use_container_width=True):
+            st.session_state.reveal = not st.session_state.reveal
+            st.rerun()
 
 # Row 2: PHRASE
 c1, c2, c3 = st.columns([1, 1, 1])
 with c2:
-    if st.button("PHRASE", key="btn_phrase", use_container_width=True):
-        play_thai_audio(current_phrase["thai"])
+    with st.container():
+        st.html('<div class="btn-phrase"></div>')
+        if st.button("PHRASE", key="btn_phrase", use_container_width=True):
+            play_thai_audio(current_phrase["thai"])
 
 # Row 3: BACK, RANDOM, NEXT
 col_back, col_rand, col_next = st.columns([1, 1, 1])
 with col_back:
-    if st.button("BACK", key="btn_back", use_container_width=True):
-        st.session_state.phrase_index = (st.session_state.phrase_index - 1) % total
-        st.session_state.reveal = False
-        st.session_state.auto_play = True
-        st.rerun()
+    with st.container():
+        st.html('<div class="btn-back"></div>')
+        if st.button("BACK", key="btn_back", use_container_width=True):
+            st.session_state.phrase_index = (st.session_state.phrase_index - 1) % total
+            st.session_state.reveal = False
+            st.session_state.auto_play = True
+            st.rerun()
 
 with col_rand:
-    if st.button("RANDOM", key="btn_rand", use_container_width=True):
-        st.session_state.phrase_index = random.randint(0, total - 1)
-        st.session_state.reveal = False
-        st.session_state.auto_play = True
-        st.rerun()
+    with st.container():
+        st.html('<div class="btn-rand"></div>')
+        if st.button("RANDOM", key="btn_rand", use_container_width=True):
+            st.session_state.phrase_index = random.randint(0, total - 1)
+            st.session_state.reveal = False
+            st.session_state.auto_play = True
+            st.rerun()
 
 with col_next:
-    if st.button("NEXT", key="btn_next", use_container_width=True):
-        st.session_state.phrase_index = (st.session_state.phrase_index + 1) % total
-        st.session_state.reveal = False
-        st.session_state.auto_play = True
-        st.rerun()
+    with st.container():
+        st.html('<div class="btn-next"></div>')
+        if st.button("NEXT", key="btn_next", use_container_width=True):
+            st.session_state.phrase_index = (st.session_state.phrase_index + 1) % total
+            st.session_state.reveal = False
+            st.session_state.auto_play = True
+            st.rerun()
 
 st.divider()
 
