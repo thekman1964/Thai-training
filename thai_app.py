@@ -1,7 +1,6 @@
 import streamlit as st
 from gtts import gTTS
 import io
-import base64
 import random
 import time
 import requests
@@ -10,7 +9,7 @@ import streamlit.components.v1 as components
 
 st.set_page_config(layout="centered", page_title="Thai Practice")
 
-# --- GLOBAL STYLING (Targets native buttons directly by text content) ---
+# --- GLOBAL STYLING ---
 st.markdown("""
     <style>
     #MainMenu {visibility: hidden;}
@@ -30,50 +29,29 @@ st.markdown("""
         padding-right: 0.5rem !important;
     }
 
-    /* Keep 3 columns side-by-side on mobile devices */
-    div[data-testid="stHorizontalBlock"] {
-        display: flex !important;
-        flex-direction: row !important;
-        flex-wrap: nowrap !important;
-        width: 100% !important;
-        gap: 6px !important;
-    }
-
-    div[data-testid="stHorizontalBlock"] > div {
-        flex: 1 1 0% !important;
-        min-width: 0 !important;
-    }
-
-    /* Standard Button Styling */
-    div[data-testid="stButton"] > button {
+    /* Base look for every native button, matching the old HTML .btn class */
+    div.stButton > button {
         width: 100% !important;
         height: 44px !important;
-        border-radius: 6px !important;
         border: none !important;
-        box-shadow: 0px 2px 4px rgba(0,0,0,0.15) !important;
+        border-radius: 6px !important;
         font-weight: 800 !important;
         font-size: 15px !important;
-    }
-
-    /* Target specific buttons via text content to keep colors intact */
-    div[data-testid="stButton"] > button:has(p:contains("REVEAL")) {
-        background-color: #0066CC !important;
-    }
-    div[data-testid="stButton"] > button:has(p:contains("PHRASE")) {
-        background-color: #FF6600 !important;
-    }
-    div[data-testid="stButton"] > button:has(p:contains("BACK")),
-    div[data-testid="stButton"] > button:has(p:contains("NEXT")) {
-        background-color: #1A202C !important;
-    }
-    div[data-testid="stButton"] > button:has(p:contains("RANDOM")) {
-        background-color: #28A745 !important;
-    }
-
-    /* Force button text color to solid white */
-    div[data-testid="stButton"] > button p {
         color: #FFFFFF !important;
+        cursor: pointer !important;
+        box-shadow: 0px 2px 4px rgba(0,0,0,0.15) !important;
+        margin-top: 3px !important;
+        margin-bottom: 3px !important;
+        box-sizing: border-box !important;
     }
+
+    /* Per-button colors, targeted by widget KEY so styling can never
+       mis-target the wrong element regardless of layout changes. */
+    .st-key-btn_reveal button { background-color: #0066CC !important; }
+    .st-key-btn_phrase button { background-color: #FF6600 !important; }
+    .st-key-btn_back button,
+    .st-key-btn_next button   { background-color: #1A202C !important; }
+    .st-key-btn_rand button   { background-color: #28A745 !important; }
     </style>
 """, unsafe_allow_html=True)
 
@@ -83,7 +61,7 @@ def load_phrases_with_meta():
     sheet_id = "1_vMSPtMo3-JD2qARp4zwrcvNrhEuSKHQVEOT1IMwgFw"
     url = f"https://docs.google.com/spreadsheets/d/{sheet_id}/export?format=csv"
     last_updated = "Unknown"
-    
+
     try:
         head_res = requests.head(url)
         if "Last-Modified" in head_res.headers:
@@ -112,17 +90,27 @@ def load_phrases_with_meta():
 PHRASES_DB, SHEET_LAST_UPDATED = load_phrases_with_meta()
 total = len(PHRASES_DB)
 
-# Initialize Session State
+# --- SESSION STATE ---
 if "phrase_index" not in st.session_state:
     st.session_state.phrase_index = 0
 if "reveal" not in st.session_state:
     st.session_state.reveal = False
-if "play_audio" not in st.session_state:
-    st.session_state.play_audio = False
 
 current_phrase = PHRASES_DB[st.session_state.phrase_index]
 
-# Flag Header
+# Helper to play TTS audio for the current phrase.
+# Uses Streamlit's native st.audio widget (with autoplay) instead of a hidden
+# iframe: it attempts autoplay the same way, but also shows a real, visible
+# player so there's a manual tap-to-play fallback if a browser blocks
+# autoplay outright (common on iOS Safari) instead of silently doing nothing.
+def play_thai_audio(text):
+    tts = gTTS(text=text, lang='th')
+    fp = io.BytesIO()
+    tts.write_to_fp(fp)
+    fp.seek(0)
+    st.audio(fp.getvalue(), format="audio/mp3", autoplay=True)
+
+# Header
 st.markdown(
     """
     <div style="text-align: center; margin-top: 2px; margin-bottom: 2px;">
@@ -142,47 +130,35 @@ if st.session_state.reveal:
 else:
     st.markdown("<p style='text-align: center; color: #777777; font-size: 13px; margin-bottom: 4px;'>Click \"REVEAL\" to view English translation</p>", unsafe_allow_html=True)
 
-# Audio Execution
-if st.session_state.play_audio:
-    tts = gTTS(text=current_phrase["thai"], lang='th')
-    fp = io.BytesIO()
-    tts.write_to_fp(fp)
-    b64_audio = base64.b64encode(fp.getvalue()).decode()
-    
-    audio_html = f"""
-    <audio autoplay style="display:none;">
-        <source src="data:audio/mp3;base64,{b64_audio}" type="audio/mp3">
-    </audio>
-    """
-    components.html(audio_html, height=0)
-    st.session_state.play_audio = False
-
-# --- PREFERRED NATIVE BUTTON LAYOUT ---
-if st.button("REVEAL", use_container_width=True):
+# --- NAV BUTTONS (native st.button, styled via CSS above to match old layout) ---
+# REVEAL: full width
+if st.button("REVEAL", key="btn_reveal", use_container_width=True):
     st.session_state.reveal = not st.session_state.reveal
+    st.rerun()
 
-if st.button("PHRASE", use_container_width=True):
-    st.session_state.play_audio = True
+# PHRASE: full width
+if st.button("PHRASE", key="btn_phrase", use_container_width=True):
+    play_thai_audio(current_phrase["thai"])
 
-col_back, col_rand, col_next = st.columns(3)
-
+# BACK / RANDOM / NEXT: one row, small gap between them
+col_back, col_rand, col_next = st.columns([1, 1, 1], gap="small")
 with col_back:
-    if st.button("BACK", use_container_width=True):
+    if st.button("BACK", key="btn_back", use_container_width=True):
         st.session_state.phrase_index = (st.session_state.phrase_index - 1) % total
         st.session_state.reveal = False
-        st.session_state.play_audio = True  # Triggers audio output on press
+        st.rerun()
 
 with col_rand:
-    if st.button("RANDOM", use_container_width=True):
+    if st.button("RANDOM", key="btn_rand", use_container_width=True):
         st.session_state.phrase_index = random.randint(0, total - 1)
         st.session_state.reveal = False
-        st.session_state.play_audio = True  # Triggers audio output on press
+        st.rerun()
 
 with col_next:
-    if st.button("NEXT", use_container_width=True):
+    if st.button("NEXT", key="btn_next", use_container_width=True):
         st.session_state.phrase_index = (st.session_state.phrase_index + 1) % total
         st.session_state.reveal = False
-        st.session_state.play_audio = True  # Triggers audio output on press
+        st.rerun()
 
 st.markdown("<hr style='margin: 8px 0;'>", unsafe_allow_html=True)
 
