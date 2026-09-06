@@ -10,7 +10,7 @@ import streamlit.components.v1 as components
 
 st.set_page_config(layout="centered", page_title="Thai Practice")
 
-# --- Mobile Compact & Universal Button Styling ---
+# --- Mobile Compact & Precise Button Styling ---
 st.markdown("""
     <style>
     /* Hide top Streamlit header bar, main menu, and footer */
@@ -31,7 +31,7 @@ st.markdown("""
         padding-right: 0.5rem !important;
     }
 
-    /* Base Streamlit Button Heights & Font Sizes */
+    /* Base Styling for All Streamlit Buttons */
     div.stButton > button {
         font-size: 14px !important;
         font-weight: bold !important;
@@ -44,29 +44,32 @@ st.markdown("""
         margin-top: 2px !important;
         margin-bottom: 2px !important;
         border: none !important;
+        width: 100% !important;
     }
 
-    /* Target REVEAL Button (Blue) via Wrapper Container */
-    div.btn-blue div.stButton > button {
+    /* 1. REVEAL Button (1st Block -> Blue) */
+    div[data-testid="stVerticalBlock"] > div:nth-child(5) button {
         background-color: #0066CC !important;
         color: #FFFFFF !important;
     }
 
-    /* Target PHRASE Button (Orange) via Wrapper Container */
-    div.btn-orange div.stButton > button {
+    /* 2. PHRASE Button (2nd Block -> Orange) */
+    div[data-testid="stVerticalBlock"] > div:nth-child(6) button {
         background-color: #FF6600 !important;
         color: #FFFFFF !important;
     }
 
-    /* Target RANDOM Button (Green) via Wrapper Container */
-    div.btn-green div.stButton > button {
-        background-color: #28A745 !important;
+    /* 3. Navigation Block (3rd Block -> BACK, RANDOM, NEXT) */
+    div[data-testid="stVerticalBlock"] > div:nth-child(7) div[data-testid="stColumn"]:nth-child(1) button {
+        background-color: #1A202C !important; /* BACK */
         color: #FFFFFF !important;
     }
-
-    /* Target Navigation Buttons (Dark Slate) */
-    div.btn-dark div.stButton > button {
-        background-color: #1A202C !important;
+    div[data-testid="stVerticalBlock"] > div:nth-child(7) div[data-testid="stColumn"]:nth-child(2) button {
+        background-color: #28A745 !important; /* RANDOM */
+        color: #FFFFFF !important;
+    }
+    div[data-testid="stVerticalBlock"] > div:nth-child(7) div[data-testid="stColumn"]:nth-child(3) button {
+        background-color: #1A202C !important; /* NEXT */
         color: #FFFFFF !important;
     }
 
@@ -174,7 +177,7 @@ st.markdown(
 st.markdown("<h4 style='text-align: center; color: #000000; margin: 0px;'>Thai Listening and Reading</h4>", unsafe_allow_html=True)
 st.markdown(f"<h2 style='text-align: center; font-size: 32px; color: #000000; margin: 2px 0;'>{current_phrase['thai']}</h2>", unsafe_allow_html=True)
 
-# 2. English Hint Display (20px bold blue when revealed)
+# 2. English Hint Display
 if st.session_state.reveal:
     st.markdown(f"<p style='text-align: center; color: #0066CC; font-size: 20px; font-weight: bold; margin-bottom: 4px;'>{current_phrase['english']}</p>", unsafe_allow_html=True)
 else:
@@ -183,18 +186,14 @@ else:
 # 3. REVEAL Button (Blue)
 _, col_rev, _ = st.columns([1, 4, 1])
 with col_rev:
-    st.markdown('<div class="btn-blue">', unsafe_allow_html=True)
     if st.button("REVEAL", key="btn_reveal", use_container_width=True):
         st.session_state.reveal = not st.session_state.reveal
-    st.markdown('</div>', unsafe_allow_html=True)
 
 # 4. PHRASE Button (Orange)
 _, col_play, _ = st.columns([1, 4, 1])
 with col_play:
-    st.markdown('<div class="btn-orange">', unsafe_allow_html=True)
     if st.button("PHRASE", key="btn_play", use_container_width=True):
         play_thai_audio(current_phrase["thai"])
-    st.markdown('</div>', unsafe_allow_html=True)
 
 # Trigger audio playback if requested by Navigation
 if st.session_state.auto_play:
@@ -205,48 +204,42 @@ if st.session_state.auto_play:
 nav_col1, nav_col2, nav_col3 = st.columns([1, 1, 1])
 
 with nav_col1:
-    st.markdown('<div class="btn-dark">', unsafe_allow_html=True)
     if st.button("BACK", key="btn_prev", use_container_width=True):
         st.session_state.phrase_index = (st.session_state.phrase_index - 1) % total
         st.session_state.reveal = False
         st.session_state.auto_play = True
         st.rerun()
-    st.markdown('</div>', unsafe_allow_html=True)
 
 with nav_col2:
-    st.markdown('<div class="btn-green">', unsafe_allow_html=True)
     if st.button("RANDOM", key="btn_rand", use_container_width=True):
         st.session_state.phrase_index = random.randint(0, total - 1)
         st.session_state.reveal = False
         st.session_state.auto_play = True
         st.rerun()
-    st.markdown('</div>', unsafe_allow_html=True)
 
 with nav_col3:
-    st.markdown('<div class="btn-dark">', unsafe_allow_html=True)
     if st.button("NEXT", key="btn_next", use_container_width=True):
         st.session_state.phrase_index = (st.session_state.phrase_index + 1) % total
         st.session_state.reveal = False
         st.session_state.auto_play = True
         st.rerun()
-    st.markdown('</div>', unsafe_allow_html=True)
 
 st.divider()
 
-# 6. Speech Recognition + Translate + "HEAR SPOKEN THAI TEXT" Button (Embedded CSS for Component iFrame)
+# 6. Speech Recognition + Translate + "HEAR SPOKEN THAI TEXT" Button
 st_speech_html = f"""
 <div style="text-align: center; font-family: sans-serif;">
-    <!-- Spoken Thai Output (32px Orange) -->
+    <!-- Spoken Thai Output -->
     <div id="output" style="color: #FF6600; font-size: 32px; font-weight: bold; min-height: 40px; margin-bottom: 2px;">
         Spoken Thai text...
     </div>
     
-    <!-- English Translation Output (20px Blue) -->
+    <!-- English Translation Output -->
     <div id="translation" style="color: #0066CC; font-size: 20px; font-weight: bold; min-height: 28px; margin-bottom: 6px;">
         English translation...
     </div>
     
-    <!-- TRANSLATE Button (Solid Orange - Explicit 32px Height) -->
+    <!-- TRANSLATE Button -->
     <button id="stt-btn" style="
         background-color: #FF6600 !important;
         color: #FFFFFF !important;
@@ -265,7 +258,7 @@ st_speech_html = f"""
     ">TRANSLATE</button>
     <br>
 
-    <!-- HEAR SPOKEN THAI TEXT Button (White with Orange Border - Explicit 32px Height) -->
+    <!-- HEAR SPOKEN THAI TEXT Button -->
     <button id="speak-btn" style="
         background-color: #FFFFFF !important;
         color: #FF6600 !important;
@@ -312,7 +305,6 @@ st_speech_html = f"""
         }}
     }}
 
-    // Text-to-Speech logic for HEAR SPOKEN THAI TEXT button
     speakBtn.onclick = () => {{
         const textToSpeak = output.innerText.trim();
         if (textToSpeak && textToSpeak !== "Spoken Thai text...") {{
