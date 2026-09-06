@@ -10,7 +10,7 @@ import streamlit.components.v1 as components
 
 st.set_page_config(layout="centered", page_title="Thai Practice")
 
-# --- CSS INJECTION & LAYOUT FIXES ---
+# --- GLOBAL STYLING & MOBILE LAYOUT OVERRIDES ---
 st.markdown("""
     <style>
     #MainMenu {visibility: hidden;}
@@ -45,7 +45,7 @@ st.markdown("""
         width: auto !important;
     }
 
-    /* UNIFORM BUTTON DIMENSIONS */
+    /* BASE BUTTON STYLES FOR ALL STREAMLIT BUTTONS */
     div[data-testid="stButton"] > button {
         width: 100% !important;
         height: 42px !important;
@@ -59,31 +59,24 @@ st.markdown("""
         border: none !important;
     }
 
-    /* COLOR SPECIFICATIONS VIA DOM ORDER */
-    /* 1st Top Button: REVEAL (Blue) */
-    div[data-testid="stElementContainer"]:nth-of-type(1) div[data-testid="stButton"] > button {
+    /* TARGETED BUTTON COLOR WRAPPERS */
+    .btn-blue div[data-testid="stButton"] > button {
         background-color: #0066CC !important;
     }
-
-    /* 2nd Top Button: PHRASE (Orange) */
-    div[data-testid="stElementContainer"]:nth-of-type(2) div[data-testid="stButton"] > button {
+    
+    .btn-orange div[data-testid="stButton"] > button {
         background-color: #FF6600 !important;
     }
 
-    /* 3-Column Row Buttons */
-    div[data-testid="stColumn"]:nth-of-type(1) div[data-testid="stButton"] > button {
-        background-color: #1A202C !important; /* BACK (Dark) */
+    .btn-dark div[data-testid="stButton"] > button {
+        background-color: #1A202C !important;
     }
 
-    div[data-testid="stColumn"]:nth-of-type(2) div[data-testid="stButton"] > button {
-        background-color: #28A745 !important; /* RANDOM (Green) */
+    .btn-green div[data-testid="stButton"] > button {
+        background-color: #28A745 !important;
     }
 
-    div[data-testid="stColumn"]:nth-of-type(3) div[data-testid="stButton"] > button {
-        background-color: #1A202C !important; /* NEXT (Dark) */
-    }
-
-    /* FORCE BUTTON TEXT TO REMAIN WHITE */
+    /* FORCE BUTTON TEXT COLOR TO WHITE */
     div[data-testid="stButton"] > button p {
         color: #FFFFFF !important;
         font-weight: 900 !important;
@@ -117,7 +110,7 @@ def play_thai_audio(text):
     """
     components.html(audio_html, height=0)
 
-# Load phrases from Google Sheet with meta
+# Load dataset with metadata
 @st.cache_data(ttl=600)
 def load_phrases_with_meta():
     sheet_id = "1_vMSPtMo3-JD2qARp4zwrcvNrhEuSKHQVEOT1IMwgFw"
@@ -189,36 +182,46 @@ if st.session_state.auto_play:
     play_thai_audio(current_phrase["thai"])
     st.session_state.auto_play = False
 
-# --- PRIMARY CONTROLS ---
+# --- CONTROLS ---
 
-# Row 1: REVEAL
-if st.button("REVEAL", key="btn_reveal", use_container_width=True):
+# Button 1: REVEAL
+c_reveal = st.container()
+c_reveal.markdown('<div class="btn-blue">', unsafe_allow_html=True)
+if c_reveal.button("REVEAL", key="btn_reveal", use_container_width=True):
     st.session_state.reveal = not st.session_state.reveal
     st.rerun()
 
-# Row 2: PHRASE
-if st.button("PHRASE", key="btn_phrase", use_container_width=True):
+# Button 2: PHRASE
+c_phrase = st.container()
+c_phrase.markdown('<div class="btn-orange">', unsafe_allow_html=True)
+if c_phrase.button("PHRASE", key="btn_phrase", use_container_width=True):
     play_thai_audio(current_phrase["thai"])
 
 # Row 3: BACK, RANDOM, NEXT (3 Columns Side-by-Side)
 col_back, col_rand, col_next = st.columns(3)
 
 with col_back:
-    if st.button("BACK", key="btn_back", use_container_width=True):
+    c_back = st.container()
+    c_back.markdown('<div class="btn-dark">', unsafe_allow_html=True)
+    if c_back.button("BACK", key="btn_back", use_container_width=True):
         st.session_state.phrase_index = (st.session_state.phrase_index - 1) % total
         st.session_state.reveal = False
         st.session_state.auto_play = True
         st.rerun()
 
 with col_rand:
-    if st.button("RANDOM", key="btn_rand", use_container_width=True):
+    c_rand = st.container()
+    c_rand.markdown('<div class="btn-green">', unsafe_allow_html=True)
+    if c_rand.button("RANDOM", key="btn_rand", use_container_width=True):
         st.session_state.phrase_index = random.randint(0, total - 1)
         st.session_state.reveal = False
         st.session_state.auto_play = True
         st.rerun()
 
 with col_next:
-    if st.button("NEXT", key="btn_next", use_container_width=True):
+    c_next = st.container()
+    c_next.markdown('<div class="btn-dark">', unsafe_allow_html=True)
+    if c_next.button("NEXT", key="btn_next", use_container_width=True):
         st.session_state.phrase_index = (st.session_state.phrase_index + 1) % total
         st.session_state.reveal = False
         st.session_state.auto_play = True
