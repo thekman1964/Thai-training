@@ -102,30 +102,6 @@ if "reveal" not in st.session_state:
 if "auto_play" not in st.session_state:
     st.session_state.auto_play = False
 
-# Handle Query Parameters for HTML-based Actions & Navigation
-query_params = st.query_params
-if "action" in query_params:
-    act = query_params["action"]
-    if act == "toggle_reveal":
-        st.session_state.reveal = not st.session_state.reveal
-    elif act == "play_audio":
-        st.session_state.auto_play = True
-    st.query_params.clear()
-    st.rerun()
-
-if "nav" in query_params:
-    action = query_params["nav"]
-    if action == "prev":
-        st.session_state.phrase_index = (st.session_state.phrase_index - 1) % total
-    elif action == "rand":
-        st.session_state.phrase_index = random.randint(0, total - 1)
-    elif action == "next":
-        st.session_state.phrase_index = (st.session_state.phrase_index + 1) % total
-    st.session_state.reveal = False
-    st.session_state.auto_play = True
-    st.query_params.clear()
-    st.rerun()
-
 current_phrase = PHRASES_DB[st.session_state.phrase_index]
 
 # 0. Waving Thailand Flag Header Image
@@ -155,90 +131,111 @@ if st.session_state.auto_play:
     play_thai_audio(current_phrase["thai"])
     st.session_state.auto_play = False
 
-# 3. REVEAL, PHRASE, BACK, RANDOM, NEXT Buttons
-# REVEAL and PHRASE are scaled inside a 3-column grid to match RANDOM's exact column width.
+# 3. Custom HTML/JS Navigation & Action Buttons Block
 action_buttons_html = """
-<div style="display: flex; flex-direction: column; align-items: center; gap: 8px; width: 100%;">
-    <!-- Row 1: REVEAL Button (Sized to 1/3 column width like RANDOM) -->
-    <div style="display: flex; gap: 6px; width: 100%;">
-        <div style="flex: 1;"></div>
-        <button onclick="window.top.location.href = window.top.location.pathname + '?action=toggle_reveal'" style="
-            flex: 1;
-            background-color: #0066CC;
-            color: #FFFFFF;
+<!DOCTYPE html>
+<html>
+<head>
+    <script>
+    function sendAction(actionName) {
+        // Post message directly to parent Streamlit frame
+        window.parent.postMessage({
+            type: "streamlit:setComponentValue",
+            value: actionName + "_" + Date.now()
+        }, "*");
+    }
+    </script>
+    <style>
+        body { margin: 0; padding: 0; font-family: sans-serif; background-color: transparent; }
+        .btn-container { display: flex; flex-direction: column; align-items: center; gap: 8px; width: 100%; }
+        .row { display: flex; gap: 6px; width: 100%; }
+        .flex-space { flex: 1; }
+        button {
+            height: 40px;
             font-weight: 900;
             font-size: 14px;
             border-radius: 6px;
-            height: 40px;
             border: 3px solid #000000;
             box-sizing: border-box;
             cursor: pointer;
-        ">REVEAL</button>
-        <div style="flex: 1;"></div>
+            color: #FFFFFF;
+        }
+        .btn-reveal { flex: 1; background-color: #0066CC; }
+        .btn-phrase { flex: 1; background-color: #FF6600; }
+        .btn-back { flex: 1; background-color: #1A202C; }
+        .btn-random { flex: 1; background-color: #28A745; }
+        .btn-next { flex: 1; background-color: #1A202C; }
+    </style>
+</head>
+<body>
+    <div class="btn-container">
+        <!-- Row 1: REVEAL Button -->
+        <div class="row">
+            <div class="flex-space"></div>
+            <button class="btn-reveal" onclick="sendAction('toggle_reveal')">REVEAL</button>
+            <div class="flex-space"></div>
+        </div>
+
+        <!-- Row 2: PHRASE Button -->
+        <div class="row">
+            <div class="flex-space"></div>
+            <button class="btn-phrase" onclick="sendAction('play_audio')">PHRASE</button>
+            <div class="flex-space"></div>
+        </div>
+
+        <!-- Row 3: BACK, RANDOM, NEXT Buttons -->
+        <div class="row">
+            <button class="btn-back" onclick="sendAction('prev')">BACK</button>
+            <button class="btn-random" onclick="sendAction('rand')">RANDOM</button>
+            <button class="btn-next" onclick="sendAction('next')">NEXT</button>
+        </div>
     </div>
-
-    <!-- Row 2: PHRASE Button (Sized to 1/3 column width like RANDOM) -->
-    <div style="display: flex; gap: 6px; width: 100%;">
-        <div style="flex: 1;"></div>
-        <button onclick="window.top.location.href = window.top.location.pathname + '?action=play_audio'" style="
-            flex: 1;
-            background-color: #FF6600;
-            color: #FFFFFF;
-            font-weight: 900;
-            font-size: 14px;
-            border-radius: 6px;
-            height: 40px;
-            border: 3px solid #000000;
-            box-sizing: border-box;
-            cursor: pointer;
-        ">PHRASE</button>
-        <div style="flex: 1;"></div>
-    </div>
-
-    <!-- Row 3: BACK, RANDOM, NEXT Row -->
-    <div style="display: flex; gap: 6px; width: 100%;">
-        <button onclick="window.top.location.href = window.top.location.pathname + '?nav=prev'" style="
-            flex: 1;
-            background-color: #1A202C;
-            color: #FFFFFF;
-            font-weight: 900;
-            font-size: 14px;
-            border-radius: 6px;
-            height: 40px;
-            border: 3px solid #000000;
-            box-sizing: border-box;
-            cursor: pointer;
-        ">BACK</button>
-
-        <button onclick="window.top.location.href = window.top.location.pathname + '?nav=rand'" style="
-            flex: 1;
-            background-color: #28A745;
-            color: #FFFFFF;
-            font-weight: 900;
-            font-size: 14px;
-            border-radius: 6px;
-            height: 40px;
-            border: 3px solid #000000;
-            box-sizing: border-box;
-            cursor: pointer;
-        ">RANDOM</button>
-
-        <button onclick="window.top.location.href = window.top.location.pathname + '?nav=next'" style="
-            flex: 1;
-            background-color: #1A202C;
-            color: #FFFFFF;
-            font-weight: 900;
-            font-size: 14px;
-            border-radius: 6px;
-            height: 40px;
-            border: 3px solid #000000;
-            box-sizing: border-box;
-            cursor: pointer;
-        ">NEXT</button>
-    </div>
-</div>
+</body>
+</html>
 """
-components.html(action_buttons_html, height=150)
+
+btn_event = components.html(action_buttons_html, height=150)
+
+# Declare component instance to catch postMessage events
+action_signal = st.components.v1.html(
+    """
+    <script>
+    window.addEventListener("message", (event) => {
+        if (event.data.type === "streamlit:setComponentValue") {
+            const val = event.data.value;
+            window.parent.postMessage({
+                type: "streamlit:setComponentValue",
+                value: val
+            }, "*");
+        }
+    });
+    </script>
+    """,
+    height=0
+)
+
+# Handle actions based on button state via URL query fallback / state handling
+btn_click = st.query_params.get("btn_click", None)
+
+if btn_click:
+    if "toggle_reveal" in btn_click:
+        st.session_state.reveal = not st.session_state.reveal
+    elif "play_audio" in btn_click:
+        st.session_state.auto_play = True
+    elif "prev" in btn_click:
+        st.session_state.phrase_index = (st.session_state.phrase_index - 1) % total
+        st.session_state.reveal = False
+        st.session_state.auto_play = True
+    elif "rand" in btn_click:
+        st.session_state.phrase_index = random.randint(0, total - 1)
+        st.session_state.reveal = False
+        st.session_state.auto_play = True
+    elif "next" in btn_click:
+        st.session_state.phrase_index = (st.session_state.phrase_index + 1) % total
+        st.session_state.reveal = False
+        st.session_state.auto_play = True
+    st.query_params.clear()
+    st.rerun()
 
 st.divider()
 
