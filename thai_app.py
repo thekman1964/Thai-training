@@ -61,43 +61,35 @@ st.markdown("""
         cursor: pointer !important;
     }
 
-    /* Target buttons using element structure or inline attributes */
-    /* REVEAL Button - Blue Border */
-    div[data-testid="stButton"]:has(button p:contains("REVEAL")) > button,
-    div[data-testid="stButton"] button:has(span:contains("REVEAL")) {
-        background-color: #0066CC !important;
-        color: #FFFFFF !important;
-        border: 4px solid #0066CC !important;
-    }
-
-    /* Target by row structure fallback */
-    /* Row 1 - REVEAL */
+    /* Row 1 - REVEAL (Blue Border) */
     [data-testid="stHorizontalBlock"]:nth-of-type(1) div[data-testid="stButton"] > button {
         background-color: #0066CC !important;
         color: #FFFFFF !important;
         border: 4px solid #0066CC !important;
     }
 
-    /* Row 2 - PHRASE */
+    /* Row 2 - PHRASE (Orange Border) */
     [data-testid="stHorizontalBlock"]:nth-of-type(2) div[data-testid="stButton"] > button {
         background-color: #FF6600 !important;
         color: #FFFFFF !important;
         border: 4px solid #FF6600 !important;
     }
 
-    /* Row 3 - BACK (Col 1), RANDOM (Col 2), NEXT (Col 3) */
+    /* Row 3 - BACK (Black Border) */
     [data-testid="stHorizontalBlock"]:nth-of-type(3) [data-testid="stColumn"]:nth-of-type(1) div[data-testid="stButton"] > button {
         background-color: #1A202C !important;
         color: #FFFFFF !important;
         border: 4px solid #000000 !important;
     }
 
+    /* Row 3 - RANDOM (Green Background & Green Border) */
     [data-testid="stHorizontalBlock"]:nth-of-type(3) [data-testid="stColumn"]:nth-of-type(2) div[data-testid="stButton"] > button {
         background-color: #28A745 !important;
         color: #FFFFFF !important;
         border: 4px solid #28A745 !important;
     }
 
+    /* Row 3 - NEXT (Black Border) */
     [data-testid="stHorizontalBlock"]:nth-of-type(3) [data-testid="stColumn"]:nth-of-type(3) div[data-testid="stButton"] > button {
         background-color: #1A202C !important;
         color: #FFFFFF !important;
