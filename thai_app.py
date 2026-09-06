@@ -10,7 +10,7 @@ import streamlit.components.v1 as components
 
 st.set_page_config(layout="centered", page_title="Thai Practice")
 
-# --- Page Setup & Pure CSS Styling ---
+# --- Page Setup (Minimal Clean CSS - No Button Hacks) ---
 st.markdown("""
     <style>
     #MainMenu, header, footer, div[data-testid="stHeader"] { visibility: hidden; display: none; }
@@ -24,48 +24,11 @@ st.markdown("""
         padding: 0.2rem 0.5rem 0rem 0.5rem !important;
     }
 
-    /* Keep side-by-side buttons aligned on mobile */
-    [data-testid="stHorizontalBlock"] {
-        display: flex !important;
-        flex-direction: row !important;
-        gap: 6px !important;
-        width: 100% !important;
-    }
-
-    [data-testid="stColumn"] {
-        flex: 1 1 0% !important;
-        min-width: 0 !important;
-    }
-
-    /* Base Styling for Native Streamlit Buttons */
-    div.stButton > button {
-        width: 100% !important;
-        height: 42px !important;
-        border-radius: 6px !important;
-        border: 3px solid #000000 !important;
-        box-sizing: border-box !important;
-        cursor: pointer !important;
-        padding: 0px !important;
-    }
-
-    div.stButton > button p {
-        color: #FFFFFF !important;
-        font-weight: 900 !important;
-        font-size: 13px !important;
-        text-transform: uppercase !important;
-        letter-spacing: 0.5px !important;
-    }
-
-    /* Dynamic Button Colors via Wrapper Keys */
-    .btn-rev button { background-color: #0066CC !important; }
-    .btn-phr button { background-color: #FF6600 !important; }
-    .btn-nav button { background-color: #1A202C !important; }
-    .btn-rnd button { background-color: #28A745 !important; }
-
     hr { margin: 10px 0px !important; }
     </style>
 """, unsafe_allow_html=True)
 
+# Helper function to play audio dynamically
 def play_thai_audio(text):
     tts = gTTS(text=text, lang='th')
     fp = io.BytesIO()
@@ -87,6 +50,7 @@ def play_thai_audio(text):
     """
     components.html(audio_html, height=0)
 
+# Fetch phrases from Google Sheet along with last updated timestamp
 @st.cache_data(ttl=600)
 def load_phrases_with_meta():
     sheet_id = "1_vMSPtMo3-JD2qARp4zwrcvNrhEuSKHQVEOT1IMwgFw"
@@ -154,51 +118,39 @@ if st.session_state.auto_play:
     play_thai_audio(current_phrase["thai"])
     st.session_state.auto_play = False
 
-# Button Row 1: REVEAL
-_, col_rev, _ = st.columns([1, 1.4, 1])
+# --- Native Streamlit Action Buttons (No CSS overrides) ---
+_, col_rev, _ = st.columns([1, 2, 1])
 with col_rev:
-    st.markdown('<div class="btn-rev">', unsafe_allow_html=True)
-    if st.button("REVEAL", key="k_rev"):
+    if st.button("REVEAL", use_container_width=True, key="k_rev"):
         st.session_state.reveal = not st.session_state.reveal
         st.rerun()
-    st.markdown('</div>', unsafe_allow_html=True)
 
-# Button Row 2: PHRASE
-_, col_phr, _ = st.columns([1, 1.4, 1])
+_, col_phr, _ = st.columns([1, 2, 1])
 with col_phr:
-    st.markdown('<div class="btn-phr">', unsafe_allow_html=True)
-    if st.button("PHRASE", key="k_phr"):
+    if st.button("PHRASE", use_container_width=True, key="k_phr"):
         play_thai_audio(current_phrase["thai"])
-    st.markdown('</div>', unsafe_allow_html=True)
 
-# Button Row 3: BACK / RANDOM / NEXT
 c_back, c_rand, c_next = st.columns(3)
 with c_back:
-    st.markdown('<div class="btn-nav">', unsafe_allow_html=True)
-    if st.button("BACK", key="k_back"):
+    if st.button("BACK", use_container_width=True, key="k_back"):
         st.session_state.phrase_index = (st.session_state.phrase_index - 1) % total
         st.session_state.reveal = False
         st.session_state.auto_play = True
         st.rerun()
-    st.markdown('</div>', unsafe_allow_html=True)
 
 with c_rand:
-    st.markdown('<div class="btn-rnd">', unsafe_allow_html=True)
-    if st.button("RANDOM", key="k_rand"):
+    if st.button("RANDOM", use_container_width=True, key="k_rand"):
         st.session_state.phrase_index = random.randint(0, total - 1)
         st.session_state.reveal = False
         st.session_state.auto_play = True
         st.rerun()
-    st.markdown('</div>', unsafe_allow_html=True)
 
 with c_next:
-    st.markdown('<div class="btn-nav">', unsafe_allow_html=True)
-    if st.button("NEXT", key="k_next"):
+    if st.button("NEXT", use_container_width=True, key="k_next"):
         st.session_state.phrase_index = (st.session_state.phrase_index + 1) % total
         st.session_state.reveal = False
         st.session_state.auto_play = True
         st.rerun()
-    st.markdown('</div>', unsafe_allow_html=True)
 
 st.divider()
 
