@@ -10,7 +10,7 @@ import streamlit.components.v1 as components
 
 st.set_page_config(layout="centered", page_title="Thai Practice")
 
-# --- Custom Button Layout & CSS Styling ---
+# --- Mobile Compact & Responsive Force-Row Styling ---
 st.markdown("""
     <style>
     /* Hide top Streamlit header bar, main menu, and footer */
@@ -31,12 +31,25 @@ st.markdown("""
         padding-right: 0.5rem !important;
     }
 
+    /* Prevent Streamlit from stacking columns vertically on mobile screens */
+    div[data-testid="stHorizontalBlock"] {
+        display: flex !important;
+        flex-direction: row !important;
+        flex-wrap: nowrap !important;
+        gap: 6px !important;
+    }
+
+    div[data-testid="stColumn"] {
+        flex: 1 1 0% !important;
+        min-width: 0 !important;
+    }
+
     /* Universal styling for native Streamlit buttons */
     div.stButton > button {
         width: 100% !important;
         height: 40px !important;
         font-weight: 900 !important;
-        font-size: 14px !important;
+        font-size: 13px !important;
         border-radius: 6px !important;
         border: 3px solid #000000 !important;
         box-sizing: border-box !important;
@@ -46,7 +59,7 @@ st.markdown("""
         letter-spacing: 0.5px;
     }
 
-    /* Specific Button Colors via Container Classes */
+    /* Specific Button Colors via Container Wrapper Classes */
     .btn-blue div.stButton > button {
         background-color: #0066CC !important;
         color: #FFFFFF !important;
@@ -167,7 +180,7 @@ if st.session_state.auto_play:
     play_thai_audio(current_phrase["thai"])
     st.session_state.auto_play = False
 
-# 3. Action & Navigation Native Streamlit Buttons Grid
+# 3. Forced Horizontal Action & Navigation Buttons Grid
 # Row 1: REVEAL
 r1_c1, r1_c2, r1_c3 = st.columns([1, 1, 1])
 with r1_c2:
@@ -185,7 +198,7 @@ with r2_c2:
         play_thai_audio(current_phrase["thai"])
     st.markdown('</div>', unsafe_allow_html=True)
 
-# Row 3: BACK, RANDOM, NEXT
+# Row 3: BACK, RANDOM, NEXT (Forced side-by-side row)
 c_back, c_rand, c_next = st.columns([1, 1, 1])
 with c_back:
     st.markdown('<div class="btn-dark">', unsafe_allow_html=True)
