@@ -10,9 +10,10 @@ import streamlit.components.v1 as components
 
 st.set_page_config(layout="centered", page_title="Thai Practice")
 
-# --- Mobile Compact Styling ---
+# --- Custom Button Layout & CSS Styling ---
 st.markdown("""
     <style>
+    /* Hide top Streamlit header bar, main menu, and footer */
     #MainMenu {visibility: hidden;}
     header {visibility: hidden;}
     footer {visibility: hidden;}
@@ -28,6 +29,42 @@ st.markdown("""
         padding-bottom: 0rem !important;
         padding-left: 0.5rem !important;
         padding-right: 0.5rem !important;
+    }
+
+    /* Universal styling for native Streamlit buttons */
+    div.stButton > button {
+        width: 100% !important;
+        height: 40px !important;
+        font-weight: 900 !important;
+        font-size: 14px !important;
+        border-radius: 6px !important;
+        border: 3px solid #000000 !important;
+        box-sizing: border-box !important;
+        cursor: pointer !important;
+        padding: 0px !important;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+    }
+
+    /* Specific Button Colors via Container Classes */
+    .btn-blue div.stButton > button {
+        background-color: #0066CC !important;
+        color: #FFFFFF !important;
+    }
+
+    .btn-orange div.stButton > button {
+        background-color: #FF6600 !important;
+        color: #FFFFFF !important;
+    }
+
+    .btn-dark div.stButton > button {
+        background-color: #1A202C !important;
+        color: #FFFFFF !important;
+    }
+
+    .btn-green div.stButton > button {
+        background-color: #28A745 !important;
+        color: #FFFFFF !important;
     }
 
     hr {
@@ -93,35 +130,13 @@ def load_phrases_with_meta():
 PHRASES_DB, SHEET_LAST_UPDATED = load_phrases_with_meta()
 total = len(PHRASES_DB)
 
-# Handle Query Parameters Action Execution
-action = st.query_params.get("action", None)
-
+# Initialize Session State
 if "phrase_index" not in st.session_state:
     st.session_state.phrase_index = 0
 if "reveal" not in st.session_state:
     st.session_state.reveal = False
 if "auto_play" not in st.session_state:
     st.session_state.auto_play = False
-
-if action:
-    if action == "toggle_reveal":
-        st.session_state.reveal = not st.session_state.reveal
-    elif action == "play_audio":
-        st.session_state.auto_play = True
-    elif action == "prev":
-        st.session_state.phrase_index = (st.session_state.phrase_index - 1) % total
-        st.session_state.reveal = False
-        st.session_state.auto_play = True
-    elif action == "rand":
-        st.session_state.phrase_index = random.randint(0, total - 1)
-        st.session_state.reveal = False
-        st.session_state.auto_play = True
-    elif action == "next":
-        st.session_state.phrase_index = (st.session_state.phrase_index + 1) % total
-        st.session_state.reveal = False
-        st.session_state.auto_play = True
-    st.query_params.clear()
-    st.rerun()
 
 current_phrase = PHRASES_DB[st.session_state.phrase_index]
 
@@ -152,67 +167,52 @@ if st.session_state.auto_play:
     play_thai_audio(current_phrase["thai"])
     st.session_state.auto_play = False
 
-# 3. Action & Navigation Buttons Component HTML (Direct URL Param Navigation)
-action_buttons_html = """
-<!DOCTYPE html>
-<html>
-<head>
-    <style>
-        body { margin: 0; padding: 0; font-family: sans-serif; background-color: transparent; }
-        .btn-container { display: flex; flex-direction: column; align-items: center; gap: 8px; width: 100%; }
-        .row { display: flex; gap: 6px; width: 100%; }
-        .flex-space { flex: 1; }
-        button {
-            height: 40px;
-            font-weight: 900;
-            font-size: 14px;
-            border-radius: 6px;
-            border: 3px solid #000000;
-            box-sizing: border-box;
-            cursor: pointer;
-            color: #FFFFFF;
-            width: 100%;
-        }
-        .btn-reveal { flex: 1; background-color: #0066CC; }
-        .btn-phrase { flex: 1; background-color: #FF6600; }
-        .btn-back { flex: 1; background-color: #1A202C; }
-        .btn-random { flex: 1; background-color: #28A745; }
-        .btn-next { flex: 1; background-color: #1A202C; }
-    </style>
-    <script>
-    function triggerAction(actionName) {
-        window.top.location.href = window.top.location.pathname + "?action=" + actionName;
-    }
-    </script>
-</head>
-<body>
-    <div class="btn-container">
-        <!-- Row 1: REVEAL Button -->
-        <div class="row">
-            <div class="flex-space"></div>
-            <button class="btn-reveal" onclick="triggerAction('toggle_reveal')">REVEAL</button>
-            <div class="flex-space"></div>
-        </div>
+# 3. Action & Navigation Native Streamlit Buttons Grid
+# Row 1: REVEAL
+r1_c1, r1_c2, r1_c3 = st.columns([1, 1, 1])
+with r1_c2:
+    st.markdown('<div class="btn-blue">', unsafe_allow_html=True)
+    if st.button("REVEAL", key="native_reveal", use_container_width=True):
+        st.session_state.reveal = not st.session_state.reveal
+        st.rerun()
+    st.markdown('</div>', unsafe_allow_html=True)
 
-        <!-- Row 2: PHRASE Button -->
-        <div class="row">
-            <div class="flex-space"></div>
-            <button class="btn-phrase" onclick="triggerAction('play_audio')">PHRASE</button>
-            <div class="flex-space"></div>
-        </div>
+# Row 2: PHRASE
+r2_c1, r2_c2, r2_c3 = st.columns([1, 1, 1])
+with r2_c2:
+    st.markdown('<div class="btn-orange">', unsafe_allow_html=True)
+    if st.button("PHRASE", key="native_phrase", use_container_width=True):
+        play_thai_audio(current_phrase["thai"])
+    st.markdown('</div>', unsafe_allow_html=True)
 
-        <!-- Row 3: BACK, RANDOM, NEXT Buttons -->
-        <div class="row">
-            <button class="btn-back" onclick="triggerAction('prev')">BACK</button>
-            <button class="btn-random" onclick="triggerAction('rand')">RANDOM</button>
-            <button class="btn-next" onclick="triggerAction('next')">NEXT</button>
-        </div>
-    </div>
-</body>
-</html>
-"""
+# Row 3: BACK, RANDOM, NEXT
+c_back, c_rand, c_next = st.columns([1, 1, 1])
+with c_back:
+    st.markdown('<div class="btn-dark">', unsafe_allow_html=True)
+    if st.button("BACK", key="native_back", use_container_width=True):
+        st.session_state.phrase_index = (st.session_state.phrase_index - 1) % total
+        st.session_state.reveal = False
+        st.session_state.auto_play = True
+        st.rerun()
+    st.markdown('</div>', unsafe_allow_html=True)
 
-components.html(action_buttons_html, height=145)
+with c_rand:
+    st.markdown('<div class="btn-green">', unsafe_allow_html=True)
+    if st.button("RANDOM", key="native_rand", use_container_width=True):
+        st.session_state.phrase_index = random.randint(0, total - 1)
+        st.session_state.reveal = False
+        st.session_state.auto_play = True
+        st.rerun()
+    st.markdown('</div>', unsafe_allow_html=True)
+
+with c_next:
+    st.markdown('<div class="btn-dark">', unsafe_allow_html=True)
+    if st.button("NEXT", key="native_next", use_container_width=True):
+        st.session_state.phrase_index = (st.session_state.phrase_index + 1) % total
+        st.session_state.reveal = False
+        st.session_state.auto_play = True
+        st.rerun()
+    st.markdown('</div>', unsafe_allow_html=True)
 
 st.divider()
 
