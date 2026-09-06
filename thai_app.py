@@ -10,7 +10,7 @@ import streamlit.components.v1 as components
 
 st.set_page_config(layout="centered", page_title="Thai Practice")
 
-# --- GLOBAL STYLES & DIRECT TEXT TARGETING FOR BUTTON COLORS ---
+# --- CSS OVERRIDES FOR NATIVE BUTTON COLORS ---
 st.markdown("""
     <style>
     /* Hide top Streamlit header bar, main menu, and footer */
@@ -60,50 +60,46 @@ st.markdown("""
         cursor: pointer !important;
     }
 
-    /* Target buttons explicitly by inner text content */
-    
-    /* REVEAL Button - Solid Blue */
-    div[data-testid="stButton"]:has(button p:contains("REVEAL")) > button,
-    div[data-testid="stButton"] button:has(p:contains("REVEAL")) {
+    /* Target specific buttons via key-based structural position */
+
+    /* Row 1: REVEAL - Blue */
+    [data-testid="stHorizontalBlock"]:nth-of-type(1) div[data-testid="stButton"] > button {
         background-color: #0066CC !important;
         color: #FFFFFF !important;
         border: 4px solid #0066CC !important;
     }
 
-    /* PHRASE Button - Solid Orange */
-    div[data-testid="stButton"]:has(button p:contains("PHRASE")) > button,
-    div[data-testid="stButton"] button:has(p:contains("PHRASE")) {
+    /* Row 2: PHRASE - Orange */
+    [data-testid="stHorizontalBlock"]:nth-of-type(2) div[data-testid="stButton"] > button {
         background-color: #FF6600 !important;
         color: #FFFFFF !important;
         border: 4px solid #FF6600 !important;
     }
 
-    /* BACK Button - Dark Gray / Black */
-    div[data-testid="stButton"]:has(button p:contains("BACK")) > button,
-    div[data-testid="stButton"] button:has(p:contains("BACK")) {
+    /* Row 3 Column 1: BACK - Dark Gray */
+    [data-testid="stHorizontalBlock"]:nth-of-type(3) [data-testid="stColumn"]:nth-of-type(1) div[data-testid="stButton"] > button {
         background-color: #1A202C !important;
         color: #FFFFFF !important;
         border: 4px solid #000000 !important;
     }
 
-    /* RANDOM Button - Solid Green */
-    div[data-testid="stButton"]:has(button p:contains("RANDOM")) > button,
-    div[data-testid="stButton"] button:has(p:contains("RANDOM")) {
+    /* Row 3 Column 2: RANDOM - Bright Green */
+    [data-testid="stHorizontalBlock"]:nth-of-type(3) [data-testid="stColumn"]:nth-of-type(2) div[data-testid="stButton"] > button {
         background-color: #28A745 !important;
         color: #FFFFFF !important;
         border: 4px solid #28A745 !important;
     }
 
-    /* NEXT Button - Dark Gray / Black */
-    div[data-testid="stButton"]:has(button p:contains("NEXT")) > button,
-    div[data-testid="stButton"] button:has(p:contains("NEXT")) {
+    /* Row 3 Column 3: NEXT - Dark Gray */
+    [data-testid="stHorizontalBlock"]:nth-of-type(3) [data-testid="stColumn"]:nth-of-type(3) div[data-testid="stButton"] > button {
         background-color: #1A202C !important;
         color: #FFFFFF !important;
         border: 4px solid #000000 !important;
     }
 
-    /* Ensure text inside buttons remains white and visible */
-    div[data-testid="stButton"] > button p {
+    /* Force button label text color to White */
+    div[data-testid="stButton"] > button p,
+    div[data-testid="stButton"] > button span {
         color: #FFFFFF !important;
         font-weight: 900 !important;
     }
