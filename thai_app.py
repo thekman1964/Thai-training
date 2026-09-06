@@ -108,6 +108,8 @@ if "phrase_index" not in st.session_state:
     st.session_state.phrase_index = 0
 if "reveal" not in st.session_state:
     st.session_state.reveal = False
+if "auto_play" not in st.session_state:
+    st.session_state.auto_play = False
 
 current_phrase = PHRASES_DB[st.session_state.phrase_index]
 
@@ -122,6 +124,14 @@ def play_thai_audio(text):
     tts.write_to_fp(fp)
     fp.seek(0)
     st.audio(fp.getvalue(), format="audio/mp3", autoplay=True)
+
+# Play audio for BACK/RANDOM/NEXT navigation here, on the run AFTER the
+# rerun triggered by those buttons. Playing it in the same run as the
+# rerun() call cuts the widget off before the browser can start playback -
+# this runs after that rerun has already completed, so nothing interrupts it.
+if st.session_state.auto_play:
+    play_thai_audio(current_phrase["thai"])
+    st.session_state.auto_play = False
 
 # Header
 st.markdown(
@@ -159,18 +169,21 @@ with col_back:
     if st.button("BACK", key="btn_back", use_container_width=True):
         st.session_state.phrase_index = (st.session_state.phrase_index - 1) % total
         st.session_state.reveal = False
+        st.session_state.auto_play = True
         st.rerun()
 
 with col_rand:
     if st.button("RANDOM", key="btn_rand", use_container_width=True):
         st.session_state.phrase_index = random.randint(0, total - 1)
         st.session_state.reveal = False
+        st.session_state.auto_play = True
         st.rerun()
 
 with col_next:
     if st.button("NEXT", key="btn_next", use_container_width=True):
         st.session_state.phrase_index = (st.session_state.phrase_index + 1) % total
         st.session_state.reveal = False
+        st.session_state.auto_play = True
         st.rerun()
 
 st.markdown("<hr style='margin: 8px 0;'>", unsafe_allow_html=True)
