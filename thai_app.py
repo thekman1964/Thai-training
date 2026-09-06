@@ -56,6 +56,13 @@ st.markdown("""
         border: none !important;
     }
 
+    /* REVEAL Button Override: Blue (#0066CC) */
+    div.stButton > button[key="btn_reveal"] {
+        background-color: #0066CC !important;
+        color: #FFFFFF !important;
+        border: none !important;
+    }
+
     /* FORCE HORIZONTAL ROW ON MOBILE */
     div[data-testid="stHorizontalBlock"] {
         display: flex !important;
@@ -166,23 +173,13 @@ if st.session_state.reveal:
 else:
     st.markdown("<p style='text-align: center; color: #777777; font-size: 13px; margin-bottom: 4px;'>Click \"REVEAL\" to view English translation</p>", unsafe_allow_html=True)
 
-# 3. REVEAL Button (Custom Blue Style)
-st.markdown("""
-    <style>
-    div.stButton > button[key="btn_reveal"] {
-        background-color: #0066CC !important;
-        color: #FFFFFF !important;
-        border: none !important;
-    }
-    </style>
-""", unsafe_allow_html=True)
-
+# 3. REVEAL Button (Blue)
 _, col_rev, _ = st.columns([1, 4, 1])
 with col_rev:
     if st.button("REVEAL", key="btn_reveal", use_container_width=True):
         st.session_state.reveal = not st.session_state.reveal
 
-# 4. PHRASE Button (Orange - Same as TRANSLATE)
+# 4. PHRASE Button (Orange)
 _, col_play, _ = st.columns([1, 4, 1])
 with col_play:
     if st.button("PHRASE", key="btn_play", type="primary", use_container_width=True):
