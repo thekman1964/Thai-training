@@ -60,7 +60,7 @@ st.markdown("""
         border: none !important;
     }
 
-    /* 3. Navigation Block (3rd Block -> BACK, RANDOM, NEXT) */
+    /* 3. Navigation Block (3rd Block -> BACK, RANDOM, NEXT with BOLD text labels) */
     div[data-testid="stVerticalBlock"] > div:nth-child(7) div[data-testid="stColumn"]:nth-child(1) button {
         background-color: #1A202C !important; /* BACK */
         color: #FFFFFF !important;
@@ -206,25 +206,25 @@ if st.session_state.auto_play:
     play_thai_audio(current_phrase["thai"])
     st.session_state.auto_play = False
 
-# 5. BACK, RANDOM, NEXT Buttons
+# 5. BACK, RANDOM, NEXT Buttons (Text Labels Bolded)
 nav_col1, nav_col2, nav_col3 = st.columns([1, 1, 1])
 
 with nav_col1:
-    if st.button("BACK", key="btn_prev", use_container_width=True):
+    if st.button("**BACK**", key="btn_prev", use_container_width=True):
         st.session_state.phrase_index = (st.session_state.phrase_index - 1) % total
         st.session_state.reveal = False
         st.session_state.auto_play = True
         st.rerun()
 
 with nav_col2:
-    if st.button("RANDOM", key="btn_rand", use_container_width=True):
+    if st.button("**RANDOM**", key="btn_rand", use_container_width=True):
         st.session_state.phrase_index = random.randint(0, total - 1)
         st.session_state.reveal = False
         st.session_state.auto_play = True
         st.rerun()
 
 with nav_col3:
-    if st.button("NEXT", key="btn_next", use_container_width=True):
+    if st.button("**NEXT**", key="btn_next", use_container_width=True):
         st.session_state.phrase_index = (st.session_state.phrase_index + 1) % total
         st.session_state.reveal = False
         st.session_state.auto_play = True
