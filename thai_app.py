@@ -1,6 +1,7 @@
 import streamlit as st
 from gtts import gTTS
 import io
+import base64
 import random
 import time
 import requests
@@ -9,7 +10,7 @@ import streamlit.components.v1 as components
 
 st.set_page_config(layout="centered", page_title="Thai Practice")
 
-# --- GLOBAL STYLING (Matches exact visual design from reference image) ---
+# --- GLOBAL STYLING ---
 st.markdown("""
     <style>
     #MainMenu {visibility: hidden;}
@@ -70,17 +71,6 @@ st.markdown("""
         color: #FFFFFF !important;
         font-weight: 800 !important;
     }
-
-    audio[data-testid="stAudio"] {
-        position: absolute !important;
-        width: 1px !important;
-        height: 1px !important;
-        opacity: 0 !important;
-        overflow: hidden !important;
-        pointer-events: none !important;
-        margin: 0 !important;
-        padding: 0 !important;
-    }
     </style>
 """, unsafe_allow_html=True)
 
@@ -124,21 +114,29 @@ if "phrase_index" not in st.session_state:
     st.session_state.phrase_index = 0
 if "reveal" not in st.session_state:
     st.session_state.reveal = False
-if "auto_play" not in st.session_state:
-    st.session_state.auto_play = False
+if "play_count" not in st.session_state:
+    st.session_state.play_count = 0
 
 current_phrase = PHRASES_DB[st.session_state.phrase_index]
 
+# --- DIRECT AUDIO INJECTION FUNCTION ---
 def play_thai_audio(text):
     tts = gTTS(text=text, lang='th')
     fp = io.BytesIO()
     tts.write_to_fp(fp)
     fp.seek(0)
-    st.audio(fp.getvalue(), format="audio/mp3", autoplay=True)
+    b64_audio = base64.b64encode(fp.read()).decode()
+    # Unique timestamp prevents browser caching and forces playback on every single click
+    audio_html = f"""
+        <audio autoplay style="display:none;">
+            <source src="data:audio/mp3;base64,{b64_audio}?t={time.time()}" type="audio/mp3">
+        </audio>
+    """
+    st.markdown(audio_html, unsafe_allow_html=True)
 
-if st.session_state.auto_play:
+# Trigger audio playback if play_count increased
+if st.session_state.play_count > 0:
     play_thai_audio(current_phrase["thai"])
-    st.session_state.auto_play = False
 
 # Header
 st.markdown(
@@ -163,11 +161,12 @@ else:
 # --- NAV BUTTONS ---
 if st.button("REVEAL", key="btn_reveal", use_container_width=True):
     st.session_state.reveal = not st.session_state.reveal
+    st.session_state.play_count = 0
     st.rerun()
 
-# FIXED PHRASE BUTTON LOGIC
+# REPEATABLE PHRASE BUTTON LOGIC
 if st.button("PHRASE", key="btn_phrase", use_container_width=True):
-    st.session_state.auto_play = True
+    st.session_state.play_count += 1
     st.rerun()
 
 col_back, col_rand, col_next = st.columns([1, 1, 1], gap="small")
@@ -175,21 +174,21 @@ with col_back:
     if st.button("BACK", key="btn_back", use_container_width=True):
         st.session_state.phrase_index = (st.session_state.phrase_index - 1) % total
         st.session_state.reveal = False
-        st.session_state.auto_play = True
+        st.session_state.play_count += 1
         st.rerun()
 
 with col_rand:
     if st.button("RANDOM", key="btn_rand", use_container_width=True):
         st.session_state.phrase_index = random.randint(0, total - 1)
         st.session_state.reveal = False
-        st.session_state.auto_play = True
+        st.session_state.play_count += 1
         st.rerun()
 
 with col_next:
     if st.button("NEXT", key="btn_next", use_container_width=True):
         st.session_state.phrase_index = (st.session_state.phrase_index + 1) % total
         st.session_state.reveal = False
-        st.session_state.auto_play = True
+        st.session_state.play_count += 1
         st.rerun()
 
 st.markdown("<hr style='margin: 8px 0;'>", unsafe_allow_html=True)
