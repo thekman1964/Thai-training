@@ -10,10 +10,9 @@ import streamlit.components.v1 as components
 
 st.set_page_config(layout="centered", page_title="Thai Practice")
 
-# --- CSS Styling for Standard Streamlit Buttons ---
+# --- Mobile Compact Styling ---
 st.markdown("""
     <style>
-    /* Hide top Streamlit header bar, main menu, and footer */
     #MainMenu {visibility: hidden;}
     header {visibility: hidden;}
     footer {visibility: hidden;}
@@ -29,48 +28,6 @@ st.markdown("""
         padding-bottom: 0rem !important;
         padding-left: 0.5rem !important;
         padding-right: 0.5rem !important;
-    }
-
-    /* Universal styling for all native Streamlit buttons */
-    div.stButton > button {
-        width: 100% !important;
-        height: 42px !important;
-        font-weight: 700 !important;
-        font-size: 15px !important;
-        border-radius: 6px !important;
-        border: none !important;
-        box-sizing: border-box !important;
-        cursor: pointer !important;
-        padding: 0px !important;
-        text-transform: uppercase;
-        letter-spacing: 0.5px;
-    }
-
-    /* Target specific rows using vertical block structure */
-    /* Row 1: REVEAL (Blue) */
-    div[data-testid="stVerticalBlock"] > div:nth-child(5) button {
-        background-color: #0B60B0 !important;
-        color: #FFFFFF !important;
-    }
-
-    /* Row 2: PHRASE (Orange) */
-    div[data-testid="stVerticalBlock"] > div:nth-child(6) button {
-        background-color: #FF6B00 !important;
-        color: #FFFFFF !important;
-    }
-
-    /* Row 3: BACK, RANDOM, NEXT (Dark, Green, Dark) */
-    div[data-testid="stVerticalBlock"] > div:nth-child(7) div[data-testid="stColumn"]:nth-child(1) button {
-        background-color: #1A202C !important;
-        color: #FFFFFF !important;
-    }
-    div[data-testid="stVerticalBlock"] > div:nth-child(7) div[data-testid="stColumn"]:nth-child(2) button {
-        background-color: #28A745 !important;
-        color: #FFFFFF !important;
-    }
-    div[data-testid="stVerticalBlock"] > div:nth-child(7) div[data-testid="stColumn"]:nth-child(3) button {
-        background-color: #1A202C !important;
-        color: #FFFFFF !important;
     }
 
     hr {
@@ -136,13 +93,35 @@ def load_phrases_with_meta():
 PHRASES_DB, SHEET_LAST_UPDATED = load_phrases_with_meta()
 total = len(PHRASES_DB)
 
-# Initialize Session State
+# Handle Query Parameters Action Execution
+action = st.query_params.get("action", None)
+
 if "phrase_index" not in st.session_state:
     st.session_state.phrase_index = 0
 if "reveal" not in st.session_state:
     st.session_state.reveal = False
 if "auto_play" not in st.session_state:
     st.session_state.auto_play = False
+
+if action:
+    if action == "toggle_reveal":
+        st.session_state.reveal = not st.session_state.reveal
+    elif action == "play_audio":
+        st.session_state.auto_play = True
+    elif action == "prev":
+        st.session_state.phrase_index = (st.session_state.phrase_index - 1) % total
+        st.session_state.reveal = False
+        st.session_state.auto_play = True
+    elif action == "rand":
+        st.session_state.phrase_index = random.randint(0, total - 1)
+        st.session_state.reveal = False
+        st.session_state.auto_play = True
+    elif action == "next":
+        st.session_state.phrase_index = (st.session_state.phrase_index + 1) % total
+        st.session_state.reveal = False
+        st.session_state.auto_play = True
+    st.query_params.clear()
+    st.rerun()
 
 current_phrase = PHRASES_DB[st.session_state.phrase_index]
 
@@ -173,49 +152,74 @@ if st.session_state.auto_play:
     play_thai_audio(current_phrase["thai"])
     st.session_state.auto_play = False
 
-# 3. Action & Navigation Buttons Matrix
-# Row 1: REVEAL (Sized identically to RANDOM in center column)
-c1, c2, c3 = st.columns([1, 1, 1])
-with c2:
-    if st.button("REVEAL", key="btn_reveal", use_container_width=True):
-        st.session_state.reveal = not st.session_state.reveal
-        st.rerun()
+# 3. Action & Navigation Buttons Component HTML (Direct URL Param Navigation)
+action_buttons_html = """
+<!DOCTYPE html>
+<html>
+<head>
+    <style>
+        body { margin: 0; padding: 0; font-family: sans-serif; background-color: transparent; }
+        .btn-container { display: flex; flex-direction: column; align-items: center; gap: 8px; width: 100%; }
+        .row { display: flex; gap: 6px; width: 100%; }
+        .flex-space { flex: 1; }
+        button {
+            height: 40px;
+            font-weight: 900;
+            font-size: 14px;
+            border-radius: 6px;
+            border: 3px solid #000000;
+            box-sizing: border-box;
+            cursor: pointer;
+            color: #FFFFFF;
+            width: 100%;
+        }
+        .btn-reveal { flex: 1; background-color: #0066CC; }
+        .btn-phrase { flex: 1; background-color: #FF6600; }
+        .btn-back { flex: 1; background-color: #1A202C; }
+        .btn-random { flex: 1; background-color: #28A745; }
+        .btn-next { flex: 1; background-color: #1A202C; }
+    </style>
+    <script>
+    function triggerAction(actionName) {
+        window.top.location.href = window.top.location.pathname + "?action=" + actionName;
+    }
+    </script>
+</head>
+<body>
+    <div class="btn-container">
+        <!-- Row 1: REVEAL Button -->
+        <div class="row">
+            <div class="flex-space"></div>
+            <button class="btn-reveal" onclick="triggerAction('toggle_reveal')">REVEAL</button>
+            <div class="flex-space"></div>
+        </div>
 
-# Row 2: PHRASE (Sized identically to RANDOM in center column)
-c1, c2, c3 = st.columns([1, 1, 1])
-with c2:
-    if st.button("PHRASE", key="btn_phrase", use_container_width=True):
-        play_thai_audio(current_phrase["thai"])
+        <!-- Row 2: PHRASE Button -->
+        <div class="row">
+            <div class="flex-space"></div>
+            <button class="btn-phrase" onclick="triggerAction('play_audio')">PHRASE</button>
+            <div class="flex-space"></div>
+        </div>
 
-# Row 3: BACK, RANDOM, NEXT
-col_back, col_rand, col_next = st.columns([1, 1, 1])
-with col_back:
-    if st.button("BACK", key="btn_back", use_container_width=True):
-        st.session_state.phrase_index = (st.session_state.phrase_index - 1) % total
-        st.session_state.reveal = False
-        st.session_state.auto_play = True
-        st.rerun()
+        <!-- Row 3: BACK, RANDOM, NEXT Buttons -->
+        <div class="row">
+            <button class="btn-back" onclick="triggerAction('prev')">BACK</button>
+            <button class="btn-random" onclick="triggerAction('rand')">RANDOM</button>
+            <button class="btn-next" onclick="triggerAction('next')">NEXT</button>
+        </div>
+    </div>
+</body>
+</html>
+"""
 
-with col_rand:
-    if st.button("RANDOM", key="btn_random", use_container_width=True):
-        st.session_state.phrase_index = random.randint(0, total - 1)
-        st.session_state.reveal = False
-        st.session_state.auto_play = True
-        st.rerun()
-
-with col_next:
-    if st.button("NEXT", key="btn_next", use_container_width=True):
-        st.session_state.phrase_index = (st.session_state.phrase_index + 1) % total
-        st.session_state.reveal = False
-        st.session_state.auto_play = True
-        st.rerun()
+components.html(action_buttons_html, height=145)
 
 st.divider()
 
 # 4. Speech Recognition Section
 st_speech_html = f"""
 <div style="text-align: center; font-family: sans-serif;">
-    <div id="output" style="color: #FF6B00; font-size: 32px; font-weight: bold; min-height: 40px; margin-bottom: 2px;">
+    <div id="output" style="color: #FF6600; font-size: 32px; font-weight: bold; min-height: 40px; margin-bottom: 2px;">
         Spoken Thai text...
     </div>
     
@@ -224,37 +228,35 @@ st_speech_html = f"""
     </div>
     
     <button id="stt-btn" style="
-        background-color: #FF6B00 !important;
+        background-color: #FF6600 !important;
         color: #FFFFFF !important;
         font-size: 14px !important;
-        font-weight: 700 !important;
-        border: none !important;
+        font-weight: 900 !important;
+        border: 3px solid #000000 !important;
         border-radius: 6px !important;
-        height: 42px !important;
-        line-height: 42px !important;
+        height: 40px !important;
+        line-height: 34px !important;
         padding: 0px !important;
         width: 100% !important;
         cursor: pointer !important;
         margin-bottom: 12px !important;
         box-sizing: border-box !important;
-        text-transform: uppercase;
     ">TRANSLATE</button>
     <br>
 
     <button id="speak-btn" style="
         background-color: #FFFFFF !important;
-        color: #FF6B00 !important;
-        border: 2px solid #FF6B00 !important;
+        color: #FF6600 !important;
+        border: 3px solid #FF6600 !important;
         font-size: 13px !important;
-        font-weight: 700 !important;
+        font-weight: 900 !important;
         border-radius: 6px !important;
-        height: 42px !important;
-        line-height: 38px !important;
+        height: 40px !important;
+        line-height: 34px !important;
         padding: 0px !important;
         width: 100% !important;
         cursor: pointer !important;
         box-sizing: border-box !important;
-        text-transform: uppercase;
     ">HEAR SPOKEN THAI TEXT</button>
 
     <div style="margin-top: 12px; font-size: 12px; color: #555555; line-height: 1.4;">
@@ -314,19 +316,19 @@ st_speech_html = f"""
             const transcript = event.results[0][0].transcript;
             output.innerText = transcript;
             btn.innerText = "TRANSLATE";
-            btn.style.backgroundColor = "#FF6B00";
+            btn.style.backgroundColor = "#FF6600";
             
             translateText(transcript);
         }};
 
         recognition.onerror = () => {{
             btn.innerText = "TRANSLATE";
-            btn.style.backgroundColor = "#FF6B00";
+            btn.style.backgroundColor = "#FF6600";
         }};
 
         recognition.onend = () => {{
             btn.innerText = "TRANSLATE";
-            btn.style.backgroundColor = "#FF6B00";
+            btn.style.backgroundColor = "#FF6600";
         }};
     }} else {{
         output.innerText = "Speech Recognition not supported in browser";
