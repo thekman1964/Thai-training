@@ -10,7 +10,7 @@ import streamlit.components.v1 as components
 
 st.set_page_config(layout="centered", page_title="Thai Practice")
 
-# --- GLOBAL STYLES & MOBILE COLUMN FORCING ---
+# Streamlit App Styling Overrides
 st.markdown("""
     <style>
     #MainMenu {visibility: hidden;}
@@ -30,49 +30,13 @@ st.markdown("""
         padding-right: 0.5rem !important;
     }
 
-    /* FORCE HORIZONTAL LAYOUT ON MOBILE FOR COLUMNS */
-    div[data-testid="stHorizontalBlock"] {
-        display: flex !important;
-        flex-direction: row !important;
-        flex-wrap: nowrap !important;
-        width: 100% !important;
-        gap: 6px !important;
-    }
-
-    div[data-testid="stColumn"] {
-        flex: 1 1 0% !important;
-        min-width: 0 !important;
-        width: auto !important;
-    }
-
-    /* Base Styling for All Native Buttons */
-    div[data-testid="stButton"] > button {
-        width: 100% !important;
-        height: 40px !important;
-        min-height: 40px !important;
-        font-size: 13px !important;
-        font-weight: 900 !important;
-        border-radius: 6px !important;
-        padding: 0px 2px !important;
-        line-height: 32px !important;
-        white-space: nowrap !important;
-        margin: 0px !important;
-        box-sizing: border-box !important;
-        cursor: pointer !important;
-    }
-
-    div[data-testid="stButton"] > button p {
-        color: #FFFFFF !important;
-        font-weight: 900 !important;
-    }
-
     hr {
         margin: 6px 0px !important;
     }
     </style>
 """, unsafe_allow_html=True)
 
-# Audio Player Helper
+# Audio Player Helper Function
 def play_thai_audio(text):
     tts = gTTS(text=text, lang='th')
     fp = io.BytesIO()
@@ -94,7 +58,7 @@ def play_thai_audio(text):
     """
     components.html(audio_html, height=0)
 
-# Fetch phrases from Google Sheet along with last updated timestamp
+# Load dataset
 @st.cache_data(ttl=600)
 def load_phrases_with_meta():
     sheet_id = "1_vMSPtMo3-JD2qARp4zwrcvNrhEuSKHQVEOT1IMwgFw"
@@ -129,17 +93,41 @@ def load_phrases_with_meta():
 PHRASES_DB, SHEET_LAST_UPDATED = load_phrases_with_meta()
 total = len(PHRASES_DB)
 
-# Initialize Session State
+# Query parameters for state communication
+query_params = st.query_params
+
 if "phrase_index" not in st.session_state:
-    st.session_state.phrase_index = 0
+    st.session_state.phrase_index = int(query_params.get("idx", 0))
 if "reveal" not in st.session_state:
-    st.session_state.reveal = False
-if "auto_play" not in st.session_state:
-    st.session_state.auto_play = False
+    st.session_state.reveal = query_params.get("rev", "0") == "1"
+
+# Handle query actions
+action = query_params.get("action", None)
+if action:
+    if action == "reveal":
+        st.session_state.reveal = not st.session_state.reveal
+    elif action == "back":
+        st.session_state.phrase_index = (st.session_state.phrase_index - 1) % total
+        st.session_state.reveal = False
+    elif action == "next":
+        st.session_state.phrase_index = (st.session_state.phrase_index + 1) % total
+        st.session_state.reveal = False
+    elif action == "rand":
+        st.session_state.phrase_index = random.randint(0, total - 1)
+        st.session_state.reveal = False
+    
+    st.query_params.clear()
+    st.query_params["idx"] = str(st.session_state.phrase_index)
+    st.query_params["rev"] = "1" if st.session_state.reveal else "0"
+    st.rerun()
 
 current_phrase = PHRASES_DB[st.session_state.phrase_index]
 
-# Header Flag Image
+# Play sound if phrase audio action was triggered
+if action == "phrase":
+    play_thai_audio(current_phrase["thai"])
+
+# Flag
 st.markdown(
     """
     <div style="text-align: center; margin-top: 2px; margin-bottom: 2px;">
@@ -151,90 +139,69 @@ st.markdown(
     unsafe_allow_html=True
 )
 
-# Title & Main Thai Phrase Display
 st.markdown("<h4 style='text-align: center; color: #000000; margin: 0px;'>Thai Listening and Reading</h4>", unsafe_allow_html=True)
 st.markdown(f"<h2 style='text-align: center; font-size: 32px; color: #000000; margin: 2px 0;'>{current_phrase['thai']}</h2>", unsafe_allow_html=True)
 
-# English Translation Display
 if st.session_state.reveal:
     st.markdown(f"<p style='text-align: center; color: #0066CC; font-size: 20px; font-weight: bold; margin-bottom: 4px;'>{current_phrase['english']}</p>", unsafe_allow_html=True)
 else:
     st.markdown("<p style='text-align: center; color: #777777; font-size: 13px; margin-bottom: 4px;'>Click \"REVEAL\" to view English translation</p>", unsafe_allow_html=True)
 
-# Trigger auto audio play if needed
-if st.session_state.auto_play:
-    play_thai_audio(current_phrase["thai"])
-    st.session_state.auto_play = False
+# Main Controls Layout (HTML Component)
+idx = st.session_state.phrase_index
+rev = "1" if st.session_state.reveal else "0"
 
-# --- BUTTON LAYOUT ---
+main_controls_html = f"""
+<style>
+    .btn {{
+        width: 100%;
+        height: 40px;
+        font-size: 14px;
+        font-weight: 900;
+        border-radius: 6px;
+        border: none;
+        color: #FFFFFF;
+        cursor: pointer;
+        margin-bottom: 6px;
+        box-sizing: border-box;
+        text-decoration: none;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-family: sans-serif;
+    }}
+    .btn-blue {{ background-color: #0066CC; }}
+    .btn-orange {{ background-color: #FF6600; }}
+    .btn-dark {{ background-color: #1A202C; }}
+    .btn-green {{ background-color: #28A745; }}
+    
+    .row {{
+        display: flex;
+        gap: 6px;
+        width: 100%;
+    }}
+    .col {{
+        flex: 1;
+    }}
+</style>
 
-# Row 1: REVEAL
-st.button("REVEAL", key="btn_reveal", use_container_width=True)
+<div>
+    <button class="btn btn-blue" onclick="window.top.location.search='?action=reveal&idx={idx}&rev={rev}'">REVEAL</button>
+    <button class="btn btn-orange" onclick="window.top.location.search='?action=phrase&idx={idx}&rev={rev}'">PHRASE</button>
+    
+    <div class="row">
+        <div class="col"><button class="btn btn-dark" onclick="window.top.location.search='?action=back&idx={idx}&rev={rev}'">BACK</button></div>
+        <div class="col"><button class="btn btn-green" onclick="window.top.location.search='?action=rand&idx={idx}&rev={rev}'">RANDOM</button></div>
+        <div class="col"><button class="btn btn-dark" onclick="window.top.location.search='?action=next&idx={idx}&rev={rev}'">NEXT</button></div>
+    </div>
+</div>
+"""
 
-# Row 2: PHRASE
-st.button("PHRASE", key="btn_phrase", use_container_width=True)
-
-# Row 3: BACK, RANDOM, NEXT (3 Columns side by side)
-col_back, col_rand, col_next = st.columns(3)
-with col_back:
-    if st.button("BACK", key="btn_back", use_container_width=True):
-        st.session_state.phrase_index = (st.session_state.phrase_index - 1) % total
-        st.session_state.reveal = False
-        st.session_state.auto_play = True
-        st.rerun()
-
-with col_rand:
-    if st.button("RANDOM", key="btn_rand", use_container_width=True):
-        st.session_state.phrase_index = random.randint(0, total - 1)
-        st.session_state.reveal = False
-        st.session_state.auto_play = True
-        st.rerun()
-
-with col_next:
-    if st.button("NEXT", key="btn_next", use_container_width=True):
-        st.session_state.phrase_index = (st.session_state.phrase_index + 1) % total
-        st.session_state.reveal = False
-        st.session_state.auto_play = True
-        st.rerun()
-
-# --- JS INJECTION FOR COLORIZATION ONLY ---
-components.html("""
-<script>
-    function colorizeButtons() {
-        const doc = window.parent.document;
-        const buttons = doc.querySelectorAll('div[data-testid="stButton"] > button');
-        
-        buttons.forEach(btn => {
-            const txt = btn.innerText.trim();
-            if (txt === 'REVEAL') {
-                btn.style.setProperty('background-color', '#0066CC', 'important');
-                btn.style.setProperty('border', '4px solid #0066CC', 'important');
-                btn.style.setProperty('color', '#FFFFFF', 'important');
-            } else if (txt === 'PHRASE') {
-                btn.style.setProperty('background-color', '#FF6600', 'important');
-                btn.style.setProperty('border', '4px solid #FF6600', 'important');
-                btn.style.setProperty('color', '#FFFFFF', 'important');
-            } else if (txt === 'BACK' || txt === 'NEXT') {
-                btn.style.setProperty('background-color', '#1A202C', 'important');
-                btn.style.setProperty('border', '4px solid #000000', 'important');
-                btn.style.setProperty('color', '#FFFFFF', 'important');
-            } else if (txt === 'RANDOM') {
-                btn.style.setProperty('background-color', '#28A745', 'important');
-                btn.style.setProperty('border', '4px solid #28A745', 'important');
-                btn.style.setProperty('color', '#FFFFFF', 'important');
-            }
-        });
-    }
-
-    setTimeout(colorizeButtons, 100);
-    setTimeout(colorizeButtons, 300);
-    setTimeout(colorizeButtons, 500);
-</script>
-""", height=0)
+components.html(main_controls_html, height=150)
 
 st.divider()
 
-# Speech Recognition & Translation Section
+# Speech Recognition Component
 st_speech_html = f"""
 <div style="text-align: center; font-family: sans-serif;">
     <div id="output" style="color: #FF6600; font-size: 32px; font-weight: bold; min-height: 40px; margin-bottom: 2px;">
@@ -250,31 +217,24 @@ st_speech_html = f"""
         color: #FFFFFF !important;
         font-size: 14px !important;
         font-weight: 900 !important;
-        border: 4px solid #FF6600 !important;
+        border: none !important;
         border-radius: 6px !important;
         height: 40px !important;
-        line-height: 32px !important;
-        padding: 0px !important;
         width: 100% !important;
         cursor: pointer !important;
-        margin-bottom: 12px !important;
-        box-sizing: border-box !important;
+        margin-bottom: 8px !important;
     ">TRANSLATE</button>
-    <br>
 
     <button id="speak-btn" style="
         background-color: #FFFFFF !important;
         color: #FF6600 !important;
-        border: 4px solid #FF6600 !important;
+        border: 2px solid #FF6600 !important;
         font-size: 13px !important;
         font-weight: 900 !important;
         border-radius: 6px !important;
         height: 40px !important;
-        line-height: 32px !important;
-        padding: 0px !important;
         width: 100% !important;
         cursor: pointer !important;
-        box-sizing: border-box !important;
     ">HEAR SPOKEN THAI TEXT</button>
 
     <div style="margin-top: 10px; font-size: 12px; color: #555555; line-height: 1.4;">
@@ -354,4 +314,4 @@ st_speech_html = f"""
 </script>
 """
 
-components.html(st_speech_html, height=260)
+components.html(st_speech_html, height=250)
