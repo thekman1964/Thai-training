@@ -167,19 +167,24 @@ with col_next:
         st.session_state.play_trigger += 1
         st.rerun()
 
-# --- TTS AUDIO COMPONENT ---
-# Google Translate TTS endpoint loaded via JavaScript HTML Audio for instant, unblocked speech on every run
-tts_url = f"https://translate.google.com/translate_tts?ie=UTF-8&q={requests.utils.quote(current_phrase['thai'])}&tl=th&client=tw-ob"
-
-audio_js = f"""
+# --- AUDIO COMPONENT (Web Speech Synthesis API for Reliable Multi-Click Playback) ---
+# This utilizes browser-native speech synthesis which doesn't get blocked or cached like hidden audio streams.
+audio_script = f"""
 <script>
-    if ({st.session_state.play_trigger} > 0) {{
-        const audio = new Audio("{tts_url}&t=" + new Date().getTime());
-        audio.play().catch(e => console.log("Playback error:", e));
+    const trigger = {st.session_state.play_trigger};
+    if (trigger > 0) {{
+        const text = {repr(current_phrase['thai'])};
+        if ('speechSynthesis' in window) {{
+            window.speechSynthesis.cancel(); // Clear any ongoing speech
+            const utterance = new SpeechSynthesisUtterance(text);
+            utterance.lang = 'th-TH';
+            utterance.rate = 0.9;
+            window.speechSynthesis.speak(utterance);
+        }}
     }}
 </script>
 """
-components.html(audio_js, height=0)
+components.html(audio_script, height=0)
 
 st.markdown("<hr style='margin: 8px 0;'>", unsafe_allow_html=True)
 
