@@ -60,11 +60,13 @@ st.markdown("""
         border: none !important;
     }
 
-    /* 3. Navigation Block (3rd Block -> BACK, RANDOM, NEXT with BOLD text labels) */
+    /* 3. Navigation Block (BACK, RANDOM, NEXT Buttons with Borders) */
     div[data-testid="stVerticalBlock"] > div:nth-child(7) div[data-testid="stColumn"]:nth-child(1) button {
         background-color: #1A202C !important; /* BACK */
         color: #FFFFFF !important;
         font-weight: 900 !important;
+        border: 2px solid #FFFFFF !important; /* White Border */
+        box-sizing: border-box !important;
     }
     div[data-testid="stVerticalBlock"] > div:nth-child(7) div[data-testid="stColumn"]:nth-child(2) button {
         background-color: #28A745 !important; /* RANDOM */
@@ -77,6 +79,8 @@ st.markdown("""
         background-color: #1A202C !important; /* NEXT */
         color: #FFFFFF !important;
         font-weight: 900 !important;
+        border: 2px solid #FFFFFF !important; /* White Border */
+        box-sizing: border-box !important;
     }
 
     /* FORCE HORIZONTAL ROW ON MOBILE */
@@ -206,7 +210,7 @@ if st.session_state.auto_play:
     play_thai_audio(current_phrase["thai"])
     st.session_state.auto_play = False
 
-# 5. BACK, RANDOM, NEXT Buttons (Text Labels Bolded)
+# 5. BACK, RANDOM, NEXT Buttons
 nav_col1, nav_col2, nav_col3 = st.columns([1, 1, 1])
 
 with nav_col1:
