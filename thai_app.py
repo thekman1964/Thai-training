@@ -10,10 +10,9 @@ import streamlit.components.v1 as components
 
 st.set_page_config(layout="centered", page_title="Thai Practice")
 
-# --- CSS OVERRIDES FOR NATIVE BUTTON COLORS ---
+# --- GLOBAL BASE STYLES ---
 st.markdown("""
     <style>
-    /* Hide top Streamlit header bar, main menu, and footer */
     #MainMenu {visibility: hidden;}
     header {visibility: hidden;}
     footer {visibility: hidden;}
@@ -31,20 +30,7 @@ st.markdown("""
         padding-right: 0.5rem !important;
     }
 
-    /* Force horizontal blocks to auto-distribute evenly */
-    [data-testid="stHorizontalBlock"] {
-        display: flex !important;
-        flex-direction: row !important;
-        width: 100% !important;
-        gap: 6px !important;
-    }
-
-    [data-testid="stColumn"] {
-        flex: 1 1 0% !important;
-        min-width: 0 !important;
-    }
-
-    /* Universal Base Styling for Native Buttons */
+    /* Universal Base Styling for Streamlit Buttons */
     div[data-testid="stButton"] > button {
         width: 100% !important;
         height: 40px !important;
@@ -60,46 +46,7 @@ st.markdown("""
         cursor: pointer !important;
     }
 
-    /* Target specific buttons via key-based structural position */
-
-    /* Row 1: REVEAL - Blue */
-    [data-testid="stHorizontalBlock"]:nth-of-type(1) div[data-testid="stButton"] > button {
-        background-color: #0066CC !important;
-        color: #FFFFFF !important;
-        border: 4px solid #0066CC !important;
-    }
-
-    /* Row 2: PHRASE - Orange */
-    [data-testid="stHorizontalBlock"]:nth-of-type(2) div[data-testid="stButton"] > button {
-        background-color: #FF6600 !important;
-        color: #FFFFFF !important;
-        border: 4px solid #FF6600 !important;
-    }
-
-    /* Row 3 Column 1: BACK - Dark Gray */
-    [data-testid="stHorizontalBlock"]:nth-of-type(3) [data-testid="stColumn"]:nth-of-type(1) div[data-testid="stButton"] > button {
-        background-color: #1A202C !important;
-        color: #FFFFFF !important;
-        border: 4px solid #000000 !important;
-    }
-
-    /* Row 3 Column 2: RANDOM - Bright Green */
-    [data-testid="stHorizontalBlock"]:nth-of-type(3) [data-testid="stColumn"]:nth-of-type(2) div[data-testid="stButton"] > button {
-        background-color: #28A745 !important;
-        color: #FFFFFF !important;
-        border: 4px solid #28A745 !important;
-    }
-
-    /* Row 3 Column 3: NEXT - Dark Gray */
-    [data-testid="stHorizontalBlock"]:nth-of-type(3) [data-testid="stColumn"]:nth-of-type(3) div[data-testid="stButton"] > button {
-        background-color: #1A202C !important;
-        color: #FFFFFF !important;
-        border: 4px solid #000000 !important;
-    }
-
-    /* Force button label text color to White */
-    div[data-testid="stButton"] > button p,
-    div[data-testid="stButton"] > button span {
+    div[data-testid="stButton"] > button p {
         color: #FFFFFF !important;
         font-weight: 900 !important;
     }
@@ -241,6 +188,41 @@ with col_next:
         st.session_state.reveal = False
         st.session_state.auto_play = True
         st.rerun()
+
+# --- JAVASCRIPT DIRECT DOM INJECTION (FORCE COLORS POST-RENDER) ---
+components.html("""
+<script>
+    function colorizeButtons() {
+        const doc = window.parent.document;
+        const buttons = doc.querySelectorAll('div[data-testid="stButton"] > button');
+        
+        buttons.forEach(btn => {
+            const txt = btn.innerText.trim();
+            if (txt === 'REVEAL') {
+                btn.style.setProperty('background-color', '#0066CC', 'important');
+                btn.style.setProperty('border', '4px solid #0066CC', 'important');
+                btn.style.setProperty('color', '#FFFFFF', 'important');
+            } else if (txt === 'PHRASE') {
+                btn.style.setProperty('background-color', '#FF6600', 'important');
+                btn.style.setProperty('border', '4px solid #FF6600', 'important');
+                btn.style.setProperty('color', '#FFFFFF', 'important');
+            } else if (txt === 'BACK' || txt === 'NEXT') {
+                btn.style.setProperty('background-color', '#1A202C', 'important');
+                btn.style.setProperty('border', '4px solid #000000', 'important');
+                btn.style.setProperty('color', '#FFFFFF', 'important');
+            } else if (txt === 'RANDOM') {
+                btn.style.setProperty('background-color', '#28A745', 'important');
+                btn.style.setProperty('border', '4px solid #28A745', 'important');
+                btn.style.setProperty('color', '#FFFFFF', 'important');
+            }
+        });
+    }
+
+    setTimeout(colorizeButtons, 100);
+    setTimeout(colorizeButtons, 300);
+    setTimeout(colorizeButtons, 500);
+</script>
+""", height=0)
 
 st.divider()
 
