@@ -46,7 +46,7 @@ st.markdown("""
     }
 
     /* Unified Native Button Formatting */
-    div.stButton > button {
+    div[data-testid="stButton"] > button {
         width: 100% !important;
         height: 40px !important;
         min-height: 40px !important;
@@ -61,30 +61,44 @@ st.markdown("""
         cursor: pointer !important;
     }
 
+    /* Target buttons using element structure or inline attributes */
     /* REVEAL Button - Blue Border */
-    .btn-reveal div.stButton > button {
+    div[data-testid="stButton"]:has(button p:contains("REVEAL")) > button,
+    div[data-testid="stButton"] button:has(span:contains("REVEAL")) {
         background-color: #0066CC !important;
         color: #FFFFFF !important;
         border: 4px solid #0066CC !important;
     }
 
-    /* PHRASE Button - Orange Border */
-    .btn-phrase div.stButton > button {
+    /* Target by row structure fallback */
+    /* Row 1 - REVEAL */
+    [data-testid="stHorizontalBlock"]:nth-of-type(1) div[data-testid="stButton"] > button {
+        background-color: #0066CC !important;
+        color: #FFFFFF !important;
+        border: 4px solid #0066CC !important;
+    }
+
+    /* Row 2 - PHRASE */
+    [data-testid="stHorizontalBlock"]:nth-of-type(2) div[data-testid="stButton"] > button {
         background-color: #FF6600 !important;
         color: #FFFFFF !important;
         border: 4px solid #FF6600 !important;
     }
 
-    /* RANDOM Button - Green Border */
-    .btn-rand div.stButton > button {
+    /* Row 3 - BACK (Col 1), RANDOM (Col 2), NEXT (Col 3) */
+    [data-testid="stHorizontalBlock"]:nth-of-type(3) [data-testid="stColumn"]:nth-of-type(1) div[data-testid="stButton"] > button {
+        background-color: #1A202C !important;
+        color: #FFFFFF !important;
+        border: 4px solid #000000 !important;
+    }
+
+    [data-testid="stHorizontalBlock"]:nth-of-type(3) [data-testid="stColumn"]:nth-of-type(2) div[data-testid="stButton"] > button {
         background-color: #28A745 !important;
         color: #FFFFFF !important;
         border: 4px solid #28A745 !important;
     }
 
-    /* BACK & NEXT Buttons - Black Border */
-    .btn-back div.stButton > button,
-    .btn-next div.stButton > button {
+    [data-testid="stHorizontalBlock"]:nth-of-type(3) [data-testid="stColumn"]:nth-of-type(3) div[data-testid="stButton"] > button {
         background-color: #1A202C !important;
         color: #FFFFFF !important;
         border: 4px solid #000000 !important;
@@ -190,53 +204,43 @@ if st.session_state.auto_play:
     play_thai_audio(current_phrase["thai"])
     st.session_state.auto_play = False
 
-# --- BUTTONS WITH INDIVIDUAL CSS CLASS WRAPPERS ---
+# --- NATIVE STREAMLIT BUTTONS ---
 
 # Row 1: REVEAL
 c1, c2, c3 = st.columns([1, 1, 1])
 with c2:
-    with st.container():
-        st.html('<div class="btn-reveal"></div>')
-        if st.button("REVEAL", key="btn_reveal", use_container_width=True):
-            st.session_state.reveal = not st.session_state.reveal
-            st.rerun()
+    if st.button("REVEAL", key="btn_reveal", use_container_width=True):
+        st.session_state.reveal = not st.session_state.reveal
+        st.rerun()
 
 # Row 2: PHRASE
 c1, c2, c3 = st.columns([1, 1, 1])
 with c2:
-    with st.container():
-        st.html('<div class="btn-phrase"></div>')
-        if st.button("PHRASE", key="btn_phrase", use_container_width=True):
-            play_thai_audio(current_phrase["thai"])
+    if st.button("PHRASE", key="btn_phrase", use_container_width=True):
+        play_thai_audio(current_phrase["thai"])
 
 # Row 3: BACK, RANDOM, NEXT
 col_back, col_rand, col_next = st.columns([1, 1, 1])
 with col_back:
-    with st.container():
-        st.html('<div class="btn-back"></div>')
-        if st.button("BACK", key="btn_back", use_container_width=True):
-            st.session_state.phrase_index = (st.session_state.phrase_index - 1) % total
-            st.session_state.reveal = False
-            st.session_state.auto_play = True
-            st.rerun()
+    if st.button("BACK", key="btn_back", use_container_width=True):
+        st.session_state.phrase_index = (st.session_state.phrase_index - 1) % total
+        st.session_state.reveal = False
+        st.session_state.auto_play = True
+        st.rerun()
 
 with col_rand:
-    with st.container():
-        st.html('<div class="btn-rand"></div>')
-        if st.button("RANDOM", key="btn_rand", use_container_width=True):
-            st.session_state.phrase_index = random.randint(0, total - 1)
-            st.session_state.reveal = False
-            st.session_state.auto_play = True
-            st.rerun()
+    if st.button("RANDOM", key="btn_rand", use_container_width=True):
+        st.session_state.phrase_index = random.randint(0, total - 1)
+        st.session_state.reveal = False
+        st.session_state.auto_play = True
+        st.rerun()
 
 with col_next:
-    with st.container():
-        st.html('<div class="btn-next"></div>')
-        if st.button("NEXT", key="btn_next", use_container_width=True):
-            st.session_state.phrase_index = (st.session_state.phrase_index + 1) % total
-            st.session_state.reveal = False
-            st.session_state.auto_play = True
-            st.rerun()
+    if st.button("NEXT", key="btn_next", use_container_width=True):
+        st.session_state.phrase_index = (st.session_state.phrase_index + 1) % total
+        st.session_state.reveal = False
+        st.session_state.auto_play = True
+        st.rerun()
 
 st.divider()
 
