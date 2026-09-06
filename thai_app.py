@@ -73,26 +73,6 @@ if "phrase_index" not in st.session_state:
 if "reveal" not in st.session_state:
     st.session_state.reveal = False
 
-# Read URL params for actions passed back from JS
-query_params = st.query_params
-if "action" in query_params:
-    action = query_params["action"]
-    if action == "reveal":
-        st.session_state.reveal = not st.session_state.reveal
-    elif action == "next":
-        st.session_state.phrase_index = (st.session_state.phrase_index + 1) % total
-        st.session_state.reveal = False
-    elif action == "back":
-        st.session_state.phrase_index = (st.session_state.phrase_index - 1) % total
-        st.session_state.reveal = False
-    elif action == "rand":
-        st.session_state.phrase_index = random.randint(0, total - 1)
-        st.session_state.reveal = False
-    st.query_params.clear()
-    st.rerun()
-
-current_phrase = PHRASES_DB[st.session_state.phrase_index]
-
 # Header Flag Image
 st.markdown(
     """
@@ -104,6 +84,8 @@ st.markdown(
     """,
     unsafe_allow_html=True
 )
+
+current_phrase = PHRASES_DB[st.session_state.phrase_index]
 
 # Title & Main Thai Phrase Display
 st.markdown("<h4 style='text-align: center; color: #000000; margin: 0px;'>Thai Listening and Reading</h4>", unsafe_allow_html=True)
@@ -121,11 +103,26 @@ fp = io.BytesIO()
 tts.write_to_fp(fp)
 b64_audio = base64.b64encode(fp.getvalue()).decode()
 
-# --- HIGH-VISIBILITY HTML CONTROL BUTTONS ---
+# --- HIGH-VISIBILITY HTML CONTROL BUTTONS WITH NATIVE STREAMLIT COMPONENT EVENTS ---
 controls_html = f"""
+<!DOCTYPE html>
+<html>
+<head>
+    <script>
+        // Official Streamlit Component Library setup
+        function sendToStreamlit(value) {{
+            window.parent.postMessage({{
+                isStreamlitMessage: true,
+                type: "streamlit:setComponentValue",
+                value: value
+            }}, "*");
+        }}
+    </script>
+</head>
+<body style="margin:0; padding:0; background:transparent;">
 <div style="width: 100%; font-family: sans-serif; box-sizing: border-box; padding: 0 2px;">
     <!-- REVEAL BUTTON -->
-    <button onclick="triggerAction('reveal')" style="
+    <button onclick="sendToStreamlit('reveal')" style="
         background-color: #0066CC !important;
         color: #FFFFFF !important;
         font-size: 14px !important;
@@ -156,7 +153,7 @@ controls_html = f"""
 
     <!-- 3-BUTTON ROW -->
     <div style="display: flex; gap: 6px; width: 100%;">
-        <button onclick="triggerAction('back')" style="
+        <button onclick="sendToStreamlit('back')" style="
             flex: 1;
             background-color: #1A202C !important;
             color: #FFFFFF !important;
@@ -169,7 +166,7 @@ controls_html = f"""
             box-shadow: 0px 2px 4px rgba(0,0,0,0.2);
         ">BACK</button>
 
-        <button onclick="triggerAction('rand')" style="
+        <button onclick="sendToStreamlit('rand')" style="
             flex: 1;
             background-color: #28A745 !important;
             color: #FFFFFF !important;
@@ -182,7 +179,7 @@ controls_html = f"""
             box-shadow: 0px 2px 4px rgba(0,0,0,0.2);
         ">RANDOM</button>
 
-        <button onclick="triggerAction('next')" style="
+        <button onclick="sendToStreamlit('next')" style="
             flex: 1;
             background-color: #1A202C !important;
             color: #FFFFFF !important;
@@ -202,16 +199,6 @@ controls_html = f"""
 </div>
 
 <script>
-    function triggerAction(actionName) {{
-        window.parent.postMessage({{
-            type: "streamlit:setComponentValue",
-            value: actionName
-        }}, "*");
-        const url = new URL(window.parent.location.href);
-        url.searchParams.set("action", actionName);
-        window.parent.location.href = url.href;
-    }}
-
     function playAudio() {{
         const audio = document.getElementById('tts-player');
         if (audio) {{
@@ -220,9 +207,29 @@ controls_html = f"""
         }}
     }}
 </script>
+</body>
+</html>
 """
 
-components.html(controls_html, height=150)
+# Render custom component and capture click events
+action = components.html(controls_html, height=150)
+
+# Process button state changes cleanly inside Python
+if action == "reveal":
+    st.session_state.reveal = not st.session_state.reveal
+    st.rerun()
+elif action == "next":
+    st.session_state.phrase_index = (st.session_state.phrase_index + 1) % total
+    st.session_state.reveal = False
+    st.rerun()
+elif action == "back":
+    st.session_state.phrase_index = (st.session_state.phrase_index - 1) % total
+    st.session_state.reveal = False
+    st.rerun()
+elif action == "rand":
+    st.session_state.phrase_index = random.randint(0, total - 1)
+    st.session_state.reveal = False
+    st.rerun()
 
 st.markdown("<hr style='margin: 8px 0;'>", unsafe_allow_html=True)
 
