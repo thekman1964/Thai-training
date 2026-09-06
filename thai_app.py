@@ -1,7 +1,6 @@
 import streamlit as st
 from gtts import gTTS
 import io
-import base64
 import random
 import time
 import requests
@@ -99,19 +98,17 @@ if "reveal" not in st.session_state:
 
 current_phrase = PHRASES_DB[st.session_state.phrase_index]
 
-# Helper to play TTS audio for the current phrase
+# Helper to play TTS audio for the current phrase.
+# Uses Streamlit's native st.audio widget (with autoplay) instead of a hidden
+# iframe: it attempts autoplay the same way, but also shows a real, visible
+# player so there's a manual tap-to-play fallback if a browser blocks
+# autoplay outright (common on iOS Safari) instead of silently doing nothing.
 def play_thai_audio(text):
     tts = gTTS(text=text, lang='th')
     fp = io.BytesIO()
     tts.write_to_fp(fp)
-    b64_audio = base64.b64encode(fp.getvalue()).decode()
-
-    audio_html = f"""
-    <audio autoplay style="display:none;">
-        <source src="data:audio/mp3;base64,{b64_audio}" type="audio/mp3">
-    </audio>
-    """
-    components.html(audio_html, height=0)
+    fp.seek(0)
+    st.audio(fp.getvalue(), format="audio/mp3", autoplay=True)
 
 # Header
 st.markdown(
