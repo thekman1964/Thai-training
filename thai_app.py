@@ -85,7 +85,16 @@ current_phrase = PHRASES_DB[current_idx]
 if should_play:
     play_thai_audio(current_phrase["thai"])
 
-# Build clean, bulletproof HTML UI for top section
+# Pre-render English display string to avoid complex quote nesting inside the f-string
+if is_revealed:
+    english_display = f'<div class="english-text">{current_phrase["english"]}</div>'
+else:
+    english_display = '<div class="hint-text">Click "REVEAL" to view English translation</div>'
+
+prev_idx = (current_idx - 1) % total
+next_idx = (current_idx + 1) % total
+rev_toggle = 0 if is_revealed else 1
+
 top_app_html = f"""
 <!DOCTYPE html>
 <html>
@@ -172,19 +181,19 @@ top_app_html = f"""
     <h4>Thai Listening and Reading</h4>
     <h2>{current_phrase['thai']}</h2>
 
-    {"<div class='english-text'>" + current_phrase['english'] + "</div>" if is_revealed else "<div class='hint-text'>Click \"REVEAL\" to view English translation</div>"}
+    {english_display}
 
     <div class="btn-stack">
         <div class="row-center">
-            <button class="btn btn-rev" onclick="nav('idx={current_idx}&rev={0 if is_revealed else 1}&play=0')">REVEAL</button>
+            <button class="btn btn-rev" id="btn-rev">REVEAL</button>
         </div>
         <div class="row-center">
-            <button class="btn btn-phr" onclick="nav('idx={current_idx}&rev={1 if is_revealed else 0}&play=1')">PHRASE</button>
+            <button class="btn btn-phr" id="btn-phr">PHRASE</button>
         </div>
         <div class="row-three">
-            <button class="btn btn-nav" onclick="nav('idx={(current_idx - 1) % total}&rev=0&play=1')">BACK</button>
-            <button class="btn btn-rnd" onclick="nav('idx={random.randint(0, total - 1)}&rev=0&play=1')">RANDOM</button>
-            <button class="btn btn-nav" onclick="nav('idx={(current_idx + 1) % total}&rev=0&play=1')">NEXT</button>
+            <button class="btn btn-nav" id="btn-back">BACK</button>
+            <button class="btn btn-rnd" id="btn-rand">RANDOM</button>
+            <button class="btn btn-nav" id="btn-next">NEXT</button>
         </div>
     </div>
 
@@ -192,6 +201,11 @@ top_app_html = f"""
         function nav(params) {{
             window.parent.location.search = "?" + params;
         }}
+        document.getElementById('btn-rev').onclick = function() {{ nav("idx={current_idx}&rev={rev_toggle}&play=0"); }};
+        document.getElementById('btn-phr').onclick = function() {{ nav("idx={current_idx}&rev={1 if is_revealed else 0}&play=1"); }};
+        document.getElementById('btn-back').onclick = function() {{ nav("idx={prev_idx}&rev=0&play=1"); }};
+        document.getElementById('btn-rand').onclick = function() {{ nav("idx=" + Math.floor(Math.random() * {total}) + "&rev=0&play=1"); }};
+        document.getElementById('btn-next').onclick = function() {{ nav("idx={next_idx}&rev=0&play=1"); }};
     </script>
 </body>
 </html>
