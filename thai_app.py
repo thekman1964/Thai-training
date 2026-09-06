@@ -10,7 +10,7 @@ import streamlit.components.v1 as components
 
 st.set_page_config(layout="centered", page_title="Thai Practice")
 
-# Streamlit App Styling Overrides
+# --- CSS OVERRIDES ---
 st.markdown("""
     <style>
     #MainMenu {visibility: hidden;}
@@ -30,13 +30,54 @@ st.markdown("""
         padding-right: 0.5rem !important;
     }
 
+    /* PREVENT MOBILE COLUMN STACKING FOR THE 3-BUTTON ROW */
+    div[data-testid="stHorizontalBlock"] {
+        display: flex !important;
+        flex-direction: row !important;
+        flex-wrap: nowrap !important;
+        width: 100% !important;
+        gap: 6px !important;
+    }
+
+    div[data-testid="stColumn"] {
+        flex: 1 1 0% !important;
+        min-width: 0 !important;
+        width: auto !important;
+    }
+
+    /* BASE BUTTON FORMATTING */
+    div[data-testid="stButton"] > button {
+        width: 100% !important;
+        height: 42px !important;
+        font-size: 14px !important;
+        font-weight: 900 !important;
+        border-radius: 6px !important;
+        padding: 0px !important;
+        white-space: nowrap !important;
+        margin: 2px 0px !important;
+        cursor: pointer !important;
+        border: none !important;
+    }
+
+    /* BUTTON COLORS BY CLASS WRAPPERS */
+    .btn-blue div[data-testid="stButton"] > button { background-color: #0066CC !important; color: #FFFFFF !important; }
+    .btn-orange div[data-testid="stButton"] > button { background-color: #FF6600 !important; color: #FFFFFF !important; }
+    .btn-dark div[data-testid="stButton"] > button { background-color: #1A202C !important; color: #FFFFFF !important; }
+    .btn-green div[data-testid="stButton"] > button { background-color: #28A745 !important; color: #FFFFFF !important; }
+
+    /* ENSURE TEXT STAYS WHITE */
+    div[data-testid="stButton"] > button p {
+        color: #FFFFFF !important;
+        font-weight: 900 !important;
+    }
+
     hr {
         margin: 6px 0px !important;
     }
     </style>
 """, unsafe_allow_html=True)
 
-# Audio Player Helper Function
+# Audio Player Helper
 def play_thai_audio(text):
     tts = gTTS(text=text, lang='th')
     fp = io.BytesIO()
@@ -58,7 +99,7 @@ def play_thai_audio(text):
     """
     components.html(audio_html, height=0)
 
-# Load dataset
+# Fetch phrases from Google Sheet along with last updated timestamp
 @st.cache_data(ttl=600)
 def load_phrases_with_meta():
     sheet_id = "1_vMSPtMo3-JD2qARp4zwrcvNrhEuSKHQVEOT1IMwgFw"
@@ -93,41 +134,17 @@ def load_phrases_with_meta():
 PHRASES_DB, SHEET_LAST_UPDATED = load_phrases_with_meta()
 total = len(PHRASES_DB)
 
-# Query parameters for state communication
-query_params = st.query_params
-
+# Initialize Session State
 if "phrase_index" not in st.session_state:
-    st.session_state.phrase_index = int(query_params.get("idx", 0))
+    st.session_state.phrase_index = 0
 if "reveal" not in st.session_state:
-    st.session_state.reveal = query_params.get("rev", "0") == "1"
-
-# Handle query actions
-action = query_params.get("action", None)
-if action:
-    if action == "reveal":
-        st.session_state.reveal = not st.session_state.reveal
-    elif action == "back":
-        st.session_state.phrase_index = (st.session_state.phrase_index - 1) % total
-        st.session_state.reveal = False
-    elif action == "next":
-        st.session_state.phrase_index = (st.session_state.phrase_index + 1) % total
-        st.session_state.reveal = False
-    elif action == "rand":
-        st.session_state.phrase_index = random.randint(0, total - 1)
-        st.session_state.reveal = False
-    
-    st.query_params.clear()
-    st.query_params["idx"] = str(st.session_state.phrase_index)
-    st.query_params["rev"] = "1" if st.session_state.reveal else "0"
-    st.rerun()
+    st.session_state.reveal = False
+if "auto_play" not in st.session_state:
+    st.session_state.auto_play = False
 
 current_phrase = PHRASES_DB[st.session_state.phrase_index]
 
-# Play sound if phrase audio action was triggered
-if action == "phrase":
-    play_thai_audio(current_phrase["thai"])
-
-# Flag
+# Header Flag Image
 st.markdown(
     """
     <div style="text-align: center; margin-top: 2px; margin-bottom: 2px;">
@@ -139,69 +156,71 @@ st.markdown(
     unsafe_allow_html=True
 )
 
+# Title & Main Thai Phrase Display
 st.markdown("<h4 style='text-align: center; color: #000000; margin: 0px;'>Thai Listening and Reading</h4>", unsafe_allow_html=True)
 st.markdown(f"<h2 style='text-align: center; font-size: 32px; color: #000000; margin: 2px 0;'>{current_phrase['thai']}</h2>", unsafe_allow_html=True)
 
+# English Translation Display
 if st.session_state.reveal:
     st.markdown(f"<p style='text-align: center; color: #0066CC; font-size: 20px; font-weight: bold; margin-bottom: 4px;'>{current_phrase['english']}</p>", unsafe_allow_html=True)
 else:
     st.markdown("<p style='text-align: center; color: #777777; font-size: 13px; margin-bottom: 4px;'>Click \"REVEAL\" to view English translation</p>", unsafe_allow_html=True)
 
-# Main Controls Layout (HTML Component)
-idx = st.session_state.phrase_index
-rev = "1" if st.session_state.reveal else "0"
+# Trigger auto audio play if needed
+if st.session_state.auto_play:
+    play_thai_audio(current_phrase["thai"])
+    st.session_state.auto_play = False
 
-main_controls_html = f"""
-<style>
-    .btn {{
-        width: 100%;
-        height: 40px;
-        font-size: 14px;
-        font-weight: 900;
-        border-radius: 6px;
-        border: none;
-        color: #FFFFFF;
-        cursor: pointer;
-        margin-bottom: 6px;
-        box-sizing: border-box;
-        text-decoration: none;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        font-family: sans-serif;
-    }}
-    .btn-blue {{ background-color: #0066CC; }}
-    .btn-orange {{ background-color: #FF6600; }}
-    .btn-dark {{ background-color: #1A202C; }}
-    .btn-green {{ background-color: #28A745; }}
-    
-    .row {{
-        display: flex;
-        gap: 6px;
-        width: 100%;
-    }}
-    .col {{
-        flex: 1;
-    }}
-</style>
+# --- NATIVE WORKING BUTTONS WITH CSS CLASS WRAPPERS ---
 
-<div>
-    <button class="btn btn-blue" onclick="window.top.location.search='?action=reveal&idx={idx}&rev={rev}'">REVEAL</button>
-    <button class="btn btn-orange" onclick="window.top.location.search='?action=phrase&idx={idx}&rev={rev}'">PHRASE</button>
-    
-    <div class="row">
-        <div class="col"><button class="btn btn-dark" onclick="window.top.location.search='?action=back&idx={idx}&rev={rev}'">BACK</button></div>
-        <div class="col"><button class="btn btn-green" onclick="window.top.location.search='?action=rand&idx={idx}&rev={rev}'">RANDOM</button></div>
-        <div class="col"><button class="btn btn-dark" onclick="window.top.location.search='?action=next&idx={idx}&rev={rev}'">NEXT</button></div>
-    </div>
-</div>
-"""
+# Row 1: REVEAL
+with st.container():
+    st.markdown('<div class="btn-blue">', unsafe_allow_html=True)
+    if st.button("REVEAL", key="btn_reveal", use_container_width=True):
+        st.session_state.reveal = not st.session_state.reveal
+        st.rerun()
+    st.markdown('</div>', unsafe_allow_html=True)
 
-components.html(main_controls_html, height=150)
+# Row 2: PHRASE
+with st.container():
+    st.markdown('<div class="btn-orange">', unsafe_allow_html=True)
+    if st.button("PHRASE", key="btn_phrase", use_container_width=True):
+        play_thai_audio(current_phrase["thai"])
+    st.markdown('</div>', unsafe_allow_html=True)
+
+# Row 3: BACK, RANDOM, NEXT (Forced 3 Columns Side-by-Side)
+col_back, col_rand, col_next = st.columns(3)
+
+with col_back:
+    st.markdown('<div class="btn-dark">', unsafe_allow_html=True)
+    if st.button("BACK", key="btn_back", use_container_width=True):
+        st.session_state.phrase_index = (st.session_state.phrase_index - 1) % total
+        st.session_state.reveal = False
+        st.session_state.auto_play = True
+        st.rerun()
+    st.markdown('</div>', unsafe_allow_html=True)
+
+with col_rand:
+    st.markdown('<div class="btn-green">', unsafe_allow_html=True)
+    if st.button("RANDOM", key="btn_rand", use_container_width=True):
+        st.session_state.phrase_index = random.randint(0, total - 1)
+        st.session_state.reveal = False
+        st.session_state.auto_play = True
+        st.rerun()
+    st.markdown('</div>', unsafe_allow_html=True)
+
+with col_next:
+    st.markdown('<div class="btn-dark">', unsafe_allow_html=True)
+    if st.button("NEXT", key="btn_next", use_container_width=True):
+        st.session_state.phrase_index = (st.session_state.phrase_index + 1) % total
+        st.session_state.reveal = False
+        st.session_state.auto_play = True
+        st.rerun()
+    st.markdown('</div>', unsafe_allow_html=True)
 
 st.divider()
 
-# Speech Recognition Component
+# Speech Recognition & Translation Section
 st_speech_html = f"""
 <div style="text-align: center; font-family: sans-serif;">
     <div id="output" style="color: #FF6600; font-size: 32px; font-weight: bold; min-height: 40px; margin-bottom: 2px;">
@@ -219,10 +238,13 @@ st_speech_html = f"""
         font-weight: 900 !important;
         border: none !important;
         border-radius: 6px !important;
-        height: 40px !important;
+        height: 42px !important;
+        line-height: 42px !important;
+        padding: 0px !important;
         width: 100% !important;
         cursor: pointer !important;
         margin-bottom: 8px !important;
+        box-sizing: border-box !important;
     ">TRANSLATE</button>
 
     <button id="speak-btn" style="
@@ -232,9 +254,12 @@ st_speech_html = f"""
         font-size: 13px !important;
         font-weight: 900 !important;
         border-radius: 6px !important;
-        height: 40px !important;
+        height: 42px !important;
+        line-height: 38px !important;
+        padding: 0px !important;
         width: 100% !important;
         cursor: pointer !important;
+        box-sizing: border-box !important;
     ">HEAR SPOKEN THAI TEXT</button>
 
     <div style="margin-top: 10px; font-size: 12px; color: #555555; line-height: 1.4;">
@@ -314,4 +339,4 @@ st_speech_html = f"""
 </script>
 """
 
-components.html(st_speech_html, height=250)
+components.html(st_speech_html, height=260)
