@@ -1,7 +1,4 @@
 import streamlit as st
-from gtts import gTTS
-import io
-import base64
 import random
 import time
 import requests
@@ -114,29 +111,10 @@ if "phrase_index" not in st.session_state:
     st.session_state.phrase_index = 0
 if "reveal" not in st.session_state:
     st.session_state.reveal = False
-if "play_count" not in st.session_state:
-    st.session_state.play_count = 0
+if "play_trigger" not in st.session_state:
+    st.session_state.play_trigger = 0
 
 current_phrase = PHRASES_DB[st.session_state.phrase_index]
-
-# --- DIRECT AUDIO INJECTION FUNCTION ---
-def play_thai_audio(text):
-    tts = gTTS(text=text, lang='th')
-    fp = io.BytesIO()
-    tts.write_to_fp(fp)
-    fp.seek(0)
-    b64_audio = base64.b64encode(fp.read()).decode()
-    # Unique timestamp prevents browser caching and forces playback on every single click
-    audio_html = f"""
-        <audio autoplay style="display:none;">
-            <source src="data:audio/mp3;base64,{b64_audio}?t={time.time()}" type="audio/mp3">
-        </audio>
-    """
-    st.markdown(audio_html, unsafe_allow_html=True)
-
-# Trigger audio playback if play_count increased
-if st.session_state.play_count > 0:
-    play_thai_audio(current_phrase["thai"])
 
 # Header
 st.markdown(
@@ -161,12 +139,10 @@ else:
 # --- NAV BUTTONS ---
 if st.button("REVEAL", key="btn_reveal", use_container_width=True):
     st.session_state.reveal = not st.session_state.reveal
-    st.session_state.play_count = 0
     st.rerun()
 
-# REPEATABLE PHRASE BUTTON LOGIC
 if st.button("PHRASE", key="btn_phrase", use_container_width=True):
-    st.session_state.play_count += 1
+    st.session_state.play_trigger += 1
     st.rerun()
 
 col_back, col_rand, col_next = st.columns([1, 1, 1], gap="small")
@@ -174,22 +150,36 @@ with col_back:
     if st.button("BACK", key="btn_back", use_container_width=True):
         st.session_state.phrase_index = (st.session_state.phrase_index - 1) % total
         st.session_state.reveal = False
-        st.session_state.play_count += 1
+        st.session_state.play_trigger += 1
         st.rerun()
 
 with col_rand:
     if st.button("RANDOM", key="btn_rand", use_container_width=True):
         st.session_state.phrase_index = random.randint(0, total - 1)
         st.session_state.reveal = False
-        st.session_state.play_count += 1
+        st.session_state.play_trigger += 1
         st.rerun()
 
 with col_next:
     if st.button("NEXT", key="btn_next", use_container_width=True):
         st.session_state.phrase_index = (st.session_state.phrase_index + 1) % total
         st.session_state.reveal = False
-        st.session_state.play_count += 1
+        st.session_state.play_trigger += 1
         st.rerun()
+
+# --- TTS AUDIO COMPONENT ---
+# Google Translate TTS endpoint loaded via JavaScript HTML Audio for instant, unblocked speech on every run
+tts_url = f"https://translate.google.com/translate_tts?ie=UTF-8&q={requests.utils.quote(current_phrase['thai'])}&tl=th&client=tw-ob"
+
+audio_js = f"""
+<script>
+    if ({st.session_state.play_trigger} > 0) {{
+        const audio = new Audio("{tts_url}&t=" + new Date().getTime());
+        audio.play().catch(e => console.log("Playback error:", e));
+    }}
+</script>
+"""
+components.html(audio_js, height=0)
 
 st.markdown("<hr style='margin: 8px 0;'>", unsafe_allow_html=True)
 
