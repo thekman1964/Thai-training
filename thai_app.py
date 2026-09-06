@@ -63,14 +63,19 @@ st.markdown("""
     div[data-testid="stVerticalBlock"] > div:nth-child(7) div[data-testid="stColumn"]:nth-child(1) button {
         background-color: #1A202C !important; /* BACK */
         color: #FFFFFF !important;
+        font-weight: 900 !important;
     }
     div[data-testid="stVerticalBlock"] > div:nth-child(7) div[data-testid="stColumn"]:nth-child(2) button {
         background-color: #28A745 !important; /* RANDOM */
         color: #FFFFFF !important;
+        font-weight: 900 !important;
+        border: 3px solid #000000 !important; /* Thick Black Border */
+        box-sizing: border-box !important;
     }
     div[data-testid="stVerticalBlock"] > div:nth-child(7) div[data-testid="stColumn"]:nth-child(3) button {
         background-color: #1A202C !important; /* NEXT */
         color: #FFFFFF !important;
+        font-weight: 900 !important;
     }
 
     /* FORCE HORIZONTAL ROW ON MOBILE */
@@ -239,7 +244,7 @@ st_speech_html = f"""
         English translation...
     </div>
     
-    <!-- TRANSLATE Button (Reduced width by 30% to 49%, doubled bottom margin to 12px) -->
+    <!-- TRANSLATE Button -->
     <button id="stt-btn" style="
         background-color: #FF6600 !important;
         color: #FFFFFF !important;
@@ -258,7 +263,7 @@ st_speech_html = f"""
     ">TRANSLATE</button>
     <br>
 
-    <!-- HEAR SPOKEN THAI TEXT Button (Matching revised 49% width) -->
+    <!-- HEAR SPOKEN THAI TEXT Button -->
     <button id="speak-btn" style="
         background-color: #FFFFFF !important;
         color: #FF6600 !important;
