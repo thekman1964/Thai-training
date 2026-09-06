@@ -10,10 +10,9 @@ import streamlit.components.v1 as components
 
 st.set_page_config(layout="centered", page_title="Thai Practice")
 
-# --- Mobile Compact & Precise Styling ---
+# --- Page Layout & Global Styling ---
 st.markdown("""
     <style>
-    /* Hide top Streamlit header bar, main menu, and footer */
     #MainMenu {visibility: hidden;}
     header {visibility: hidden;}
     footer {visibility: hidden;}
@@ -29,51 +28,6 @@ st.markdown("""
         padding-bottom: 0rem !important;
         padding-left: 0.5rem !important;
         padding-right: 0.5rem !important;
-    }
-
-    /* Native Streamlit Button Overrides */
-    div.stButton > button {
-        font-size: 14px !important;
-        font-weight: 900 !important;
-        border-radius: 6px !important;
-        height: 40px !important;
-        min-height: 40px !important;
-        padding: 0px !important;
-        line-height: 34px !important;
-        white-space: nowrap !important;
-        margin-top: 2px !important;
-        margin-bottom: 2px !important;
-        width: 100% !important;
-        box-sizing: border-box !important;
-    }
-
-    /* REVEAL Button Styling (Blue with 3px border) */
-    div[data-testid="stVerticalBlock"] > div:nth-child(5) button {
-        background-color: #0066CC !important;
-        color: #FFFFFF !important;
-        border: 3px solid #000000 !important;
-    }
-
-    /* PHRASE Button Styling (Orange with 3px border) */
-    div[data-testid="stVerticalBlock"] > div:nth-child(6) button {
-        background-color: #FF6600 !important;
-        color: #FFFFFF !important;
-        border: 3px solid #000000 !important;
-    }
-
-    /* BACK & NEXT Buttons (Dark Gray with 3px border) */
-    div[data-testid="stColumn"]:nth-child(1) button,
-    div[data-testid="stColumn"]:nth-child(3) button {
-        background-color: #1A202C !important;
-        color: #FFFFFF !important;
-        border: 3px solid #000000 !important;
-    }
-
-    /* RANDOM Button (Green with 3px border) */
-    div[data-testid="stColumn"]:nth-child(2) button {
-        background-color: #28A745 !important;
-        color: #FFFFFF !important;
-        border: 3px solid #000000 !important;
     }
 
     hr {
@@ -147,9 +101,32 @@ if "reveal" not in st.session_state:
 if "auto_play" not in st.session_state:
     st.session_state.auto_play = False
 
+# Handle button clicks via URL parameters safely
+if "action" in st.query_params:
+    act = st.query_params["action"]
+    if act == "reveal":
+        st.session_state.reveal = not st.session_state.reveal
+    elif act == "phrase":
+        st.session_state.auto_play = True
+    elif act == "back":
+        st.session_state.phrase_index = (st.session_state.phrase_index - 1) % total
+        st.session_state.reveal = False
+        st.session_state.auto_play = True
+    elif act == "random":
+        st.session_state.phrase_index = random.randint(0, total - 1)
+        st.session_state.reveal = False
+        st.session_state.auto_play = True
+    elif act == "next":
+        st.session_state.phrase_index = (st.session_state.phrase_index + 1) % total
+        st.session_state.reveal = False
+        st.session_state.auto_play = True
+    
+    st.query_params.clear()
+    st.rerun()
+
 current_phrase = PHRASES_DB[st.session_state.phrase_index]
 
-# 0. Waving Thailand Flag Header Image
+# Header Flag Image
 st.markdown(
     """
     <div style="text-align: center; margin-top: 2px; margin-bottom: 2px;">
@@ -161,72 +138,114 @@ st.markdown(
     unsafe_allow_html=True
 )
 
-# 1. Main Title & Phrase Display (32px)
+# Main Title & Phrase Display
 st.markdown("<h4 style='text-align: center; color: #000000; margin: 0px;'>Thai Listening and Reading</h4>", unsafe_allow_html=True)
 st.markdown(f"<h2 style='text-align: center; font-size: 32px; color: #000000; margin: 2px 0;'>{current_phrase['thai']}</h2>", unsafe_allow_html=True)
 
-# 2. English Hint Display
+# English Hint Display
 if st.session_state.reveal:
     st.markdown(f"<p style='text-align: center; color: #0066CC; font-size: 20px; font-weight: bold; margin-bottom: 4px;'>{current_phrase['english']}</p>", unsafe_allow_html=True)
 else:
     st.markdown("<p style='text-align: center; color: #777777; font-size: 13px; margin-bottom: 4px;'>Click \"REVEAL\" to view English translation</p>", unsafe_allow_html=True)
-
-# 3. REVEAL Button (Centred column layout; identical size to RANDOM)
-col_l1, col_rev, col_r1 = st.columns([1, 1, 1])
-with col_rev:
-    if st.button("REVEAL", key="btn_reveal", use_container_width=True):
-        st.session_state.reveal = not st.session_state.reveal
-
-# 4. PHRASE Button (Centred column layout; identical size to RANDOM)
-col_l2, col_phrase, col_r2 = st.columns([1, 1, 1])
-with col_phrase:
-    if st.button("PHRASE", key="btn_phrase", use_container_width=True):
-        play_thai_audio(current_phrase["thai"])
 
 # Trigger audio playback if auto-play flag is set
 if st.session_state.auto_play:
     play_thai_audio(current_phrase["thai"])
     st.session_state.auto_play = False
 
-# 5. BACK, RANDOM, NEXT Navigation Row
-col_back, col_rand, col_next = st.columns([1, 1, 1])
-with col_back:
-    if st.button("BACK", key="btn_back", use_container_width=True):
-        st.session_state.phrase_index = (st.session_state.phrase_index - 1) % total
-        st.session_state.reveal = False
-        st.session_state.auto_play = True
-        st.rerun()
+# --- GUARANTEED UNIFIED CONTROL PANEL ---
+# All 5 buttons rendered in a single CSS Flexbox container.
+control_panel_html = """
+<!DOCTYPE html>
+<html>
+<head>
+    <style>
+        body { margin: 0; padding: 0; background: transparent; font-family: sans-serif; }
+        .control-grid {
+            display: flex;
+            flex-direction: column;
+            gap: 6px;
+            width: 100%;
+        }
+        .row {
+            display: flex;
+            gap: 6px;
+            width: 100%;
+        }
+        .col-33 {
+            flex: 1;
+            width: 33.33%;
+        }
+        button {
+            width: 100%;
+            height: 40px;
+            font-weight: 900;
+            font-size: 14px;
+            border-radius: 6px;
+            border: 3px solid #000000;
+            box-sizing: border-box;
+            cursor: pointer;
+            color: #FFFFFF;
+        }
+        .btn-reveal { background-color: #0066CC; }
+        .btn-phrase { background-color: #FF6600; }
+        .btn-back   { background-color: #1A202C; }
+        .btn-random { background-color: #28A745; }
+        .btn-next   { background-color: #1A202C; }
+    </style>
+</head>
+<body>
+    <div class="control-grid">
+        <!-- Row 1: REVEAL (Centered, 1/3 Width) -->
+        <div class="row">
+            <div class="col-33"></div>
+            <div class="col-33">
+                <button class="btn-reveal" onclick="window.top.location.href=window.top.location.pathname+'?action=reveal'">REVEAL</button>
+            </div>
+            <div class="col-33"></div>
+        </div>
 
-with col_rand:
-    if st.button("RANDOM", key="btn_rand", use_container_width=True):
-        st.session_state.phrase_index = random.randint(0, total - 1)
-        st.session_state.reveal = False
-        st.session_state.auto_play = True
-        st.rerun()
+        <!-- Row 2: PHRASE (Centered, 1/3 Width) -->
+        <div class="row">
+            <div class="col-33"></div>
+            <div class="col-33">
+                <button class="btn-phrase" onclick="window.top.location.href=window.top.location.pathname+'?action=phrase'">PHRASE</button>
+            </div>
+            <div class="col-33"></div>
+        </div>
 
-with col_next:
-    if st.button("NEXT", key="btn_next", use_container_width=True):
-        st.session_state.phrase_index = (st.session_state.phrase_index + 1) % total
-        st.session_state.reveal = False
-        st.session_state.auto_play = True
-        st.rerun()
+        <!-- Row 3: BACK, RANDOM, NEXT (Three Equal 1/3 Columns) -->
+        <div class="row">
+            <div class="col-33">
+                <button class="btn-back" onclick="window.top.location.href=window.top.location.pathname+'?action=back'">BACK</button>
+            </div>
+            <div class="col-33">
+                <button class="btn-random" onclick="window.top.location.href=window.top.location.pathname+'?action=random'">RANDOM</button>
+            </div>
+            <div class="col-33">
+                <button class="btn-next" onclick="window.top.location.href=window.top.location.pathname+'?action=next'">NEXT</button>
+            </div>
+        </div>
+    </div>
+</body>
+</html>
+"""
+
+components.html(control_panel_html, height=140)
 
 st.divider()
 
-# 6. Speech Recognition + Translate + "HEAR SPOKEN THAI TEXT" Button
+# Speech Recognition & Translation Section
 st_speech_html = f"""
 <div style="text-align: center; font-family: sans-serif;">
-    <!-- Spoken Thai Output -->
     <div id="output" style="color: #FF6600; font-size: 32px; font-weight: bold; min-height: 40px; margin-bottom: 2px;">
         Spoken Thai text...
     </div>
     
-    <!-- English Translation Output -->
     <div id="translation" style="color: #0066CC; font-size: 20px; font-weight: bold; min-height: 28px; margin-bottom: 6px;">
         English translation...
     </div>
     
-    <!-- TRANSLATE Button -->
     <button id="stt-btn" style="
         background-color: #FF6600 !important;
         color: #FFFFFF !important;
@@ -244,7 +263,6 @@ st_speech_html = f"""
     ">TRANSLATE</button>
     <br>
 
-    <!-- HEAR SPOKEN THAI TEXT Button -->
     <button id="speak-btn" style="
         background-color: #FFFFFF !important;
         color: #FF6600 !important;
@@ -260,7 +278,6 @@ st_speech_html = f"""
         box-sizing: border-box !important;
     ">HEAR SPOKEN THAI TEXT</button>
 
-    <!-- Spreadsheet Stats Fields -->
     <div style="margin-top: 10px; font-size: 12px; color: #555555; line-height: 1.4;">
         <div><b>Available Records:</b> {total}</div>
         <div><b>Spreadsheet Last Updated:</b> {SHEET_LAST_UPDATED}</div>
