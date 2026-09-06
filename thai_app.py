@@ -10,19 +10,61 @@ import streamlit.components.v1 as components
 
 st.set_page_config(layout="centered", page_title="Thai Practice")
 
-# Hide standard Streamlit header/footer elements
+# --- GLOBAL STYLING ---
 st.markdown("""
     <style>
     #MainMenu {visibility: hidden;}
     header {visibility: hidden;}
     footer {visibility: hidden;}
     div[data-testid="stHeader"] {display: none;}
-    .stApp { background-color: #FFFFFF !important; }
+
+    .stApp {
+        background-color: #FFFFFF !important;
+        color: #000000 !important;
+    }
+
     .block-container {
         padding-top: 0.2rem !important;
         padding-bottom: 0rem !important;
         padding-left: 0.5rem !important;
         padding-right: 0.5rem !important;
+    }
+
+    /* Force 3 columns into 1 row on mobile screens */
+    div[data-testid="stHorizontalBlock"] {
+        display: flex !important;
+        flex-direction: row !important;
+        flex-wrap: nowrap !important;
+        width: 100% !important;
+        gap: 6px !important;
+    }
+
+    div[data-testid="stColumn"] {
+        flex: 1 1 0% !important;
+        min-width: 0 !important;
+        width: auto !important;
+    }
+
+    /* Standardize all button containers */
+    div[data-testid="stButton"] > button {
+        width: 100% !important;
+        height: 44px !important;
+        border-radius: 6px !important;
+        border: none !important;
+        box-shadow: 0px 2px 4px rgba(0,0,0,0.15) !important;
+        font-weight: 800 !important;
+        font-size: 15px !important;
+        color: #FFFFFF !important;
+    }
+
+    /* Container Color Rules */
+    .blue-btn div[data-testid="stButton"] > button { background-color: #0066CC !important; }
+    .orange-btn div[data-testid="stButton"] > button { background-color: #FF6600 !important; }
+    .dark-btn div[data-testid="stButton"] > button { background-color: #1A202C !important; }
+    .green-btn div[data-testid="stButton"] > button { background-color: #28A745 !important; }
+
+    div[data-testid="stButton"] > button p {
+        color: #FFFFFF !important;
     }
     </style>
 """, unsafe_allow_html=True)
@@ -70,26 +112,6 @@ if "reveal" not in st.session_state:
 if "play_audio" not in st.session_state:
     st.session_state.play_audio = False
 
-# --- HANDLE QUERY PARAM ACTIONS (RELIABLE URL-BASED STATE TRIGGER) ---
-params = st.query_params
-if "action" in params:
-    act = params["action"]
-    st.query_params.clear()
-    if act == "reveal":
-        st.session_state.reveal = not st.session_state.reveal
-    elif act == "phrase":
-        st.session_state.play_audio = True
-    elif act == "back":
-        st.session_state.phrase_index = (st.session_state.phrase_index - 1) % total
-        st.session_state.reveal = False
-    elif act == "rand":
-        st.session_state.phrase_index = random.randint(0, total - 1)
-        st.session_state.reveal = False
-    elif act == "next":
-        st.session_state.phrase_index = (st.session_state.phrase_index + 1) % total
-        st.session_state.reveal = False
-    st.rerun()
-
 current_phrase = PHRASES_DB[st.session_state.phrase_index]
 
 # Flag Header
@@ -127,48 +149,48 @@ if st.session_state.play_audio:
     components.html(audio_html, height=0)
     st.session_state.play_audio = False
 
-# --- FULLY CUSTOM HTML CONTROL BUTTONS WITH GUARANTEED COLOR & CLICK ACTIONS ---
-controls_component = """
-<div style="font-family: system-ui, -apple-system, sans-serif; width: 100%;">
-    <style>
-        .btn {
-            width: 100%;
-            height: 44px;
-            border-radius: 6px;
-            border: none;
-            color: #FFFFFF;
-            font-size: 15px;
-            font-weight: 800;
-            cursor: pointer;
-            box-shadow: 0px 2px 4px rgba(0,0,0,0.15);
-            margin-bottom: 8px;
-            display: block;
-        }
-        .btn-reveal { background-color: #0066CC !important; }
-        .btn-phrase { background-color: #FF6600 !important; }
-        .row { display: flex; gap: 6px; width: 100%; }
-        .btn-dark { background-color: #1A202C !important; flex: 1; margin-bottom: 0px; }
-        .btn-green { background-color: #28A745 !important; flex: 1; margin-bottom: 0px; }
-    </style>
+# --- NATIVE STREAMLIT BUTTONS WITH DIRECT CLASS WRAPPERS ---
 
-    <button class="btn btn-reveal" onclick="triggerAction('reveal')">REVEAL</button>
-    <button class="btn btn-phrase" onclick="triggerAction('phrase')">PHRASE</button>
-    
-    <div class="row">
-        <button class="btn btn-dark" onclick="triggerAction('back')">BACK</button>
-        <button class="btn btn-green" onclick="triggerAction('rand')">RANDOM</button>
-        <button class="btn btn-dark" onclick="triggerAction('next')">NEXT</button>
-    </div>
+# 1. REVEAL Button (Blue)
+st.markdown('<div class="blue-btn">', unsafe_allow_html=True)
+if st.button("REVEAL", use_container_width=True):
+    st.session_state.reveal = not st.session_state.reveal
+    st.rerun()
+st.markdown('</div>', unsafe_allow_html=True)
 
-    <script>
-    function triggerAction(act) {
-        window.parent.location.href = window.parent.location.pathname + '?action=' + act;
-    }
-    </script>
-</div>
-"""
+# 2. PHRASE Button (Orange)
+st.markdown('<div class="orange-btn">', unsafe_allow_html=True)
+if st.button("PHRASE", use_container_width=True):
+    st.session_state.play_audio = True
+    st.rerun()
+st.markdown('</div>', unsafe_allow_html=True)
 
-components.html(controls_component, height=150)
+# 3. BACK, RANDOM, NEXT Buttons Row
+col_back, col_rand, col_next = st.columns(3)
+
+with col_back:
+    st.markdown('<div class="dark-btn">', unsafe_allow_html=True)
+    if st.button("BACK", use_container_width=True):
+        st.session_state.phrase_index = (st.session_state.phrase_index - 1) % total
+        st.session_state.reveal = False
+        st.rerun()
+    st.markdown('</div>', unsafe_allow_html=True)
+
+with col_rand:
+    st.markdown('<div class="green-btn">', unsafe_allow_html=True)
+    if st.button("RANDOM", use_container_width=True):
+        st.session_state.phrase_index = random.randint(0, total - 1)
+        st.session_state.reveal = False
+        st.rerun()
+    st.markdown('</div>', unsafe_allow_html=True)
+
+with col_next:
+    st.markdown('<div class="dark-btn">', unsafe_allow_html=True)
+    if st.button("NEXT", use_container_width=True):
+        st.session_state.phrase_index = (st.session_state.phrase_index + 1) % total
+        st.session_state.reveal = False
+        st.rerun()
+    st.markdown('</div>', unsafe_allow_html=True)
 
 st.markdown("<hr style='margin: 8px 0;'>", unsafe_allow_html=True)
 
