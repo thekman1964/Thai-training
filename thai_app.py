@@ -10,7 +10,7 @@ import streamlit.components.v1 as components
 
 st.set_page_config(layout="centered", page_title="Thai Practice")
 
-# --- CSS OVERRIDES FOR NATIVE STREAMLIT BUTTONS ---
+# --- CSS OVERRIDES FOR NATIVE STREAMLIT BUTTONS & COLORED BORDERS ---
 st.markdown("""
     <style>
     /* Hide top Streamlit header bar, main menu, and footer */
@@ -54,37 +54,40 @@ st.markdown("""
         font-weight: 900 !important;
         border-radius: 6px !important;
         padding: 0px !important;
-        line-height: 34px !important;
+        line-height: 32px !important;
         white-space: nowrap !important;
         margin: 2px 0px !important;
         box-sizing: border-box !important;
         cursor: pointer !important;
     }
 
-    /* Color Customization via Button Keys */
+    /* REVEAL Button - Blue Border */
     div.stButton > button[key="btn_reveal"] {
         background-color: #0066CC !important;
         color: #FFFFFF !important;
-        border: 3px solid #000000 !important;
+        border: 4px solid #0066CC !important;
     }
 
+    /* PHRASE Button - Orange Border */
     div.stButton > button[key="btn_phrase"] {
         background-color: #FF6600 !important;
         color: #FFFFFF !important;
-        border: 3px solid #000000 !important;
+        border: 4px solid #FF6600 !important;
     }
 
+    /* RANDOM Button - Green Border */
+    div.stButton > button[key="btn_rand"] {
+        background-color: #28A745 !important;
+        color: #FFFFFF !important;
+        border: 4px solid #28A745 !important;
+    }
+
+    /* BACK & NEXT Buttons - Black Border */
     div.stButton > button[key="btn_back"],
     div.stButton > button[key="btn_next"] {
         background-color: #1A202C !important;
         color: #FFFFFF !important;
-        border: 3px solid #000000 !important;
-    }
-
-    div.stButton > button[key="btn_rand"] {
-        background-color: #28A745 !important;
-        color: #FFFFFF !important;
-        border: 3px solid #000000 !important;
+        border: 4px solid #000000 !important;
     }
 
     hr {
@@ -187,7 +190,7 @@ if st.session_state.auto_play:
     play_thai_audio(current_phrase["thai"])
     st.session_state.auto_play = False
 
-# --- NATIVE STREAMLIT BUTTONS (FULL FUNCTIONALITY & EXACT 1/3 WIDTHS) ---
+# --- BUTTONS WITH COLORED BORDERS ---
 
 # Row 1: REVEAL
 c1, c2, c3 = st.columns([1, 1, 1])
@@ -243,10 +246,10 @@ st_speech_html = f"""
         color: #FFFFFF !important;
         font-size: 14px !important;
         font-weight: 900 !important;
-        border: 3px solid #000000 !important;
+        border: 4px solid #FF6600 !important;
         border-radius: 6px !important;
         height: 40px !important;
-        line-height: 34px !important;
+        line-height: 32px !important;
         padding: 0px !important;
         width: 100% !important;
         cursor: pointer !important;
@@ -258,12 +261,12 @@ st_speech_html = f"""
     <button id="speak-btn" style="
         background-color: #FFFFFF !important;
         color: #FF6600 !important;
-        border: 3px solid #FF6600 !important;
+        border: 4px solid #FF6600 !important;
         font-size: 13px !important;
         font-weight: 900 !important;
         border-radius: 6px !important;
         height: 40px !important;
-        line-height: 34px !important;
+        line-height: 32px !important;
         padding: 0px !important;
         width: 100% !important;
         cursor: pointer !important;
