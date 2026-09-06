@@ -31,15 +31,15 @@ st.markdown("""
         padding-right: 0.5rem !important;
     }
 
-    /* Base Styling for All Streamlit Buttons */
+    /* Base Styling for All Streamlit Buttons (Increased height by 25% to 40px) */
     div.stButton > button {
         font-size: 14px !important;
         font-weight: bold !important;
         border-radius: 6px !important;
-        height: 32px !important;
-        min-height: 32px !important;
+        height: 40px !important;
+        min-height: 40px !important;
         padding: 0px !important;
-        line-height: 32px !important;
+        line-height: 40px !important;
         white-space: nowrap !important;
         margin-top: 2px !important;
         margin-bottom: 2px !important;
@@ -226,7 +226,7 @@ with nav_col3:
 
 st.divider()
 
-# 6. Speech Recognition + Translate + "HEAR SPOKEN THAI TEXT" Button
+# 6. Speech Recognition + Translate + "HEAR SPOKEN THAI TEXT" Button (40px Height)
 st_speech_html = f"""
 <div style="text-align: center; font-family: sans-serif;">
     <!-- Spoken Thai Output -->
@@ -239,7 +239,7 @@ st_speech_html = f"""
         English translation...
     </div>
     
-    <!-- TRANSLATE Button -->
+    <!-- TRANSLATE Button (Increased height to 40px) -->
     <button id="stt-btn" style="
         background-color: #FF6600 !important;
         color: #FFFFFF !important;
@@ -247,8 +247,8 @@ st_speech_html = f"""
         font-weight: bold !important;
         border: none !important;
         border-radius: 6px !important;
-        height: 32px !important;
-        line-height: 32px !important;
+        height: 40px !important;
+        line-height: 40px !important;
         padding: 0px !important;
         width: 70% !important;
         max-width: 260px !important;
@@ -258,7 +258,7 @@ st_speech_html = f"""
     ">TRANSLATE</button>
     <br>
 
-    <!-- HEAR SPOKEN THAI TEXT Button -->
+    <!-- HEAR SPOKEN THAI TEXT Button (Increased height to 40px) -->
     <button id="speak-btn" style="
         background-color: #FFFFFF !important;
         color: #FF6600 !important;
@@ -266,8 +266,8 @@ st_speech_html = f"""
         font-size: 13px !important;
         font-weight: bold !important;
         border-radius: 6px !important;
-        height: 32px !important;
-        line-height: 28px !important;
+        height: 40px !important;
+        line-height: 36px !important;
         padding: 0px !important;
         width: 75% !important;
         max-width: 280px !important;
@@ -353,4 +353,4 @@ st_speech_html = f"""
 </script>
 """
 
-components.html(st_speech_html, height=230)
+components.html(st_speech_html, height=250)
