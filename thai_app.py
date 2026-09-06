@@ -1,42 +1,21 @@
 import streamlit as st
-from gtts import gTTS
-import io
-import base64
 import time
 import requests
 import pandas as pd
+import json
 import streamlit.components.v1 as components
 
 st.set_page_config(layout="centered", page_title="Thai Practice")
 
-# --- Page Setup ---
+# --- Remove Streamlit Wrappers & Spacing ---
 st.markdown("""
     <style>
     #MainMenu, header, footer, div[data-testid="stHeader"] { visibility: hidden; display: none; }
     .stApp { background-color: #FFFFFF !important; color: #000000 !important; }
-    .block-container { padding: 0.2rem 0.5rem 0rem 0.5rem !important; }
-    hr { margin: 10px 0px !important; }
+    .block-container { padding: 0.1rem 0.2rem !important; max-width: 100% !important; }
+    iframe { width: 100% !important; border: none !important; }
     </style>
 """, unsafe_allow_html=True)
-
-# Helper function to play audio
-def play_thai_audio(text):
-    tts = gTTS(text=text, lang='th')
-    fp = io.BytesIO()
-    tts.write_to_fp(fp)
-    b64_audio = base64.b64encode(fp.getvalue()).decode()
-    
-    audio_key = int(time.time() * 1000)
-    audio_html = f"""
-    <audio id="audio_{audio_key}" autoplay style="display:none;">
-        <source src="data:audio/mp3;base64,{b64_audio}" type="audio/mp3">
-    </audio>
-    <script>
-        var audio = document.getElementById('audio_{audio_key}');
-        if(audio) {{ audio.currentTime = 0; audio.play(); }}
-    </script>
-    """
-    components.html(audio_html, height=0)
 
 # Fetch phrases from Google Sheet
 @st.cache_data(ttl=600)
@@ -71,207 +50,254 @@ def load_phrases_with_meta():
     return fallback, last_updated
 
 PHRASES_DB, SHEET_LAST_UPDATED = load_phrases_with_meta()
-total = len(PHRASES_DB)
+phrases_json = json.dumps(PHRASES_DB, ensure_ascii=False)
 
-# Read query params for state management
-query_params = st.query_params
-current_idx = int(query_params.get("idx", 0)) % total
-is_revealed = query_params.get("rev", "0") == "1"
-should_play = query_params.get("play", "0") == "1"
-
-current_phrase = PHRASES_DB[current_idx]
-
-# Play audio if requested via query param
-if should_play:
-    play_thai_audio(current_phrase["thai"])
-
-# Pre-render English display string to avoid complex quote nesting inside the f-string
-if is_revealed:
-    english_display = f'<div class="english-text">{current_phrase["english"]}</div>'
-else:
-    english_display = '<div class="hint-text">Click "REVEAL" to view English translation</div>'
-
-prev_idx = (current_idx - 1) % total
-next_idx = (current_idx + 1) % total
-rev_toggle = 0 if is_revealed else 1
-
-top_app_html = f"""
+# Self-Contained Mobile App HTML
+full_app_html = f"""
 <!DOCTYPE html>
 <html>
 <head>
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <style>
+        * {{
+            box-sizing: border-box;
+            -webkit-tap-highlight-color: transparent;
+        }}
         body {{
             margin: 0;
-            padding: 0;
+            padding: 4px 8px;
             background: #FFFFFF;
             font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
             text-align: center;
         }}
         .flag {{
-            width: 55px;
-            height: 36px;
-            margin-top: 2px;
-            margin-bottom: 2px;
+            width: 50px;
+            height: 32px;
+            margin: 2px auto;
+            display: block;
             border-radius: 3px;
             box-shadow: 0px 2px 4px rgba(0,0,0,0.2);
         }}
         h4 {{
-            margin: 0;
+            margin: 2px 0 0 0;
             color: #000000;
+            font-size: 15px;
             font-weight: 600;
         }}
-        h2 {{
-            font-size: 32px;
-            color: #000000;
-            margin: 6px 0;
-        }}
-        .english-text {{
-            color: #0066CC;
-            font-size: 20px;
+        .thai-card {{
+            font-size: 28px;
             font-weight: bold;
-            margin-bottom: 12px;
+            color: #000000;
+            margin: 8px 0;
+            min-height: 40px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
         }}
-        .hint-text {{
+        .translation-card {{
+            font-size: 18px;
+            font-weight: bold;
+            color: #0066CC;
+            min-height: 26px;
+            margin-bottom: 10px;
+        }}
+        .hint-card {{
+            font-size: 12px;
             color: #777777;
-            font-size: 13px;
-            margin-bottom: 12px;
+            min-height: 26px;
+            margin-bottom: 10px;
         }}
-        .btn-stack {{
+
+        /* Responsive Layout Grid */
+        .controls-container {{
             display: flex;
             flex-direction: column;
-            align-items: center;
             gap: 8px;
             width: 100%;
+            max-width: 420px;
+            margin: 0 auto;
         }}
-        .row-center {{
+        .btn-row {{
             display: flex;
-            justify-content: center;
             width: 100%;
-        }}
-        .row-three {{
-            display: flex;
             justify-content: center;
             gap: 6px;
-            width: 100%;
         }}
+
+        /* Universal Responsive Button Styling */
         .btn {{
             height: 42px;
-            font-weight: 900;
-            font-size: 13px;
             border-radius: 6px;
             border: 3px solid #000000;
-            box-sizing: border-box;
-            cursor: pointer;
+            font-weight: 900;
+            font-size: 13px;
             text-transform: uppercase;
             letter-spacing: 0.5px;
+            cursor: pointer;
             display: flex;
             align-items: center;
             justify-content: center;
-            text-decoration: none;
+            box-sizing: border-box;
+            transition: opacity 0.1s ease;
         }}
-        .btn-rev {{ width: 50%; background-color: #0066CC; color: #FFFFFF; }}
-        .btn-phr {{ width: 50%; background-color: #FF6600; color: #FFFFFF; }}
+        .btn:active {{
+            opacity: 0.75;
+        }}
+
+        /* Button Colors */
+        .btn-rev {{ width: 65%; background-color: #0066CC; color: #FFFFFF; }}
+        .btn-phr {{ width: 65%; background-color: #FF6600; color: #FFFFFF; }}
         .btn-nav {{ flex: 1; background-color: #1A202C; color: #FFFFFF; }}
         .btn-rnd {{ flex: 1; background-color: #28A745; color: #FFFFFF; }}
+
+        .divider {{
+            border: 0;
+            height: 1px;
+            background: #E2E8F0;
+            margin: 14px 0;
+        }}
+
+        .stt-output {{
+            color: #FF6600;
+            font-size: 26px;
+            font-weight: bold;
+            min-height: 36px;
+            margin-bottom: 2px;
+        }}
+        .stt-translation {{
+            color: #0066CC;
+            font-size: 18px;
+            font-weight: bold;
+            min-height: 24px;
+            margin-bottom: 8px;
+        }}
+        .btn-stt {{
+            width: 100%;
+            background-color: #FF6600;
+            color: #FFFFFF;
+        }}
+        .btn-hear {{
+            width: 100%;
+            background-color: #FFFFFF;
+            color: #FF6600;
+            border: 3px solid #FF6600;
+        }}
+
+        .meta-info {{
+            margin-top: 12px;
+            font-size: 11px;
+            color: #555555;
+            line-height: 1.4;
+        }}
     </style>
 </head>
 <body>
+
     <img src="https://upload.wikimedia.org/wikipedia/commons/a/a9/Flag_of_Thailand.svg" class="flag" alt="Flag">
     <h4>Thai Listening and Reading</h4>
-    <h2>{current_phrase['thai']}</h2>
 
-    {english_display}
+    <div id="thai-text" class="thai-card">--</div>
+    <div id="english-text" class="hint-card">Click "REVEAL" to view English translation</div>
 
-    <div class="btn-stack">
-        <div class="row-center">
-            <button class="btn btn-rev" id="btn-rev">REVEAL</button>
+    <div class="controls-container">
+        <div class="btn-row">
+            <button class="btn btn-rev" id="btn-reveal">REVEAL</button>
         </div>
-        <div class="row-center">
-            <button class="btn btn-phr" id="btn-phr">PHRASE</button>
+        <div class="btn-row">
+            <button class="btn btn-phr" id="btn-phrase">PHRASE</button>
         </div>
-        <div class="row-three">
+        <div class="btn-row">
             <button class="btn btn-nav" id="btn-back">BACK</button>
             <button class="btn btn-rnd" id="btn-rand">RANDOM</button>
             <button class="btn btn-nav" id="btn-next">NEXT</button>
         </div>
     </div>
 
-    <script>
-        function nav(params) {{
-            window.parent.location.search = "?" + params;
-        }}
-        document.getElementById('btn-rev').onclick = function() {{ nav("idx={current_idx}&rev={rev_toggle}&play=0"); }};
-        document.getElementById('btn-phr').onclick = function() {{ nav("idx={current_idx}&rev={1 if is_revealed else 0}&play=1"); }};
-        document.getElementById('btn-back').onclick = function() {{ nav("idx={prev_idx}&rev=0&play=1"); }};
-        document.getElementById('btn-rand').onclick = function() {{ nav("idx=" + Math.floor(Math.random() * {total}) + "&rev=0&play=1"); }};
-        document.getElementById('btn-next').onclick = function() {{ nav("idx={next_idx}&rev=0&play=1"); }};
-    </script>
-</body>
-</html>
-"""
+    <div class="divider"></div>
 
-components.html(top_app_html, height=280)
+    <div id="output" class="stt-output">Spoken Thai text...</div>
+    <div id="translation" class="stt-translation">English translation...</div>
 
-st.divider()
-
-# Speech Recognition Section
-st_speech_html = f"""
-<div style="text-align: center; font-family: sans-serif;">
-    <div id="output" style="color: #FF6600; font-size: 32px; font-weight: bold; min-height: 40px; margin-bottom: 2px;">
-        Spoken Thai text...
+    <div class="controls-container">
+        <button id="stt-btn" class="btn btn-stt">TRANSLATE</button>
+        <button id="speak-btn" class="btn btn-hear">HEAR SPOKEN THAI TEXT</button>
     </div>
-    
-    <div id="translation" style="color: #0066CC; font-size: 20px; font-weight: bold; min-height: 28px; margin-bottom: 8px;">
-        English translation...
-    </div>
-    
-    <button id="stt-btn" style="
-        background-color: #FF6600 !important;
-        color: #FFFFFF !important;
-        font-size: 14px !important;
-        font-weight: 900 !important;
-        border: 3px solid #000000 !important;
-        border-radius: 6px !important;
-        height: 42px !important;
-        line-height: 36px !important;
-        padding: 0px !important;
-        width: 100% !important;
-        cursor: pointer !important;
-        margin-bottom: 12px !important;
-        box-sizing: border-box !important;
-    ">TRANSLATE</button>
-    <br>
 
-    <button id="speak-btn" style="
-        background-color: #FFFFFF !important;
-        color: #FF6600 !important;
-        border: 3px solid #FF6600 !important;
-        font-size: 13px !important;
-        font-weight: 900 !important;
-        border-radius: 6px !important;
-        height: 42px !important;
-        line-height: 36px !important;
-        padding: 0px !important;
-        width: 100% !important;
-        cursor: pointer !important;
-        box-sizing: border-box !important;
-    ">HEAR SPOKEN THAI TEXT</button>
-
-    <div style="margin-top: 12px; font-size: 12px; color: #555555; line-height: 1.4;">
-        <div><b>Available Records:</b> {total}</div>
+    <div class="meta-info">
+        <div><b>Available Records:</b> {len(PHRASES_DB)}</div>
         <div><b>Spreadsheet Last Updated:</b> {SHEET_LAST_UPDATED}</div>
     </div>
-</div>
 
 <script>
-    const btn = document.getElementById('stt-btn');
+    const db = {phrases_json};
+    let currentIndex = 0;
+    let isRevealed = false;
+
+    const thaiText = document.getElementById('thai-text');
+    const englishText = document.getElementById('english-text');
+
+    function renderCard(playAudio = false) {{
+        if(!db || db.length === 0) return;
+        const item = db[currentIndex];
+        thaiText.innerText = item.thai;
+
+        if (isRevealed) {{
+            englishText.innerText = item.english;
+            englishText.className = "translation-card";
+        }} else {{
+            englishText.innerText = 'Click "REVEAL" to view English translation';
+            englishText.className = "hint-card";
+        }}
+
+        if (playAudio) {{
+            speakThai(item.thai);
+        }}
+    }}
+
+    function speakThai(text) {{
+        if ('speechSynthesis' in window) {{
+            window.speechSynthesis.cancel();
+            const utterance = new SpeechSynthesisUtterance(text);
+            utterance.lang = 'th-TH';
+            window.speechSynthesis.speak(utterance);
+        }}
+    }}
+
+    document.getElementById('btn-reveal').onclick = () => {{
+        isRevealed = !isRevealed;
+        renderCard(false);
+    }};
+
+    document.getElementById('btn-phrase').onclick = () => {{
+        speakThai(db[currentIndex].thai);
+    }};
+
+    document.getElementById('btn-back').onclick = () => {{
+        currentIndex = (currentIndex - 1 + db.length) % db.length;
+        isRevealed = false;
+        renderCard(true);
+    }};
+
+    document.getElementById('btn-rand').onclick = () => {{
+        currentIndex = Math.floor(Math.random() * db.length);
+        isRevealed = false;
+        renderCard(true);
+    }};
+
+    document.getElementById('btn-next').onclick = () => {{
+        currentIndex = (currentIndex + 1) % db.length;
+        isRevealed = false;
+        renderCard(true);
+    }};
+
+    // --- Speech Recognition ---
+    const sttBtn = document.getElementById('stt-btn');
     const speakBtn = document.getElementById('speak-btn');
     const output = document.getElementById('output');
     const translation = document.getElementById('translation');
-    
+
     const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
-    
+
     async function translateText(text) {{
         try {{
             translation.innerText = "Translating...";
@@ -290,9 +316,7 @@ st_speech_html = f"""
     speakBtn.onclick = () => {{
         const textToSpeak = output.innerText.trim();
         if (textToSpeak && textToSpeak !== "Spoken Thai text...") {{
-            const utterance = new SpeechSynthesisUtterance(textToSpeak);
-            utterance.lang = 'th-TH';
-            window.speechSynthesis.speak(utterance);
+            speakThai(textToSpeak);
         }}
     }};
 
@@ -301,11 +325,11 @@ st_speech_html = f"""
         recognition.lang = 'th-TH';
         recognition.interimResults = false;
 
-        btn.onclick = () => {{
+        sttBtn.onclick = () => {{
             try {{
                 recognition.start();
-                btn.innerText = "LISTENING...";
-                btn.style.backgroundColor = "#CC0000";
+                sttBtn.innerText = "LISTENING...";
+                sttBtn.style.backgroundColor = "#CC0000";
             }} catch(e) {{
                 recognition.stop();
             }}
@@ -314,25 +338,29 @@ st_speech_html = f"""
         recognition.onresult = (event) => {{
             const transcript = event.results[0][0].transcript;
             output.innerText = transcript;
-            btn.innerText = "TRANSLATE";
-            btn.style.backgroundColor = "#FF6600";
-            
+            sttBtn.innerText = "TRANSLATE";
+            sttBtn.style.backgroundColor = "#FF6600";
             translateText(transcript);
         }};
 
         recognition.onerror = () => {{
-            btn.innerText = "TRANSLATE";
-            btn.style.backgroundColor = "#FF6600";
+            sttBtn.innerText = "TRANSLATE";
+            sttBtn.style.backgroundColor = "#FF6600";
         }};
 
         recognition.onend = () => {{
-            btn.innerText = "TRANSLATE";
-            btn.style.backgroundColor = "#FF6600";
+            sttBtn.innerText = "TRANSLATE";
+            sttBtn.style.backgroundColor = "#FF6600";
         }};
     }} else {{
-        output.innerText = "Speech Recognition not supported in browser";
+        output.innerText = "Speech Recognition not supported";
     }}
+
+    // Initial render
+    renderCard(false);
 </script>
+</body>
+</html>
 """
 
-components.html(st_speech_html, height=260)
+components.html(full_app_html, height=560, scrolling=False)
