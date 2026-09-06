@@ -155,13 +155,15 @@ if st.session_state.auto_play:
     play_thai_audio(current_phrase["thai"])
     st.session_state.auto_play = False
 
-# 3. REVEAL, PHRASE, BACK, RANDOM, NEXT Buttons (Uniform Sizing via HTML Grid)
+# 3. REVEAL, PHRASE, BACK, RANDOM, NEXT Buttons
+# REVEAL and PHRASE are scaled inside a 3-column grid to match RANDOM's exact column width.
 action_buttons_html = """
 <div style="display: flex; flex-direction: column; align-items: center; gap: 8px; width: 100%;">
-    <!-- REVEAL Button (Identical dimensions to RANDOM) -->
-    <div style="width: 100%; display: flex; justify-content: center;">
+    <!-- Row 1: REVEAL Button (Sized to 1/3 column width like RANDOM) -->
+    <div style="display: flex; gap: 6px; width: 100%;">
+        <div style="flex: 1;"></div>
         <button onclick="window.top.location.href = window.top.location.pathname + '?action=toggle_reveal'" style="
-            width: 100%;
+            flex: 1;
             background-color: #0066CC;
             color: #FFFFFF;
             font-weight: 900;
@@ -172,12 +174,14 @@ action_buttons_html = """
             box-sizing: border-box;
             cursor: pointer;
         ">REVEAL</button>
+        <div style="flex: 1;"></div>
     </div>
 
-    <!-- PHRASE Button (Identical dimensions to RANDOM) -->
-    <div style="width: 100%; display: flex; justify-content: center;">
+    <!-- Row 2: PHRASE Button (Sized to 1/3 column width like RANDOM) -->
+    <div style="display: flex; gap: 6px; width: 100%;">
+        <div style="flex: 1;"></div>
         <button onclick="window.top.location.href = window.top.location.pathname + '?action=play_audio'" style="
-            width: 100%;
+            flex: 1;
             background-color: #FF6600;
             color: #FFFFFF;
             font-weight: 900;
@@ -188,9 +192,10 @@ action_buttons_html = """
             box-sizing: border-box;
             cursor: pointer;
         ">PHRASE</button>
+        <div style="flex: 1;"></div>
     </div>
 
-    <!-- BACK, RANDOM, NEXT Row -->
+    <!-- Row 3: BACK, RANDOM, NEXT Row -->
     <div style="display: flex; gap: 6px; width: 100%;">
         <button onclick="window.top.location.href = window.top.location.pathname + '?nav=prev'" style="
             flex: 1;
