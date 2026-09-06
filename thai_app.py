@@ -54,16 +54,11 @@ st.markdown("""
     .st-key-btn_rand button   { background-color: #28A745 !important; }
 
     /* Hide the native audio player visually (still functions/attempts
-       autoplay) so it doesn't take up space or shift the button layout. */
-    div[data-testid="stAudio"] {
-        position: absolute !important;
-        width: 0px !important;
-        height: 0px !important;
-        opacity: 0 !important;
-        overflow: hidden !important;
-        pointer-events: none !important;
-        margin: 0 !important;
-        padding: 0 !important;
+       autoplay) so it doesn't take up space or shift the button layout.
+       Note: the data-testid sits on the <audio> tag itself, not a
+       wrapping div - targeting "div[data-testid=stAudio]" never matches. */
+    audio[data-testid="stAudio"] {
+        display: none !important;
     }
     </style>
 """, unsafe_allow_html=True)
