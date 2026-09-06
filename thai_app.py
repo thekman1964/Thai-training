@@ -10,7 +10,7 @@ import streamlit.components.v1 as components
 
 st.set_page_config(layout="centered", page_title="Thai Practice")
 
-# --- GLOBAL STYLING (Targeting via explicit key selectors) ---
+# --- GLOBAL STYLING ---
 st.markdown("""
     <style>
     #MainMenu {visibility: hidden;}
@@ -28,58 +28,6 @@ st.markdown("""
         padding-bottom: 0rem !important;
         padding-left: 0.5rem !important;
         padding-right: 0.5rem !important;
-    }
-
-    /* Force 3 columns into 1 horizontal row on mobile */
-    div[data-testid="stHorizontalBlock"] {
-        display: flex !important;
-        flex-direction: row !important;
-        flex-wrap: nowrap !important;
-        width: 100% !important;
-        gap: 6px !important;
-    }
-
-    div[data-testid="stHorizontalBlock"] > div {
-        flex: 1 1 0% !important;
-        min-width: 0 !important;
-    }
-
-    /* Standard Button Dimensions */
-    div[data-testid="stButton"] > button {
-        width: 100% !important;
-        height: 44px !important;
-        border-radius: 6px !important;
-        border: none !important;
-        box-shadow: 0px 2px 4px rgba(0,0,0,0.15) !important;
-        font-weight: 800 !important;
-        font-size: 15px !important;
-    }
-
-    /* KEY-BASED DIRECT BUTTON COLOR TARGETING */
-    div[data-testid="stButton"] > button[key="btn_reveal"] {
-        background-color: #0066CC !important;
-        color: #FFFFFF !important;
-    }
-
-    div[data-testid="stButton"] > button[key="btn_phrase"] {
-        background-color: #FF6600 !important;
-        color: #FFFFFF !important;
-    }
-
-    div[data-testid="stButton"] > button[key="btn_back"],
-    div[data-testid="stButton"] > button[key="btn_next"] {
-        background-color: #1A202C !important;
-        color: #FFFFFF !important;
-    }
-
-    div[data-testid="stButton"] > button[key="btn_random"] {
-        background-color: #28A745 !important;
-        color: #FFFFFF !important;
-    }
-
-    /* Force text inside buttons to remain solid white */
-    div[data-testid="stButton"] > button p {
-        color: #FFFFFF !important;
     }
     </style>
 """, unsafe_allow_html=True)
@@ -119,7 +67,10 @@ def load_phrases_with_meta():
 PHRASES_DB, SHEET_LAST_UPDATED = load_phrases_with_meta()
 total = len(PHRASES_DB)
 
-# Initialize Session State
+# --- HANDLE ACTION FROM QUERY PARAMS ---
+params = st.query_params
+action = params.get("action", None)
+
 if "phrase_index" not in st.session_state:
     st.session_state.phrase_index = 0
 if "reveal" not in st.session_state:
@@ -127,9 +78,28 @@ if "reveal" not in st.session_state:
 if "play_audio" not in st.session_state:
     st.session_state.play_audio = False
 
+if action == "reveal":
+    st.session_state.reveal = not st.session_state.reveal
+    st.query_params.clear()
+elif action == "phrase":
+    st.session_state.play_audio = True
+    st.query_params.clear()
+elif action == "back":
+    st.session_state.phrase_index = (st.session_state.phrase_index - 1) % total
+    st.session_state.reveal = False
+    st.query_params.clear()
+elif action == "random":
+    st.session_state.phrase_index = random.randint(0, total - 1)
+    st.session_state.reveal = False
+    st.query_params.clear()
+elif action == "next":
+    st.session_state.phrase_index = (st.session_state.phrase_index + 1) % total
+    st.session_state.reveal = False
+    st.query_params.clear()
+
 current_phrase = PHRASES_DB[st.session_state.phrase_index]
 
-# Flag Header
+# Header
 st.markdown(
     """
     <div style="text-align: center; margin-top: 2px; margin-bottom: 2px;">
@@ -164,29 +134,57 @@ if st.session_state.play_audio:
     components.html(audio_html, height=0)
     st.session_state.play_audio = False
 
-# --- NATIVE CONTROL BUTTONS WITH EXPLICIT KEYS ---
-if st.button("REVEAL", use_container_width=True, key="btn_reveal"):
-    st.session_state.reveal = not st.session_state.reveal
+# --- BULLETPROOF BUTTON CONTAINER ---
+nav_buttons_html = """
+<style>
+    .btn-container {
+        display: flex;
+        flex-direction: column;
+        gap: 8px;
+        width: 100%;
+        box-sizing: border-box;
+        font-family: system-ui, -apple-system, sans-serif;
+    }
+    .btn-row {
+        display: flex;
+        gap: 6px;
+        width: 100%;
+    }
+    .btn {
+        width: 100%;
+        height: 44px;
+        border: none;
+        border-radius: 6px;
+        font-weight: 800;
+        font-size: 15px;
+        color: #FFFFFF;
+        cursor: pointer;
+        box-shadow: 0px 2px 4px rgba(0,0,0,0.15);
+    }
+    .btn-blue { background-color: #0066CC; }
+    .btn-orange { background-color: #FF6600; }
+    .btn-dark { background-color: #1A202C; }
+    .btn-green { background-color: #28A745; }
+</style>
 
-if st.button("PHRASE", use_container_width=True, key="btn_phrase"):
-    st.session_state.play_audio = True
+<div class="btn-container">
+    <button class="btn btn-blue" onclick="sendAction('reveal')">REVEAL</button>
+    <button class="btn btn-orange" onclick="sendAction('phrase')">PHRASE</button>
+    <div class="btn-row">
+        <button class="btn btn-dark" onclick="sendAction('back')">BACK</button>
+        <button class="btn btn-green" onclick="sendAction('random')">RANDOM</button>
+        <button class="btn btn-dark" onclick="sendAction('next')">NEXT</button>
+    </div>
+</div>
 
-col_back, col_rand, col_next = st.columns(3)
+<script>
+    function sendAction(action) {
+        window.top.location.href = window.top.location.pathname + '?action=' + action;
+    }
+</script>
+"""
 
-with col_back:
-    if st.button("BACK", use_container_width=True, key="btn_back"):
-        st.session_state.phrase_index = (st.session_state.phrase_index - 1) % total
-        st.session_state.reveal = False
-
-with col_rand:
-    if st.button("RANDOM", use_container_width=True, key="btn_random"):
-        st.session_state.phrase_index = random.randint(0, total - 1)
-        st.session_state.reveal = False
-
-with col_next:
-    if st.button("NEXT", use_container_width=True, key="btn_next"):
-        st.session_state.phrase_index = (st.session_state.phrase_index + 1) % total
-        st.session_state.reveal = False
+components.html(nav_buttons_html, height=155)
 
 st.markdown("<hr style='margin: 8px 0;'>", unsafe_allow_html=True)
 
