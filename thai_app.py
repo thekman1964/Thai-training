@@ -10,7 +10,7 @@ import streamlit.components.v1 as components
 
 st.set_page_config(layout="centered", page_title="Thai Practice")
 
-# --- Mobile Compact & Precise Button Styling ---
+# --- Mobile Compact & Precise Styling ---
 st.markdown("""
     <style>
     /* Hide top Streamlit header bar, main menu, and footer */
@@ -31,7 +31,7 @@ st.markdown("""
         padding-right: 0.5rem !important;
     }
 
-    /* Base Styling for All Streamlit Buttons */
+    /* Base Styling for Native Streamlit Buttons */
     div.stButton > button {
         font-size: 14px !important;
         font-weight: bold !important;
@@ -43,65 +43,21 @@ st.markdown("""
         white-space: nowrap !important;
         margin-top: 2px !important;
         margin-bottom: 2px !important;
-        border: none !important;
         width: 100% !important;
     }
 
-    /* Wrapper-Based Targeted Styling */
-    
     /* REVEAL Button (Blue) */
-    .btn-reveal-wrapper div.stButton > button {
+    div[data-testid="stVerticalBlock"] > div:nth-child(5) button {
         background-color: #0066CC !important;
-        color: #FFFFFF !important;
-    }
-
-    /* PHRASE Button (Orange, No Border) */
-    .btn-phrase-wrapper div.stButton > button {
-        background-color: #FF6600 !important;
         color: #FFFFFF !important;
         border: none !important;
     }
 
-    /* BACK Button (Solid White Border) */
-    .btn-back-wrapper div.stButton > button {
-        background-color: #1A202C !important;
+    /* PHRASE Button (Orange) */
+    div[data-testid="stVerticalBlock"] > div:nth-child(6) button {
+        background-color: #FF6600 !important;
         color: #FFFFFF !important;
-        font-weight: 900 !important;
-        border: 2px solid #FFFFFF !important;
-        box-sizing: border-box !important;
-    }
-
-    /* RANDOM Button (Thick Black Border) */
-    .btn-random-wrapper div.stButton > button {
-        background-color: #28A745 !important;
-        color: #FFFFFF !important;
-        font-weight: 900 !important;
-        border: 3px solid #000000 !important;
-        box-sizing: border-box !important;
-    }
-
-    /* NEXT Button (Solid White Border) */
-    .btn-next-wrapper div.stButton > button {
-        background-color: #1A202C !important;
-        color: #FFFFFF !important;
-        font-weight: 900 !important;
-        border: 2px solid #FFFFFF !important;
-        box-sizing: border-box !important;
-    }
-
-    /* FORCE HORIZONTAL ROW ON MOBILE */
-    div[data-testid="stHorizontalBlock"] {
-        display: flex !important;
-        flex-direction: row !important;
-        flex-wrap: nowrap !important;
-        gap: 4px !important;
-        margin-top: 4px !important;
-        margin-bottom: 4px !important;
-    }
-
-    div[data-testid="stHorizontalBlock"] > div {
-        flex: 1 1 0px !important;
-        min-width: 0 !important;
+        border: none !important;
     }
 
     hr {
@@ -175,6 +131,21 @@ if "reveal" not in st.session_state:
 if "auto_play" not in st.session_state:
     st.session_state.auto_play = False
 
+# Handle Query Parameters for HTML-based Navigation
+query_params = st.query_params
+if "nav" in query_params:
+    action = query_params["nav"]
+    if action == "prev":
+        st.session_state.phrase_index = (st.session_state.phrase_index - 1) % total
+    elif action == "rand":
+        st.session_state.phrase_index = random.randint(0, total - 1)
+    elif action == "next":
+        st.session_state.phrase_index = (st.session_state.phrase_index + 1) % total
+    st.session_state.reveal = False
+    st.session_state.auto_play = True
+    st.query_params.clear()
+    st.rerun()
+
 current_phrase = PHRASES_DB[st.session_state.phrase_index]
 
 # 0. Waving Thailand Flag Header Image
@@ -202,53 +173,64 @@ else:
 # 3. REVEAL Button (Blue)
 _, col_rev, _ = st.columns([1, 4, 1])
 with col_rev:
-    st.markdown('<div class="btn-reveal-wrapper">', unsafe_allow_html=True)
     if st.button("REVEAL", key="btn_reveal", use_container_width=True):
         st.session_state.reveal = not st.session_state.reveal
-    st.markdown('</div>', unsafe_allow_html=True)
 
 # 4. PHRASE Button (Orange)
 _, col_play, _ = st.columns([1, 4, 1])
 with col_play:
-    st.markdown('<div class="btn-phrase-wrapper">', unsafe_allow_html=True)
     if st.button("PHRASE", key="btn_play", use_container_width=True):
         play_thai_audio(current_phrase["thai"])
-    st.markdown('</div>', unsafe_allow_html=True)
 
 # Trigger audio playback if requested by Navigation
 if st.session_state.auto_play:
     play_thai_audio(current_phrase["thai"])
     st.session_state.auto_play = False
 
-# 5. BACK, RANDOM, NEXT Buttons
-nav_col1, nav_col2, nav_col3 = st.columns([1, 1, 1])
+# 5. BACK, RANDOM, NEXT Buttons (Rendered via HTML/CSS Component)
+nav_html = """
+<div style="display: flex; gap: 6px; margin-top: 4px; margin-bottom: 4px; width: 100%;">
+    <button onclick="window.top.location.href = window.top.location.pathname + '?nav=prev'" style="
+        flex: 1;
+        background-color: #1A202C;
+        color: #FFFFFF;
+        font-weight: 900;
+        font-size: 14px;
+        border-radius: 6px;
+        height: 40px;
+        border: 2px solid #000000;
+        box-sizing: border-box;
+        cursor: pointer;
+    ">BACK</button>
 
-with nav_col1:
-    st.markdown('<div class="btn-back-wrapper">', unsafe_allow_html=True)
-    if st.button("**BACK**", key="btn_prev", use_container_width=True):
-        st.session_state.phrase_index = (st.session_state.phrase_index - 1) % total
-        st.session_state.reveal = False
-        st.session_state.auto_play = True
-        st.rerun()
-    st.markdown('</div>', unsafe_allow_html=True)
+    <button onclick="window.top.location.href = window.top.location.pathname + '?nav=rand'" style="
+        flex: 1;
+        background-color: #28A745;
+        color: #FFFFFF;
+        font-weight: 900;
+        font-size: 14px;
+        border-radius: 6px;
+        height: 40px;
+        border: 3px solid #000000;
+        box-sizing: border-box;
+        cursor: pointer;
+    ">RANDOM</button>
 
-with nav_col2:
-    st.markdown('<div class="btn-random-wrapper">', unsafe_allow_html=True)
-    if st.button("**RANDOM**", key="btn_rand", use_container_width=True):
-        st.session_state.phrase_index = random.randint(0, total - 1)
-        st.session_state.reveal = False
-        st.session_state.auto_play = True
-        st.rerun()
-    st.markdown('</div>', unsafe_allow_html=True)
-
-with nav_col3:
-    st.markdown('<div class="btn-next-wrapper">', unsafe_allow_html=True)
-    if st.button("**NEXT**", key="btn_next", use_container_width=True):
-        st.session_state.phrase_index = (st.session_state.phrase_index + 1) % total
-        st.session_state.reveal = False
-        st.session_state.auto_play = True
-        st.rerun()
-    st.markdown('</div>', unsafe_allow_html=True)
+    <button onclick="window.top.location.href = window.top.location.pathname + '?nav=next'" style="
+        flex: 1;
+        background-color: #1A202C;
+        color: #FFFFFF;
+        font-weight: 900;
+        font-size: 14px;
+        border-radius: 6px;
+        height: 40px;
+        border: 2px solid #000000;
+        box-sizing: border-box;
+        cursor: pointer;
+    ">NEXT</button>
+</div>
+"""
+components.html(nav_html, height=48)
 
 st.divider()
 
