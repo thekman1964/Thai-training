@@ -31,35 +31,6 @@ st.markdown("""
         padding-right: 0.5rem !important;
     }
 
-    /* Base Styling for Native Streamlit Buttons */
-    div.stButton > button {
-        font-size: 14px !important;
-        font-weight: bold !important;
-        border-radius: 6px !important;
-        height: 40px !important;
-        min-height: 40px !important;
-        padding: 0px !important;
-        line-height: 40px !important;
-        white-space: nowrap !important;
-        margin-top: 2px !important;
-        margin-bottom: 2px !important;
-        width: 100% !important;
-    }
-
-    /* REVEAL Button (Blue) */
-    div[data-testid="stVerticalBlock"] > div:nth-child(5) button {
-        background-color: #0066CC !important;
-        color: #FFFFFF !important;
-        border: none !important;
-    }
-
-    /* PHRASE Button (Orange) */
-    div[data-testid="stVerticalBlock"] > div:nth-child(6) button {
-        background-color: #FF6600 !important;
-        color: #FFFFFF !important;
-        border: none !important;
-    }
-
     hr {
         margin: 6px 0px !important;
     }
@@ -131,8 +102,17 @@ if "reveal" not in st.session_state:
 if "auto_play" not in st.session_state:
     st.session_state.auto_play = False
 
-# Handle Query Parameters for HTML-based Navigation
+# Handle Query Parameters for HTML-based Actions & Navigation
 query_params = st.query_params
+if "action" in query_params:
+    act = query_params["action"]
+    if act == "toggle_reveal":
+        st.session_state.reveal = not st.session_state.reveal
+    elif act == "play_audio":
+        st.session_state.auto_play = True
+    st.query_params.clear()
+    st.rerun()
+
 if "nav" in query_params:
     action = query_params["nav"]
     if action == "prev":
@@ -170,24 +150,52 @@ if st.session_state.reveal:
 else:
     st.markdown("<p style='text-align: center; color: #777777; font-size: 13px; margin-bottom: 4px;'>Click \"REVEAL\" to view English translation</p>", unsafe_allow_html=True)
 
-# 3. REVEAL Button (Blue)
-_, col_rev, _ = st.columns([1, 4, 1])
-with col_rev:
-    if st.button("REVEAL", key="btn_reveal", use_container_width=True):
-        st.session_state.reveal = not st.session_state.reveal
+# 3. REVEAL Button (Sized/Bordered Identically to RANDOM Button)
+reveal_html = """
+<div style="display: flex; justify-content: center; width: 100%; margin-bottom: 6px;">
+    <button onclick="window.top.location.href = window.top.location.pathname + '?action=toggle_reveal'" style="
+        width: 100%;
+        max-width: 260px;
+        background-color: #0066CC;
+        color: #FFFFFF;
+        font-weight: 900;
+        font-size: 14px;
+        border-radius: 6px;
+        height: 40px;
+        border: 3px solid #000000;
+        box-sizing: border-box;
+        cursor: pointer;
+    ">REVEAL</button>
+</div>
+"""
+components.html(reveal_html, height=46)
 
-# 4. PHRASE Button (Orange)
-_, col_play, _ = st.columns([1, 4, 1])
-with col_play:
-    if st.button("PHRASE", key="btn_play", use_container_width=True):
-        play_thai_audio(current_phrase["thai"])
+# 4. PHRASE Button (Sized/Bordered Identically to RANDOM Button)
+phrase_html = """
+<div style="display: flex; justify-content: center; width: 100%; margin-bottom: 6px;">
+    <button onclick="window.top.location.href = window.top.location.pathname + '?action=play_audio'" style="
+        width: 100%;
+        max-width: 260px;
+        background-color: #FF6600;
+        color: #FFFFFF;
+        font-weight: 900;
+        font-size: 14px;
+        border-radius: 6px;
+        height: 40px;
+        border: 3px solid #000000;
+        box-sizing: border-box;
+        cursor: pointer;
+    ">PHRASE</button>
+</div>
+"""
+components.html(phrase_html, height=46)
 
-# Trigger audio playback if requested by Navigation
+# Trigger audio playback if requested
 if st.session_state.auto_play:
     play_thai_audio(current_phrase["thai"])
     st.session_state.auto_play = False
 
-# 5. BACK, RANDOM, NEXT Buttons (Rendered via HTML/CSS Component)
+# 5. BACK, RANDOM, NEXT Buttons (Row Layout)
 nav_html = """
 <div style="display: flex; gap: 6px; margin-top: 4px; margin-bottom: 4px; width: 100%;">
     <button onclick="window.top.location.href = window.top.location.pathname + '?nav=prev'" style="
@@ -198,7 +206,7 @@ nav_html = """
         font-size: 14px;
         border-radius: 6px;
         height: 40px;
-        border: 2px solid #000000;
+        border: 3px solid #000000;
         box-sizing: border-box;
         cursor: pointer;
     ">BACK</button>
@@ -224,7 +232,7 @@ nav_html = """
         font-size: 14px;
         border-radius: 6px;
         height: 40px;
-        border: 2px solid #000000;
+        border: 3px solid #000000;
         box-sizing: border-box;
         cursor: pointer;
     ">NEXT</button>
@@ -252,13 +260,13 @@ st_speech_html = f"""
         background-color: #FF6600 !important;
         color: #FFFFFF !important;
         font-size: 14px !important;
-        font-weight: bold !important;
-        border: none !important;
+        font-weight: 900 !important;
+        border: 3px solid #000000 !important;
         border-radius: 6px !important;
         height: 40px !important;
-        line-height: 40px !important;
+        line-height: 34px !important;
         padding: 0px !important;
-        width: 49% !important;
+        width: 100% !important;
         max-width: 260px !important;
         cursor: pointer !important;
         margin-bottom: 12px !important;
@@ -270,14 +278,14 @@ st_speech_html = f"""
     <button id="speak-btn" style="
         background-color: #FFFFFF !important;
         color: #FF6600 !important;
-        border: 2px solid #FF6600 !important;
+        border: 3px solid #FF6600 !important;
         font-size: 13px !important;
-        font-weight: bold !important;
+        font-weight: 900 !important;
         border-radius: 6px !important;
         height: 40px !important;
-        line-height: 36px !important;
+        line-height: 34px !important;
         padding: 0px !important;
-        width: 49% !important;
+        width: 100% !important;
         max-width: 260px !important;
         cursor: pointer !important;
         box-sizing: border-box !important;
