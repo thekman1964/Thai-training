@@ -31,7 +31,7 @@ st.markdown("""
         padding-right: 0.5rem !important;
     }
 
-    /* Native Streamlit Button Overrides */
+    /* Native Streamlit Button Overrides (base look for ALL buttons) */
     div.stButton > button {
         font-size: 14px !important;
         font-weight: 900 !important;
@@ -47,30 +47,35 @@ st.markdown("""
         box-sizing: border-box !important;
     }
 
-    /* REVEAL Button Styling (Blue with 3px border) */
-    div[data-testid="stVerticalBlock"] > div:nth-child(5) button {
+    /* --- Per-button colors, targeted by widget KEY (not sibling position) ---
+         Streamlit auto-generates a .st-key-<key> class on each keyed widget's
+         wrapper, so these selectors always hit the correct, single button
+         regardless of how the surrounding layout/DOM changes. */
+
+    /* REVEAL Button (Blue) */
+    .st-key-btn_reveal button {
         background-color: #0066CC !important;
         color: #FFFFFF !important;
         border: 3px solid #000000 !important;
     }
 
-    /* PHRASE Button Styling (Orange with 3px border) */
-    div[data-testid="stVerticalBlock"] > div:nth-child(6) button {
+    /* PHRASE Button (Orange) */
+    .st-key-btn_phrase button {
         background-color: #FF6600 !important;
         color: #FFFFFF !important;
         border: 3px solid #000000 !important;
     }
 
-    /* BACK & NEXT Buttons (Dark Gray with 3px border) */
-    div[data-testid="stColumn"]:nth-child(1) button,
-    div[data-testid="stColumn"]:nth-child(3) button {
+    /* BACK & NEXT Buttons (Dark Gray) */
+    .st-key-btn_back button,
+    .st-key-btn_next button {
         background-color: #1A202C !important;
         color: #FFFFFF !important;
         border: 3px solid #000000 !important;
     }
 
-    /* RANDOM Button (Green with 3px border) */
-    div[data-testid="stColumn"]:nth-child(2) button {
+    /* RANDOM Button (Green) */
+    .st-key-btn_rand button {
         background-color: #28A745 !important;
         color: #FFFFFF !important;
         border: 3px solid #000000 !important;
@@ -88,7 +93,7 @@ def play_thai_audio(text):
     fp = io.BytesIO()
     tts.write_to_fp(fp)
     b64_audio = base64.b64encode(fp.getvalue()).decode()
-    
+
     audio_key = int(time.time() * 1000)
     audio_html = f"""
     <audio id="audio_{audio_key}" autoplay style="display:none;">
@@ -110,7 +115,7 @@ def load_phrases_with_meta():
     sheet_id = "1_vMSPtMo3-JD2qARp4zwrcvNrhEuSKHQVEOT1IMwgFw"
     url = f"https://docs.google.com/spreadsheets/d/{sheet_id}/export?format=csv"
     last_updated = "Unknown"
-    
+
     try:
         head_res = requests.head(url)
         if "Last-Modified" in head_res.headers:
@@ -171,11 +176,6 @@ if st.session_state.reveal:
 else:
     st.markdown("<p style='text-align: center; color: #777777; font-size: 13px; margin-bottom: 4px;'>Click \"REVEAL\" to view English translation</p>", unsafe_allow_html=True)
 
-# Trigger audio playback if auto-play flag is set
-if st.session_state.auto_play:
-    play_thai_audio(current_phrase["thai"])
-    st.session_state.auto_play = False
-
 # --- NATIVE STREAMLIT RESPONSIVE BUTTONS ---
 # Row 1: REVEAL (Centered, exactly 1/3 width)
 _, col_rev, _ = st.columns([1, 1, 1])
@@ -212,6 +212,13 @@ with col_next:
         st.session_state.reveal = False
         st.session_state.auto_play = True
         st.rerun()
+
+# Trigger audio playback if auto-play flag is set.
+# NOTE: this is placed AFTER the buttons (not before) so the invisible
+# audio iframe never sits on top of the button row and can't intercept clicks.
+if st.session_state.auto_play:
+    play_thai_audio(current_phrase["thai"])
+    st.session_state.auto_play = False
 
 st.divider()
 
