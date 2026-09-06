@@ -10,7 +10,7 @@ import streamlit.components.v1 as components
 
 st.set_page_config(layout="centered", page_title="Thai Practice")
 
-# --- Page Layout & Global Styling ---
+# --- Page Setup & Pure CSS Styling ---
 st.markdown("""
     <style>
     #MainMenu, header, footer, div[data-testid="stHeader"] { visibility: hidden; display: none; }
@@ -24,11 +24,10 @@ st.markdown("""
         padding: 0.2rem 0.5rem 0rem 0.5rem !important;
     }
 
-    /* Keep row elements side-by-side on mobile without vertical stacking */
+    /* Keep side-by-side buttons aligned on mobile */
     [data-testid="stHorizontalBlock"] {
         display: flex !important;
         flex-direction: row !important;
-        flex-wrap: nowrap !important;
         gap: 6px !important;
         width: 100% !important;
     }
@@ -38,10 +37,10 @@ st.markdown("""
         min-width: 0 !important;
     }
 
-    /* Universal Streamlit Button Base Styling */
+    /* Base Styling for Native Streamlit Buttons */
     div.stButton > button {
         width: 100% !important;
-        height: 40px !important;
+        height: 42px !important;
         border-radius: 6px !important;
         border: 3px solid #000000 !important;
         box-sizing: border-box !important;
@@ -57,17 +56,16 @@ st.markdown("""
         letter-spacing: 0.5px !important;
     }
 
-    /* Custom Colors Assigned via Container Wrappers */
-    #btn-reveal button { background-color: #0066CC !important; }
-    #btn-phrase button { background-color: #FF6600 !important; }
-    #btn-back button, #btn-next button { background-color: #1A202C !important; }
-    #btn-rand button { background-color: #28A745 !important; }
+    /* Dynamic Button Colors via Wrapper Keys */
+    .btn-rev button { background-color: #0066CC !important; }
+    .btn-phr button { background-color: #FF6600 !important; }
+    .btn-nav button { background-color: #1A202C !important; }
+    .btn-rnd button { background-color: #28A745 !important; }
 
     hr { margin: 10px 0px !important; }
     </style>
 """, unsafe_allow_html=True)
 
-# Helper function to play audio dynamically
 def play_thai_audio(text):
     tts = gTTS(text=text, lang='th')
     fp = io.BytesIO()
@@ -89,7 +87,6 @@ def play_thai_audio(text):
     """
     components.html(audio_html, height=0)
 
-# Fetch phrases from Google Sheet along with last updated timestamp
 @st.cache_data(ttl=600)
 def load_phrases_with_meta():
     sheet_id = "1_vMSPtMo3-JD2qARp4zwrcvNrhEuSKHQVEOT1IMwgFw"
@@ -133,7 +130,7 @@ if "auto_play" not in st.session_state:
 
 current_phrase = PHRASES_DB[st.session_state.phrase_index]
 
-# Header Flag
+# Flag Header
 st.markdown(
     """
     <div style="text-align: center; margin-top: 2px; margin-bottom: 2px;">
@@ -157,25 +154,27 @@ if st.session_state.auto_play:
     play_thai_audio(current_phrase["thai"])
     st.session_state.auto_play = False
 
-# Native Action Buttons Wrapper
-r1_c1, r1_c2, r1_c3 = st.columns([1, 1.2, 1])
-with r1_c2:
-    st.markdown('<div id="btn-reveal">', unsafe_allow_html=True)
+# Button Row 1: REVEAL
+_, col_rev, _ = st.columns([1, 1.4, 1])
+with col_rev:
+    st.markdown('<div class="btn-rev">', unsafe_allow_html=True)
     if st.button("REVEAL", key="k_rev"):
         st.session_state.reveal = not st.session_state.reveal
         st.rerun()
     st.markdown('</div>', unsafe_allow_html=True)
 
-r2_c1, r2_c2, r2_c3 = st.columns([1, 1.2, 1])
-with r2_c2:
-    st.markdown('<div id="btn-phrase">', unsafe_allow_html=True)
+# Button Row 2: PHRASE
+_, col_phr, _ = st.columns([1, 1.4, 1])
+with col_phr:
+    st.markdown('<div class="btn-phr">', unsafe_allow_html=True)
     if st.button("PHRASE", key="k_phr"):
         play_thai_audio(current_phrase["thai"])
     st.markdown('</div>', unsafe_allow_html=True)
 
-c_back, c_rand, c_next = st.columns([1, 1, 1])
+# Button Row 3: BACK / RANDOM / NEXT
+c_back, c_rand, c_next = st.columns(3)
 with c_back:
-    st.markdown('<div id="btn-back">', unsafe_allow_html=True)
+    st.markdown('<div class="btn-nav">', unsafe_allow_html=True)
     if st.button("BACK", key="k_back"):
         st.session_state.phrase_index = (st.session_state.phrase_index - 1) % total
         st.session_state.reveal = False
@@ -184,7 +183,7 @@ with c_back:
     st.markdown('</div>', unsafe_allow_html=True)
 
 with c_rand:
-    st.markdown('<div id="btn-rand">', unsafe_allow_html=True)
+    st.markdown('<div class="btn-rnd">', unsafe_allow_html=True)
     if st.button("RANDOM", key="k_rand"):
         st.session_state.phrase_index = random.randint(0, total - 1)
         st.session_state.reveal = False
@@ -193,7 +192,7 @@ with c_rand:
     st.markdown('</div>', unsafe_allow_html=True)
 
 with c_next:
-    st.markdown('<div id="btn-next">', unsafe_allow_html=True)
+    st.markdown('<div class="btn-nav">', unsafe_allow_html=True)
     if st.button("NEXT", key="k_next"):
         st.session_state.phrase_index = (st.session_state.phrase_index + 1) % total
         st.session_state.reveal = False
