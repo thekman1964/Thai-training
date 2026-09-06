@@ -10,13 +10,10 @@ import streamlit.components.v1 as components
 
 st.set_page_config(layout="centered", page_title="Thai Practice")
 
-# --- Page Setup ---
+# --- Page Layout & Global Styling ---
 st.markdown("""
     <style>
-    #MainMenu {visibility: hidden;}
-    header {visibility: hidden;}
-    footer {visibility: hidden;}
-    div[data-testid="stHeader"] {display: none;}
+    #MainMenu, header, footer, div[data-testid="stHeader"] { visibility: hidden; display: none; }
 
     .stApp {
         background-color: #FFFFFF !important;
@@ -24,15 +21,49 @@ st.markdown("""
     }
 
     .block-container {
-        padding-top: 0.2rem !important;
-        padding-bottom: 0rem !important;
-        padding-left: 0.5rem !important;
-        padding-right: 0.5rem !important;
+        padding: 0.2rem 0.5rem 0rem 0.5rem !important;
     }
 
-    hr {
-        margin: 10px 0px !important;
+    /* Keep row elements side-by-side on mobile without vertical stacking */
+    [data-testid="stHorizontalBlock"] {
+        display: flex !important;
+        flex-direction: row !important;
+        flex-wrap: nowrap !important;
+        gap: 6px !important;
+        width: 100% !important;
     }
+
+    [data-testid="stColumn"] {
+        flex: 1 1 0% !important;
+        min-width: 0 !important;
+    }
+
+    /* Universal Streamlit Button Base Styling */
+    div.stButton > button {
+        width: 100% !important;
+        height: 40px !important;
+        border-radius: 6px !important;
+        border: 3px solid #000000 !important;
+        box-sizing: border-box !important;
+        cursor: pointer !important;
+        padding: 0px !important;
+    }
+
+    div.stButton > button p {
+        color: #FFFFFF !important;
+        font-weight: 900 !important;
+        font-size: 13px !important;
+        text-transform: uppercase !important;
+        letter-spacing: 0.5px !important;
+    }
+
+    /* Custom Colors Assigned via Container Wrappers */
+    #btn-reveal button { background-color: #0066CC !important; }
+    #btn-phrase button { background-color: #FF6600 !important; }
+    #btn-back button, #btn-next button { background-color: #1A202C !important; }
+    #btn-rand button { background-color: #28A745 !important; }
+
+    hr { margin: 10px 0px !important; }
     </style>
 """, unsafe_allow_html=True)
 
@@ -102,149 +133,73 @@ if "auto_play" not in st.session_state:
 
 current_phrase = PHRASES_DB[st.session_state.phrase_index]
 
-# Play audio if triggered
+# Header Flag
+st.markdown(
+    """
+    <div style="text-align: center; margin-top: 2px; margin-bottom: 2px;">
+        <img src="https://upload.wikimedia.org/wikipedia/commons/a/a9/Flag_of_Thailand.svg" 
+             alt="Thailand Flag" 
+             style="width: 55px; height: 36px; display: inline-block; border-radius: 3px; box-shadow: 0px 2px 4px rgba(0,0,0,0.2);">
+    </div>
+    """,
+    unsafe_allow_html=True
+)
+
+st.markdown("<h4 style='text-align: center; color: #000000; margin: 0px;'>Thai Listening and Reading</h4>", unsafe_allow_html=True)
+st.markdown(f"<h2 style='text-align: center; font-size: 32px; color: #000000; margin: 4px 0;'>{current_phrase['thai']}</h2>", unsafe_allow_html=True)
+
+if st.session_state.reveal:
+    st.markdown(f"<p style='text-align: center; color: #0066CC; font-size: 20px; font-weight: bold; margin-bottom: 8px;'>{current_phrase['english']}</p>", unsafe_allow_html=True)
+else:
+    st.markdown("<p style='text-align: center; color: #777777; font-size: 13px; margin-bottom: 8px;'>Click \"REVEAL\" to view English translation</p>", unsafe_allow_html=True)
+
 if st.session_state.auto_play:
     play_thai_audio(current_phrase["thai"])
     st.session_state.auto_play = False
 
-# --- Combined HTML App Component ---
-app_html = f"""
-<!DOCTYPE html>
-<html>
-<head>
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <style>
-        body {{
-            margin: 0;
-            padding: 0;
-            background: #FFFFFF;
-            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
-            text-align: center;
-        }}
-        .flag {{
-            width: 55px;
-            height: 36px;
-            margin-top: 2px;
-            margin-bottom: 2px;
-            border-radius: 3px;
-            box-shadow: 0px 2px 4px rgba(0,0,0,0.2);
-        }}
-        h4 {{
-            margin: 0;
-            color: #000000;
-            font-weight: 600;
-        }}
-        h2 {{
-            font-size: 32px;
-            color: #000000;
-            margin: 4px 0;
-        }}
-        .english-text {{
-            color: #0066CC;
-            font-size: 20px;
-            font-weight: bold;
-            margin-bottom: 8px;
-        }}
-        .hint-text {{
-            color: #777777;
-            font-size: 13px;
-            margin-bottom: 8px;
-        }}
-        .btn-container {{
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            gap: 8px;
-            width: 100%;
-        }}
-        .row-center {{
-            display: flex;
-            justify-content: center;
-            width: 100%;
-        }}
-        .row-three {{
-            display: flex;
-            gap: 6px;
-            width: 100%;
-        }}
-        button {{
-            height: 40px;
-            font-weight: 900;
-            font-size: 13px;
-            border-radius: 6px;
-            border: 3px solid #000000;
-            box-sizing: border-box;
-            cursor: pointer;
-            text-transform: uppercase;
-            letter-spacing: 0.5px;
-        }}
-        .btn-reveal {{ width: 35%; background-color: #0066CC; color: #FFFFFF; }}
-        .btn-phrase {{ width: 35%; background-color: #FF6600; color: #FFFFFF; }}
-        .btn-back, .btn-next {{ flex: 1; background-color: #1A202C; color: #FFFFFF; }}
-        .btn-rand {{ flex: 1; background-color: #28A745; color: #FFFFFF; }}
-    </style>
-</head>
-<body>
-
-    <img src="https://upload.wikimedia.org/wikipedia/commons/a/a9/Flag_of_Thailand.svg" class="flag" alt="Thailand Flag">
-    <h4>Thai Listening and Reading</h4>
-    <h2>{current_phrase['thai']}</h2>
-
-    {"<div class='english-text'>" + current_phrase['english'] + "</div>" if st.session_state.reveal else "<div class='hint-text'>Click \"REVEAL\" to view English translation</div>"}
-
-    <div class="btn-container">
-        <div class="row-center">
-            <button class="btn-reveal" onclick="sendAction('rev')">REVEAL</button>
-        </div>
-        <div class="row-center">
-            <button class="btn-phrase" onclick="sendAction('phr')">PHRASE</button>
-        </div>
-        <div class="row-three">
-            <button class="btn-back" onclick="sendAction('back')">BACK</button>
-            <button class="btn-rand" onclick="sendAction('rand')">RANDOM</button>
-            <button class="btn-next" onclick="sendAction('next')">NEXT</button>
-        </div>
-    </div>
-
-    <script>
-        function sendAction(actionVal) {{
-            const payload = actionVal + '_' + Date.now();
-            if (window.parent && window.parent.postMessage) {{
-                window.parent.postMessage({{
-                    isStreamlitMessage: true,
-                    type: "streamlit:setComponentValue",
-                    value: payload
-                }}, "*");
-            }}
-        }}
-    </script>
-</body>
-</html>
-"""
-
-# Render combined HTML UI Component
-selected_action = components.html(app_html, height=220)
-
-# Process trigger events
-if selected_action:
-    action_type = str(selected_action).split('_')[0]
-    if action_type == "rev":
+# Native Action Buttons Wrapper
+r1_c1, r1_c2, r1_c3 = st.columns([1, 1.2, 1])
+with r1_c2:
+    st.markdown('<div id="btn-reveal">', unsafe_allow_html=True)
+    if st.button("REVEAL", key="k_rev"):
         st.session_state.reveal = not st.session_state.reveal
-    elif action_type == "phr":
-        st.session_state.auto_play = True
-    elif action_type == "back":
+        st.rerun()
+    st.markdown('</div>', unsafe_allow_html=True)
+
+r2_c1, r2_c2, r2_c3 = st.columns([1, 1.2, 1])
+with r2_c2:
+    st.markdown('<div id="btn-phrase">', unsafe_allow_html=True)
+    if st.button("PHRASE", key="k_phr"):
+        play_thai_audio(current_phrase["thai"])
+    st.markdown('</div>', unsafe_allow_html=True)
+
+c_back, c_rand, c_next = st.columns([1, 1, 1])
+with c_back:
+    st.markdown('<div id="btn-back">', unsafe_allow_html=True)
+    if st.button("BACK", key="k_back"):
         st.session_state.phrase_index = (st.session_state.phrase_index - 1) % total
         st.session_state.reveal = False
         st.session_state.auto_play = True
-    elif action_type == "rand":
+        st.rerun()
+    st.markdown('</div>', unsafe_allow_html=True)
+
+with c_rand:
+    st.markdown('<div id="btn-rand">', unsafe_allow_html=True)
+    if st.button("RANDOM", key="k_rand"):
         st.session_state.phrase_index = random.randint(0, total - 1)
         st.session_state.reveal = False
         st.session_state.auto_play = True
-    elif action_type == "next":
+        st.rerun()
+    st.markdown('</div>', unsafe_allow_html=True)
+
+with c_next:
+    st.markdown('<div id="btn-next">', unsafe_allow_html=True)
+    if st.button("NEXT", key="k_next"):
         st.session_state.phrase_index = (st.session_state.phrase_index + 1) % total
         st.session_state.reveal = False
         st.session_state.auto_play = True
-    st.rerun()
+        st.rerun()
+    st.markdown('</div>', unsafe_allow_html=True)
 
 st.divider()
 
