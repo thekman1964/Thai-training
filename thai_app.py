@@ -10,7 +10,7 @@ import streamlit.components.v1 as components
 
 st.set_page_config(layout="centered", page_title="Thai Practice")
 
-# --- GLOBAL STYLING & CLEANUP ---
+# --- GLOBAL STYLING ---
 st.markdown("""
     <style>
     #MainMenu {visibility: hidden;}
@@ -30,7 +30,7 @@ st.markdown("""
         padding-right: 0.5rem !important;
     }
 
-    /* Keep 3 columns strictly in 1 row on mobile */
+    /* Force 3-column row alignment on mobile screens */
     div[data-testid="stHorizontalBlock"] {
         display: flex !important;
         flex-direction: row !important;
@@ -45,37 +45,27 @@ st.markdown("""
         width: auto !important;
     }
 
-    /* Universal styling for standard Streamlit buttons */
+    /* Base Button Styling */
     div[data-testid="stButton"] > button {
         width: 100% !important;
         height: 44px !important;
         border-radius: 6px !important;
         border: none !important;
-        box-shadow: 0px 2px 4px rgba(0,0,0,0.2) !important;
+        box-shadow: 0px 2px 4px rgba(0,0,0,0.15) !important;
+        font-weight: 800 !important;
+        font-size: 15px !important;
     }
 
-    /* Force text styling inside buttons */
+    /* Target specific buttons via key-wrapper classes */
+    div.st-key-btn_reveal > button { background-color: #0066CC !important; color: #FFFFFF !important; }
+    div.st-key-btn_phrase > button { background-color: #FF6600 !important; color: #FFFFFF !important; }
+    div.st-key-btn_back > button { background-color: #1A202C !important; color: #FFFFFF !important; }
+    div.st-key-btn_rand > button { background-color: #28A745 !important; color: #FFFFFF !important; }
+    div.st-key-btn_next > button { background-color: #1A202C !important; color: #FFFFFF !important; }
+
+    /* Override inner text color to remain solid white */
     div[data-testid="stButton"] > button p {
         color: #FFFFFF !important;
-        font-size: 15px !important;
-        font-weight: 900 !important;
-    }
-
-    /* Distinct color mapping by matching button text labels */
-    div[data-testid="stButton"] > button:has(p:contains("REVEAL")) {
-        background-color: #0066CC !important;
-    }
-    div[data-testid="stButton"] > button:has(p:contains("PHRASE")) {
-        background-color: #FF6600 !important;
-    }
-    div[data-testid="stButton"] > button:has(p:contains("BACK")) {
-        background-color: #1A202C !important;
-    }
-    div[data-testid="stButton"] > button:has(p:contains("RANDOM")) {
-        background-color: #28A745 !important;
-    }
-    div[data-testid="stButton"] > button:has(p:contains("NEXT")) {
-        background-color: #1A202C !important;
     }
     </style>
 """, unsafe_allow_html=True)
@@ -145,7 +135,7 @@ if st.session_state.reveal:
 else:
     st.markdown("<p style='text-align: center; color: #777777; font-size: 13px; margin-bottom: 4px;'>Click \"REVEAL\" to view English translation</p>", unsafe_allow_html=True)
 
-# Audio Playback Handling
+# Audio Execution
 if st.session_state.play_audio:
     tts = gTTS(text=current_phrase["thai"], lang='th')
     fp = io.BytesIO()
@@ -160,27 +150,27 @@ if st.session_state.play_audio:
     components.html(audio_html, height=0)
     st.session_state.play_audio = False
 
-# --- NATIVE STREAMLIT BUTTONS (GUARANTEED WORKING STATE & STYLING) ---
-if st.button("REVEAL", use_container_width=True):
+# --- NATIVE STREAMLIT BUTTONS WITH DIRECT KEYS FOR STYLING ---
+if st.button("REVEAL", key="btn_reveal", use_container_width=True):
     st.session_state.reveal = not st.session_state.reveal
 
-if st.button("PHRASE", use_container_width=True):
+if st.button("PHRASE", key="btn_phrase", use_container_width=True):
     st.session_state.play_audio = True
 
 col_back, col_rand, col_next = st.columns(3)
 
 with col_back:
-    if st.button("BACK", use_container_width=True):
+    if st.button("BACK", key="btn_back", use_container_width=True):
         st.session_state.phrase_index = (st.session_state.phrase_index - 1) % total
         st.session_state.reveal = False
 
 with col_rand:
-    if st.button("RANDOM", use_container_width=True):
+    if st.button("RANDOM", key="btn_rand", use_container_width=True):
         st.session_state.phrase_index = random.randint(0, total - 1)
         st.session_state.reveal = False
 
 with col_next:
-    if st.button("NEXT", use_container_width=True):
+    if st.button("NEXT", key="btn_next", use_container_width=True):
         st.session_state.phrase_index = (st.session_state.phrase_index + 1) % total
         st.session_state.reveal = False
 
@@ -227,7 +217,7 @@ st_speech_html = f"""
         width: 100% !important;
         cursor: pointer !important;
         box-sizing: border-box !important;
-        box-shadow: 0px 2px 4px rgba(0,0,0,0.1);
+        shadow: 0px 2px 4px rgba(0,0,0,0.1);
     ">HEAR SPOKEN THAI TEXT</button>
 
     <div style="margin-top: 10px; font-size: 12px; color: #555555; line-height: 1.4;">
