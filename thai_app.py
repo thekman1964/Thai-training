@@ -10,7 +10,7 @@ import streamlit.components.v1 as components
 
 st.set_page_config(layout="centered", page_title="Thai Practice")
 
-# --- Mobile Compact & Precise Styling ---
+# --- CSS Styling for Standard Streamlit Buttons ---
 st.markdown("""
     <style>
     /* Hide top Streamlit header bar, main menu, and footer */
@@ -29,6 +29,42 @@ st.markdown("""
         padding-bottom: 0rem !important;
         padding-left: 0.5rem !important;
         padding-right: 0.5rem !important;
+    }
+
+    /* Universal styling for all native Streamlit buttons */
+    div.stButton > button {
+        width: 100% !important;
+        height: 40px !important;
+        font-weight: 900 !important;
+        font-size: 14px !important;
+        border-radius: 6px !important;
+        border: 3px solid #000000 !important;
+        box-sizing: border-box !important;
+        cursor: pointer !important;
+        padding: 0px !important;
+        line-height: 34px !important;
+    }
+
+    /* Individual Color Themes via Key Selectors */
+    div.stButton > button[key="btn_reveal"] {
+        background-color: #0066CC !important;
+        color: #FFFFFF !important;
+    }
+
+    div.stButton > button[key="btn_phrase"] {
+        background-color: #FF6600 !important;
+        color: #FFFFFF !important;
+    }
+
+    div.stButton > button[key="btn_back"], 
+    div.stButton > button[key="btn_next"] {
+        background-color: #1A202C !important;
+        color: #FFFFFF !important;
+    }
+
+    div.stButton > button[key="btn_random"] {
+        background-color: #28A745 !important;
+        color: #FFFFFF !important;
     }
 
     hr {
@@ -104,7 +140,7 @@ if "auto_play" not in st.session_state:
 
 current_phrase = PHRASES_DB[st.session_state.phrase_index]
 
-# 0. Waving Thailand Flag Header Image
+# 0. Header Flag
 st.markdown(
     """
     <div style="text-align: center; margin-top: 2px; margin-bottom: 2px;">
@@ -116,7 +152,7 @@ st.markdown(
     unsafe_allow_html=True
 )
 
-# 1. Main Title & Phrase Display (32px)
+# 1. Title & Phrase Display
 st.markdown("<h4 style='text-align: center; color: #000000; margin: 0px;'>Thai Listening and Reading</h4>", unsafe_allow_html=True)
 st.markdown(f"<h2 style='text-align: center; font-size: 32px; color: #000000; margin: 2px 0;'>{current_phrase['thai']}</h2>", unsafe_allow_html=True)
 
@@ -131,128 +167,56 @@ if st.session_state.auto_play:
     play_thai_audio(current_phrase["thai"])
     st.session_state.auto_play = False
 
-# 3. Custom HTML/JS Navigation & Action Buttons Block
-action_buttons_html = """
-<!DOCTYPE html>
-<html>
-<head>
-    <script>
-    function sendAction(actionName) {
-        // Post message directly to parent Streamlit frame
-        window.parent.postMessage({
-            type: "streamlit:setComponentValue",
-            value: actionName + "_" + Date.now()
-        }, "*");
-    }
-    </script>
-    <style>
-        body { margin: 0; padding: 0; font-family: sans-serif; background-color: transparent; }
-        .btn-container { display: flex; flex-direction: column; align-items: center; gap: 8px; width: 100%; }
-        .row { display: flex; gap: 6px; width: 100%; }
-        .flex-space { flex: 1; }
-        button {
-            height: 40px;
-            font-weight: 900;
-            font-size: 14px;
-            border-radius: 6px;
-            border: 3px solid #000000;
-            box-sizing: border-box;
-            cursor: pointer;
-            color: #FFFFFF;
-        }
-        .btn-reveal { flex: 1; background-color: #0066CC; }
-        .btn-phrase { flex: 1; background-color: #FF6600; }
-        .btn-back { flex: 1; background-color: #1A202C; }
-        .btn-random { flex: 1; background-color: #28A745; }
-        .btn-next { flex: 1; background-color: #1A202C; }
-    </style>
-</head>
-<body>
-    <div class="btn-container">
-        <!-- Row 1: REVEAL Button -->
-        <div class="row">
-            <div class="flex-space"></div>
-            <button class="btn-reveal" onclick="sendAction('toggle_reveal')">REVEAL</button>
-            <div class="flex-space"></div>
-        </div>
-
-        <!-- Row 2: PHRASE Button -->
-        <div class="row">
-            <div class="flex-space"></div>
-            <button class="btn-phrase" onclick="sendAction('play_audio')">PHRASE</button>
-            <div class="flex-space"></div>
-        </div>
-
-        <!-- Row 3: BACK, RANDOM, NEXT Buttons -->
-        <div class="row">
-            <button class="btn-back" onclick="sendAction('prev')">BACK</button>
-            <button class="btn-random" onclick="sendAction('rand')">RANDOM</button>
-            <button class="btn-next" onclick="sendAction('next')">NEXT</button>
-        </div>
-    </div>
-</body>
-</html>
-"""
-
-btn_event = components.html(action_buttons_html, height=150)
-
-# Declare component instance to catch postMessage events
-action_signal = st.components.v1.html(
-    """
-    <script>
-    window.addEventListener("message", (event) => {
-        if (event.data.type === "streamlit:setComponentValue") {
-            const val = event.data.value;
-            window.parent.postMessage({
-                type: "streamlit:setComponentValue",
-                value: val
-            }, "*");
-        }
-    });
-    </script>
-    """,
-    height=0
-)
-
-# Handle actions based on button state via URL query fallback / state handling
-btn_click = st.query_params.get("btn_click", None)
-
-if btn_click:
-    if "toggle_reveal" in btn_click:
+# 3. Native Streamlit Buttons with Exact Column Grid Matching
+# Row 1: REVEAL
+c1, c2, c3 = st.columns([1, 1, 1])
+with c2:
+    if st.button("REVEAL", key="btn_reveal", use_container_width=True):
         st.session_state.reveal = not st.session_state.reveal
-    elif "play_audio" in btn_click:
-        st.session_state.auto_play = True
-    elif "prev" in btn_click:
+        st.rerun()
+
+# Row 2: PHRASE
+c1, c2, c3 = st.columns([1, 1, 1])
+with c2:
+    if st.button("PHRASE", key="btn_phrase", use_container_width=True):
+        play_thai_audio(current_phrase["thai"])
+
+# Row 3: BACK, RANDOM, NEXT
+col_back, col_rand, col_next = st.columns([1, 1, 1])
+with col_back:
+    if st.button("BACK", key="btn_back", use_container_width=True):
         st.session_state.phrase_index = (st.session_state.phrase_index - 1) % total
         st.session_state.reveal = False
         st.session_state.auto_play = True
-    elif "rand" in btn_click:
+        st.rerun()
+
+with col_rand:
+    if st.button("RANDOM", key="btn_random", use_container_width=True):
         st.session_state.phrase_index = random.randint(0, total - 1)
         st.session_state.reveal = False
         st.session_state.auto_play = True
-    elif "next" in btn_click:
+        st.rerun()
+
+with col_next:
+    if st.button("NEXT", key="btn_next", use_container_width=True):
         st.session_state.phrase_index = (st.session_state.phrase_index + 1) % total
         st.session_state.reveal = False
         st.session_state.auto_play = True
-    st.query_params.clear()
-    st.rerun()
+        st.rerun()
 
 st.divider()
 
-# 4. Speech Recognition + Translate + "HEAR SPOKEN THAI TEXT" Button
+# 4. Speech Recognition Section
 st_speech_html = f"""
 <div style="text-align: center; font-family: sans-serif;">
-    <!-- Spoken Thai Output -->
     <div id="output" style="color: #FF6600; font-size: 32px; font-weight: bold; min-height: 40px; margin-bottom: 2px;">
         Spoken Thai text...
     </div>
     
-    <!-- English Translation Output -->
     <div id="translation" style="color: #0066CC; font-size: 20px; font-weight: bold; min-height: 28px; margin-bottom: 6px;">
         English translation...
     </div>
     
-    <!-- TRANSLATE Button -->
     <button id="stt-btn" style="
         background-color: #FF6600 !important;
         color: #FFFFFF !important;
@@ -270,7 +234,6 @@ st_speech_html = f"""
     ">TRANSLATE</button>
     <br>
 
-    <!-- HEAR SPOKEN THAI TEXT Button -->
     <button id="speak-btn" style="
         background-color: #FFFFFF !important;
         color: #FF6600 !important;
@@ -286,7 +249,6 @@ st_speech_html = f"""
         box-sizing: border-box !important;
     ">HEAR SPOKEN THAI TEXT</button>
 
-    <!-- Spreadsheet Stats Fields -->
     <div style="margin-top: 10px; font-size: 12px; color: #555555; line-height: 1.4;">
         <div><b>Available Records:</b> {total}</div>
         <div><b>Spreadsheet Last Updated:</b> {SHEET_LAST_UPDATED}</div>
