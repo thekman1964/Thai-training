@@ -10,7 +10,7 @@ import streamlit.components.v1 as components
 
 st.set_page_config(layout="centered", page_title="Thai Practice")
 
-# --- CSS OVERRIDES FOR NATIVE STREAMLIT BUTTONS & COLORED BORDERS ---
+# --- GLOBAL STYLES & BUTTON COLORS ---
 st.markdown("""
     <style>
     /* Hide top Streamlit header bar, main menu, and footer */
@@ -31,7 +31,7 @@ st.markdown("""
         padding-right: 0.5rem !important;
     }
 
-    /* Force all columns to distribute evenly across container */
+    /* Force horizontal blocks to auto-distribute */
     [data-testid="stHorizontalBlock"] {
         display: flex !important;
         flex-direction: row !important;
@@ -39,13 +39,12 @@ st.markdown("""
         gap: 6px !important;
     }
 
-    /* Force column items to take exact equal 1/3 widths */
     [data-testid="stColumn"] {
         flex: 1 1 0% !important;
         min-width: 0 !important;
     }
 
-    /* Unified Native Button Formatting */
+    /* General Button Base Styling */
     div[data-testid="stButton"] > button {
         width: 100% !important;
         height: 40px !important;
@@ -61,39 +60,33 @@ st.markdown("""
         cursor: pointer !important;
     }
 
-    /* Row 1 - REVEAL (Blue Border) */
-    [data-testid="stHorizontalBlock"]:nth-of-type(1) div[data-testid="stButton"] > button {
+    /* REVEAL Button - Blue */
+    .btn-reveal-box div[data-testid="stButton"] > button {
         background-color: #0066CC !important;
         color: #FFFFFF !important;
         border: 4px solid #0066CC !important;
     }
 
-    /* Row 2 - PHRASE (Orange Border) */
-    [data-testid="stHorizontalBlock"]:nth-of-type(2) div[data-testid="stButton"] > button {
+    /* PHRASE Button - Orange */
+    .btn-phrase-box div[data-testid="stButton"] > button {
         background-color: #FF6600 !important;
         color: #FFFFFF !important;
         border: 4px solid #FF6600 !important;
     }
 
-    /* Row 3 - BACK (Black Border) */
-    [data-testid="stHorizontalBlock"]:nth-of-type(3) [data-testid="stColumn"]:nth-of-type(1) div[data-testid="stButton"] > button {
+    /* BACK & NEXT Buttons - Dark Grey / Black */
+    .btn-back-box div[data-testid="stButton"] > button,
+    .btn-next-box div[data-testid="stButton"] > button {
         background-color: #1A202C !important;
         color: #FFFFFF !important;
         border: 4px solid #000000 !important;
     }
 
-    /* Row 3 - RANDOM (Green Background & Green Border) */
-    [data-testid="stHorizontalBlock"]:nth-of-type(3) [data-testid="stColumn"]:nth-of-type(2) div[data-testid="stButton"] > button {
+    /* RANDOM Button - Bright Green */
+    .btn-rand-box div[data-testid="stButton"] > button {
         background-color: #28A745 !important;
         color: #FFFFFF !important;
         border: 4px solid #28A745 !important;
-    }
-
-    /* Row 3 - NEXT (Black Border) */
-    [data-testid="stHorizontalBlock"]:nth-of-type(3) [data-testid="stColumn"]:nth-of-type(3) div[data-testid="stButton"] > button {
-        background-color: #1A202C !important;
-        color: #FFFFFF !important;
-        border: 4px solid #000000 !important;
     }
 
     hr {
@@ -196,43 +189,58 @@ if st.session_state.auto_play:
     play_thai_audio(current_phrase["thai"])
     st.session_state.auto_play = False
 
-# --- NATIVE STREAMLIT BUTTONS ---
+# --- NATIVE STREAMLIT BUTTONS WITH CLASS CONTAINER WRAPPERS ---
 
 # Row 1: REVEAL
 c1, c2, c3 = st.columns([1, 1, 1])
 with c2:
-    if st.button("REVEAL", key="btn_reveal", use_container_width=True):
-        st.session_state.reveal = not st.session_state.reveal
-        st.rerun()
+    with st.container():
+        st.markdown('<div class="btn-reveal-box">', unsafe_allow_html=True)
+        if st.button("REVEAL", key="btn_reveal", use_container_width=True):
+            st.session_state.reveal = not st.session_state.reveal
+            st.rerun()
+        st.markdown('</div>', unsafe_allow_html=True)
 
 # Row 2: PHRASE
 c1, c2, c3 = st.columns([1, 1, 1])
 with c2:
-    if st.button("PHRASE", key="btn_phrase", use_container_width=True):
-        play_thai_audio(current_phrase["thai"])
+    with st.container():
+        st.markdown('<div class="btn-phrase-box">', unsafe_allow_html=True)
+        if st.button("PHRASE", key="btn_phrase", use_container_width=True):
+            play_thai_audio(current_phrase["thai"])
+        st.markdown('</div>', unsafe_allow_html=True)
 
 # Row 3: BACK, RANDOM, NEXT
 col_back, col_rand, col_next = st.columns([1, 1, 1])
 with col_back:
-    if st.button("BACK", key="btn_back", use_container_width=True):
-        st.session_state.phrase_index = (st.session_state.phrase_index - 1) % total
-        st.session_state.reveal = False
-        st.session_state.auto_play = True
-        st.rerun()
+    with st.container():
+        st.markdown('<div class="btn-back-box">', unsafe_allow_html=True)
+        if st.button("BACK", key="btn_back", use_container_width=True):
+            st.session_state.phrase_index = (st.session_state.phrase_index - 1) % total
+            st.session_state.reveal = False
+            st.session_state.auto_play = True
+            st.rerun()
+        st.markdown('</div>', unsafe_allow_html=True)
 
 with col_rand:
-    if st.button("RANDOM", key="btn_rand", use_container_width=True):
-        st.session_state.phrase_index = random.randint(0, total - 1)
-        st.session_state.reveal = False
-        st.session_state.auto_play = True
-        st.rerun()
+    with st.container():
+        st.markdown('<div class="btn-rand-box">', unsafe_allow_html=True)
+        if st.button("RANDOM", key="btn_rand", use_container_width=True):
+            st.session_state.phrase_index = random.randint(0, total - 1)
+            st.session_state.reveal = False
+            st.session_state.auto_play = True
+            st.rerun()
+        st.markdown('</div>', unsafe_allow_html=True)
 
 with col_next:
-    if st.button("NEXT", key="btn_next", use_container_width=True):
-        st.session_state.phrase_index = (st.session_state.phrase_index + 1) % total
-        st.session_state.reveal = False
-        st.session_state.auto_play = True
-        st.rerun()
+    with st.container():
+        st.markdown('<div class="btn-next-box">', unsafe_allow_html=True)
+        if st.button("NEXT", key="btn_next", use_container_width=True):
+            st.session_state.phrase_index = (st.session_state.phrase_index + 1) % total
+            st.session_state.reveal = False
+            st.session_state.auto_play = True
+            st.rerun()
+        st.markdown('</div>', unsafe_allow_html=True)
 
 st.divider()
 
