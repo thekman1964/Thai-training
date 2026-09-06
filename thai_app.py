@@ -37,6 +37,8 @@ st.markdown("""
         font-weight: bold !important;
         border-radius: 6px !important;
         padding: 6px 0px !important;
+        height: 32px !important;
+        line-height: 1 !important;
         white-space: nowrap !important;
         margin-top: 2px !important;
         margin-bottom: 2px !important;
@@ -56,9 +58,16 @@ st.markdown("""
         border: none !important;
     }
 
-    /* REVEAL Button Override: Blue (#0066CC) */
+    /* REVEAL Button: Blue (#0066CC) */
     div.stButton > button[key="btn_reveal"] {
         background-color: #0066CC !important;
+        color: #FFFFFF !important;
+        border: none !important;
+    }
+
+    /* RANDOM Button: Green (#28A745) */
+    div.stButton > button[key="btn_rand"] {
+        background-color: #28A745 !important;
         color: #FFFFFF !important;
         border: none !important;
     }
@@ -201,7 +210,7 @@ with nav_col1:
         st.rerun()
 
 with nav_col2:
-    if st.button("RANDOM", key="btn_rand", type="secondary", use_container_width=True):
+    if st.button("RANDOM", key="btn_rand", use_container_width=True):
         st.session_state.phrase_index = random.randint(0, total - 1)
         st.session_state.reveal = False
         st.session_state.auto_play = True
@@ -229,23 +238,25 @@ st_speech_html = f"""
         English translation...
     </div>
     
-    <!-- TRANSLATE Button (Solid Orange) -->
+    <!-- TRANSLATE Button (Solid Orange - Matched 32px Height) -->
     <button id="stt-btn" style="
         background-color: #FF6600;
         color: white;
-        font-size: 15px;
+        font-size: 14px;
         font-weight: bold;
         border: none;
         border-radius: 6px;
-        padding: 8px 0px;
+        height: 32px;
+        padding: 6px 0px;
         width: 70%;
         max-width: 260px;
         cursor: pointer;
-        margin-bottom: 8px;
+        margin-bottom: 6px;
+        box-sizing: border-box;
     ">TRANSLATE</button>
     <br>
 
-    <!-- HEAR SPOKEN THAI TEXT Button (White with Orange Border) -->
+    <!-- HEAR SPOKEN THAI TEXT Button (White with Orange Border - Matched 32px Height) -->
     <button id="speak-btn" style="
         background-color: #FFFFFF;
         color: #FF6600;
@@ -253,10 +264,12 @@ st_speech_html = f"""
         font-size: 13px;
         font-weight: bold;
         border-radius: 6px;
-        padding: 8px 0px;
+        height: 32px;
+        padding: 4px 0px;
         width: 75%;
         max-width: 280px;
         cursor: pointer;
+        box-sizing: border-box;
     ">HEAR SPOKEN THAI TEXT</button>
 
     <!-- Spreadsheet Stats Fields -->
