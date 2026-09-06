@@ -10,7 +10,7 @@ import streamlit.components.v1 as components
 
 st.set_page_config(layout="centered", page_title="Thai Practice")
 
-# --- Global CSS ---
+# --- Custom Styling ---
 st.markdown("""
     <style>
     #MainMenu {visibility: hidden;}
@@ -36,6 +36,7 @@ st.markdown("""
     </style>
 """, unsafe_allow_html=True)
 
+# Helper function to play audio dynamically
 def play_thai_audio(text):
     tts = gTTS(text=text, lang='th')
     fp = io.BytesIO()
@@ -57,6 +58,7 @@ def play_thai_audio(text):
     """
     components.html(audio_html, height=0)
 
+# Fetch phrases from Google Sheet along with last updated timestamp
 @st.cache_data(ttl=600)
 def load_phrases_with_meta():
     sheet_id = "1_vMSPtMo3-JD2qARp4zwrcvNrhEuSKHQVEOT1IMwgFw"
@@ -91,12 +93,35 @@ def load_phrases_with_meta():
 PHRASES_DB, SHEET_LAST_UPDATED = load_phrases_with_meta()
 total = len(PHRASES_DB)
 
+# Process query parameters for button presses
+params = st.query_params
+action = params.get("act", None)
+
 if "phrase_index" not in st.session_state:
     st.session_state.phrase_index = 0
 if "reveal" not in st.session_state:
     st.session_state.reveal = False
 if "auto_play" not in st.session_state:
     st.session_state.auto_play = False
+
+if action:
+    if action == "rev":
+        st.session_state.reveal = not st.session_state.reveal
+    elif action == "phr":
+        st.session_state.auto_play = True
+    elif action == "back":
+        st.session_state.phrase_index = (st.session_state.phrase_index - 1) % total
+        st.session_state.reveal = False
+        st.session_state.auto_play = True
+    elif action == "rand":
+        st.session_state.phrase_index = random.randint(0, total - 1)
+        st.session_state.reveal = False
+        st.session_state.auto_play = True
+    elif action == "next":
+        st.session_state.phrase_index = (st.session_state.phrase_index + 1) % total
+        st.session_state.reveal = False
+        st.session_state.auto_play = True
+    st.query_params.clear()
 
 current_phrase = PHRASES_DB[st.session_state.phrase_index]
 
@@ -124,77 +149,52 @@ if st.session_state.auto_play:
     play_thai_audio(current_phrase["thai"])
     st.session_state.auto_play = False
 
-# HTML Component with Native Event Listener Bridge
-button_component = components.declare_component(
-    "custom_nav_buttons",
-    html="""
-    <style>
-      body { margin: 0; padding: 0; background: transparent; font-family: sans-serif; }
-      .btn-container { display: flex; flex-direction: column; align-items: center; gap: 8px; width: 100%; }
-      .row-center { display: flex; justify-content: center; width: 100%; }
-      .row-three { display: flex; gap: 6px; width: 100%; }
-      button {
-        height: 42px;
-        font-weight: 900;
-        font-size: 13px;
-        border-radius: 6px;
-        border: 3px solid #000000;
-        box-sizing: border-box;
-        cursor: pointer;
-        text-transform: uppercase;
-        letter-spacing: 0.5px;
-      }
-      .btn-reveal { width: 35%; background-color: #0066CC; color: #FFFFFF; }
-      .btn-phrase { width: 35%; background-color: #FF6600; color: #FFFFFF; }
-      .btn-back, .btn-next { flex: 1; background-color: #1A202C; color: #FFFFFF; }
-      .btn-rand { flex: 1; background-color: #28A745; color: #FFFFFF; }
-    </style>
+# HTML Component for Exact Colored Layout
+buttons_html = """
+<style>
+  body { margin: 0; padding: 0; background: transparent; font-family: sans-serif; }
+  .btn-container { display: flex; flex-direction: column; align-items: center; gap: 8px; width: 100%; }
+  .row-center { display: flex; justify-content: center; width: 100%; }
+  .row-three { display: flex; gap: 6px; width: 100%; }
+  button {
+    height: 40px;
+    font-weight: 900;
+    font-size: 13px;
+    border-radius: 6px;
+    border: 3px solid #000000;
+    box-sizing: border-box;
+    cursor: pointer;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+  }
+  .btn-reveal { width: 35%; background-color: #0066CC; color: #FFFFFF; }
+  .btn-phrase { width: 35%; background-color: #FF6600; color: #FFFFFF; }
+  .btn-back, .btn-next { flex: 1; background-color: #1A202C; color: #FFFFFF; }
+  .btn-rand { flex: 1; background-color: #28A745; color: #FFFFFF; }
+</style>
 
-    <div class="btn-container">
-      <div class="row-center">
-        <button class="btn-reveal" onclick="sendAction('rev')">REVEAL</button>
-      </div>
-      <div class="row-center">
-        <button class="btn-phrase" onclick="sendAction('phr')">PHRASE</button>
-      </div>
-      <div class="row-three">
-        <button class="btn-back" onclick="sendAction('back')">BACK</button>
-        <button class="btn-rand" onclick="sendAction('rand')">RANDOM</button>
-        <button class="btn-next" onclick="sendAction('next')">NEXT</button>
-      </div>
-    </div>
+<div class="btn-container">
+  <div class="row-center">
+    <button class="btn-reveal" onclick="sendAction('rev')">REVEAL</button>
+  </div>
+  <div class="row-center">
+    <button class="btn-phrase" onclick="sendAction('phr')">PHRASE</button>
+  </div>
+  <div class="row-three">
+    <button class="btn-back" onclick="sendAction('back')">BACK</button>
+    <button class="btn-rand" onclick="sendAction('rand')">RANDOM</button>
+    <button class="btn-next" onclick="sendAction('next')">NEXT</button>
+  </div>
+</div>
 
-    <script>
-      function sendAction(actionVal) {
-        if (window.Streamlit) {
-          Streamlit.setComponentValue(actionVal + '_' + Date.now());
-        }
-      }
-    </script>
-    """
-)
+<script>
+  function sendAction(actionVal) {
+    window.parent.location.search = '?act=' + actionVal;
+  }
+</script>
+"""
 
-btn_action = button_component(key="nav_buttons", default=None)
-
-if btn_action:
-    action_type = str(btn_action).split('_')[0]
-    if action_type == "rev":
-        st.session_state.reveal = not st.session_state.reveal
-    elif action_type == "phr":
-        play_thai_audio(current_phrase["thai"])
-    elif action_type == "back":
-        st.session_state.phrase_index = (st.session_state.phrase_index - 1) % total
-        st.session_state.reveal = False
-        st.session_state.auto_play = True
-    elif action_type == "rand":
-        st.session_state.phrase_index = random.randint(0, total - 1)
-        st.session_state.reveal = False
-        st.session_state.auto_play = True
-    elif action_type == "next":
-        st.session_state.phrase_index = (st.session_state.phrase_index + 1) % total
-        st.session_state.reveal = False
-        st.session_state.auto_play = True
-    st.rerun()
+components.html(buttons_html, height=150)
 
 st.divider()
 
