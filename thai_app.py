@@ -150,99 +150,94 @@ if st.session_state.reveal:
 else:
     st.markdown("<p style='text-align: center; color: #777777; font-size: 13px; margin-bottom: 4px;'>Click \"REVEAL\" to view English translation</p>", unsafe_allow_html=True)
 
-# 3. REVEAL Button (Sized/Bordered Identically to RANDOM Button)
-reveal_html = """
-<div style="display: flex; justify-content: center; width: 100%; margin-bottom: 6px;">
-    <button onclick="window.top.location.href = window.top.location.pathname + '?action=toggle_reveal'" style="
-        width: 100%;
-        max-width: 260px;
-        background-color: #0066CC;
-        color: #FFFFFF;
-        font-weight: 900;
-        font-size: 14px;
-        border-radius: 6px;
-        height: 40px;
-        border: 3px solid #000000;
-        box-sizing: border-box;
-        cursor: pointer;
-    ">REVEAL</button>
-</div>
-"""
-components.html(reveal_html, height=46)
-
-# 4. PHRASE Button (Sized/Bordered Identically to RANDOM Button)
-phrase_html = """
-<div style="display: flex; justify-content: center; width: 100%; margin-bottom: 6px;">
-    <button onclick="window.top.location.href = window.top.location.pathname + '?action=play_audio'" style="
-        width: 100%;
-        max-width: 260px;
-        background-color: #FF6600;
-        color: #FFFFFF;
-        font-weight: 900;
-        font-size: 14px;
-        border-radius: 6px;
-        height: 40px;
-        border: 3px solid #000000;
-        box-sizing: border-box;
-        cursor: pointer;
-    ">PHRASE</button>
-</div>
-"""
-components.html(phrase_html, height=46)
-
 # Trigger audio playback if requested
 if st.session_state.auto_play:
     play_thai_audio(current_phrase["thai"])
     st.session_state.auto_play = False
 
-# 5. BACK, RANDOM, NEXT Buttons (Row Layout)
-nav_html = """
-<div style="display: flex; gap: 6px; margin-top: 4px; margin-bottom: 4px; width: 100%;">
-    <button onclick="window.top.location.href = window.top.location.pathname + '?nav=prev'" style="
-        flex: 1;
-        background-color: #1A202C;
-        color: #FFFFFF;
-        font-weight: 900;
-        font-size: 14px;
-        border-radius: 6px;
-        height: 40px;
-        border: 3px solid #000000;
-        box-sizing: border-box;
-        cursor: pointer;
-    ">BACK</button>
+# 3. REVEAL, PHRASE, BACK, RANDOM, NEXT Buttons (Uniform Sizing via HTML Grid)
+action_buttons_html = """
+<div style="display: flex; flex-direction: column; align-items: center; gap: 8px; width: 100%;">
+    <!-- REVEAL Button (Identical dimensions to RANDOM) -->
+    <div style="width: 100%; display: flex; justify-content: center;">
+        <button onclick="window.top.location.href = window.top.location.pathname + '?action=toggle_reveal'" style="
+            width: 100%;
+            background-color: #0066CC;
+            color: #FFFFFF;
+            font-weight: 900;
+            font-size: 14px;
+            border-radius: 6px;
+            height: 40px;
+            border: 3px solid #000000;
+            box-sizing: border-box;
+            cursor: pointer;
+        ">REVEAL</button>
+    </div>
 
-    <button onclick="window.top.location.href = window.top.location.pathname + '?nav=rand'" style="
-        flex: 1;
-        background-color: #28A745;
-        color: #FFFFFF;
-        font-weight: 900;
-        font-size: 14px;
-        border-radius: 6px;
-        height: 40px;
-        border: 3px solid #000000;
-        box-sizing: border-box;
-        cursor: pointer;
-    ">RANDOM</button>
+    <!-- PHRASE Button (Identical dimensions to RANDOM) -->
+    <div style="width: 100%; display: flex; justify-content: center;">
+        <button onclick="window.top.location.href = window.top.location.pathname + '?action=play_audio'" style="
+            width: 100%;
+            background-color: #FF6600;
+            color: #FFFFFF;
+            font-weight: 900;
+            font-size: 14px;
+            border-radius: 6px;
+            height: 40px;
+            border: 3px solid #000000;
+            box-sizing: border-box;
+            cursor: pointer;
+        ">PHRASE</button>
+    </div>
 
-    <button onclick="window.top.location.href = window.top.location.pathname + '?nav=next'" style="
-        flex: 1;
-        background-color: #1A202C;
-        color: #FFFFFF;
-        font-weight: 900;
-        font-size: 14px;
-        border-radius: 6px;
-        height: 40px;
-        border: 3px solid #000000;
-        box-sizing: border-box;
-        cursor: pointer;
-    ">NEXT</button>
+    <!-- BACK, RANDOM, NEXT Row -->
+    <div style="display: flex; gap: 6px; width: 100%;">
+        <button onclick="window.top.location.href = window.top.location.pathname + '?nav=prev'" style="
+            flex: 1;
+            background-color: #1A202C;
+            color: #FFFFFF;
+            font-weight: 900;
+            font-size: 14px;
+            border-radius: 6px;
+            height: 40px;
+            border: 3px solid #000000;
+            box-sizing: border-box;
+            cursor: pointer;
+        ">BACK</button>
+
+        <button onclick="window.top.location.href = window.top.location.pathname + '?nav=rand'" style="
+            flex: 1;
+            background-color: #28A745;
+            color: #FFFFFF;
+            font-weight: 900;
+            font-size: 14px;
+            border-radius: 6px;
+            height: 40px;
+            border: 3px solid #000000;
+            box-sizing: border-box;
+            cursor: pointer;
+        ">RANDOM</button>
+
+        <button onclick="window.top.location.href = window.top.location.pathname + '?nav=next'" style="
+            flex: 1;
+            background-color: #1A202C;
+            color: #FFFFFF;
+            font-weight: 900;
+            font-size: 14px;
+            border-radius: 6px;
+            height: 40px;
+            border: 3px solid #000000;
+            box-sizing: border-box;
+            cursor: pointer;
+        ">NEXT</button>
+    </div>
 </div>
 """
-components.html(nav_html, height=48)
+components.html(action_buttons_html, height=150)
 
 st.divider()
 
-# 6. Speech Recognition + Translate + "HEAR SPOKEN THAI TEXT" Button
+# 4. Speech Recognition + Translate + "HEAR SPOKEN THAI TEXT" Button
 st_speech_html = f"""
 <div style="text-align: center; font-family: sans-serif;">
     <!-- Spoken Thai Output -->
@@ -267,7 +262,6 @@ st_speech_html = f"""
         line-height: 34px !important;
         padding: 0px !important;
         width: 100% !important;
-        max-width: 260px !important;
         cursor: pointer !important;
         margin-bottom: 12px !important;
         box-sizing: border-box !important;
@@ -286,7 +280,6 @@ st_speech_html = f"""
         line-height: 34px !important;
         padding: 0px !important;
         width: 100% !important;
-        max-width: 260px !important;
         cursor: pointer !important;
         box-sizing: border-box !important;
     ">HEAR SPOKEN THAI TEXT</button>
