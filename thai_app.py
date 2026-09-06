@@ -59,22 +59,28 @@ st.markdown("""
         border: none !important;
     }
 
-    /* BUTTON COLORS BY ELEMENT KEY */
-    div[data-testid="stButton"] > button[key="btn_reveal"] {
+    /* COLOR SPECIFICATIONS VIA DOM ORDER */
+    /* 1st Top Button: REVEAL (Blue) */
+    div[data-testid="stElementContainer"]:nth-of-type(1) div[data-testid="stButton"] > button {
         background-color: #0066CC !important;
     }
-    
-    div[data-testid="stButton"] > button[key="btn_phrase"] {
+
+    /* 2nd Top Button: PHRASE (Orange) */
+    div[data-testid="stElementContainer"]:nth-of-type(2) div[data-testid="stButton"] > button {
         background-color: #FF6600 !important;
     }
-    
-    div[data-testid="stButton"] > button[key="btn_back"],
-    div[data-testid="stButton"] > button[key="btn_next"] {
-        background-color: #1A202C !important;
+
+    /* 3-Column Row Buttons */
+    div[data-testid="stColumn"]:nth-of-type(1) div[data-testid="stButton"] > button {
+        background-color: #1A202C !important; /* BACK (Dark) */
     }
-    
-    div[data-testid="stButton"] > button[key="btn_rand"] {
-        background-color: #28A745 !important;
+
+    div[data-testid="stColumn"]:nth-of-type(2) div[data-testid="stButton"] > button {
+        background-color: #28A745 !important; /* RANDOM (Green) */
+    }
+
+    div[data-testid="stColumn"]:nth-of-type(3) div[data-testid="stButton"] > button {
+        background-color: #1A202C !important; /* NEXT (Dark) */
     }
 
     /* FORCE BUTTON TEXT TO REMAIN WHITE */
@@ -194,7 +200,7 @@ if st.button("REVEAL", key="btn_reveal", use_container_width=True):
 if st.button("PHRASE", key="btn_phrase", use_container_width=True):
     play_thai_audio(current_phrase["thai"])
 
-# Row 3: BACK, RANDOM, NEXT (Forced 3 Columns Side-by-Side)
+# Row 3: BACK, RANDOM, NEXT (3 Columns Side-by-Side)
 col_back, col_rand, col_next = st.columns(3)
 
 with col_back:
