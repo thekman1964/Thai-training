@@ -47,7 +47,7 @@ st.markdown("""
     div.stButton > button {
         width: 100% !important;
         height: 44px !important;
-        border: 2px solid #000000 !important; /* Distinct black border */
+        border: 2px solid #000000 !important;
         border-radius: 8px !important;
         font-weight: 800 !important;
         font-size: 15px !important;
@@ -165,8 +165,10 @@ if st.button("REVEAL", key="btn_reveal", use_container_width=True):
     st.session_state.reveal = not st.session_state.reveal
     st.rerun()
 
+# FIXED PHRASE BUTTON LOGIC
 if st.button("PHRASE", key="btn_phrase", use_container_width=True):
-    play_thai_audio(current_phrase["thai"])
+    st.session_state.auto_play = True
+    st.rerun()
 
 col_back, col_rand, col_next = st.columns([1, 1, 1], gap="small")
 with col_back:
