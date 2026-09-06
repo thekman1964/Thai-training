@@ -2,7 +2,6 @@ import streamlit as st
 from gtts import gTTS
 import io
 import base64
-import random
 import time
 import requests
 import pandas as pd
@@ -10,25 +9,17 @@ import streamlit.components.v1 as components
 
 st.set_page_config(layout="centered", page_title="Thai Practice")
 
-# --- Page Setup (Minimal Clean CSS - No Button Hacks) ---
+# --- Page Setup ---
 st.markdown("""
     <style>
     #MainMenu, header, footer, div[data-testid="stHeader"] { visibility: hidden; display: none; }
-
-    .stApp {
-        background-color: #FFFFFF !important;
-        color: #000000 !important;
-    }
-
-    .block-container {
-        padding: 0.2rem 0.5rem 0rem 0.5rem !important;
-    }
-
+    .stApp { background-color: #FFFFFF !important; color: #000000 !important; }
+    .block-container { padding: 0.2rem 0.5rem 0rem 0.5rem !important; }
     hr { margin: 10px 0px !important; }
     </style>
 """, unsafe_allow_html=True)
 
-# Helper function to play audio dynamically
+# Helper function to play audio
 def play_thai_audio(text):
     tts = gTTS(text=text, lang='th')
     fp = io.BytesIO()
@@ -42,15 +33,12 @@ def play_thai_audio(text):
     </audio>
     <script>
         var audio = document.getElementById('audio_{audio_key}');
-        if(audio) {{
-            audio.currentTime = 0;
-            audio.play();
-        }}
+        if(audio) {{ audio.currentTime = 0; audio.play(); }}
     </script>
     """
     components.html(audio_html, height=0)
 
-# Fetch phrases from Google Sheet along with last updated timestamp
+# Fetch phrases from Google Sheet
 @st.cache_data(ttl=600)
 def load_phrases_with_meta():
     sheet_id = "1_vMSPtMo3-JD2qARp4zwrcvNrhEuSKHQVEOT1IMwgFw"
@@ -85,72 +73,131 @@ def load_phrases_with_meta():
 PHRASES_DB, SHEET_LAST_UPDATED = load_phrases_with_meta()
 total = len(PHRASES_DB)
 
-if "phrase_index" not in st.session_state:
-    st.session_state.phrase_index = 0
-if "reveal" not in st.session_state:
-    st.session_state.reveal = False
-if "auto_play" not in st.session_state:
-    st.session_state.auto_play = False
+# Read query params for state management
+query_params = st.query_params
+current_idx = int(query_params.get("idx", 0)) % total
+is_revealed = query_params.get("rev", "0") == "1"
+should_play = query_params.get("play", "0") == "1"
 
-current_phrase = PHRASES_DB[st.session_state.phrase_index]
+current_phrase = PHRASES_DB[current_idx]
 
-# Flag Header
-st.markdown(
-    """
-    <div style="text-align: center; margin-top: 2px; margin-bottom: 2px;">
-        <img src="https://upload.wikimedia.org/wikipedia/commons/a/a9/Flag_of_Thailand.svg" 
-             alt="Thailand Flag" 
-             style="width: 55px; height: 36px; display: inline-block; border-radius: 3px; box-shadow: 0px 2px 4px rgba(0,0,0,0.2);">
-    </div>
-    """,
-    unsafe_allow_html=True
-)
-
-st.markdown("<h4 style='text-align: center; color: #000000; margin: 0px;'>Thai Listening and Reading</h4>", unsafe_allow_html=True)
-st.markdown(f"<h2 style='text-align: center; font-size: 32px; color: #000000; margin: 4px 0;'>{current_phrase['thai']}</h2>", unsafe_allow_html=True)
-
-if st.session_state.reveal:
-    st.markdown(f"<p style='text-align: center; color: #0066CC; font-size: 20px; font-weight: bold; margin-bottom: 8px;'>{current_phrase['english']}</p>", unsafe_allow_html=True)
-else:
-    st.markdown("<p style='text-align: center; color: #777777; font-size: 13px; margin-bottom: 8px;'>Click \"REVEAL\" to view English translation</p>", unsafe_allow_html=True)
-
-if st.session_state.auto_play:
+# Play audio if requested via query param
+if should_play:
     play_thai_audio(current_phrase["thai"])
-    st.session_state.auto_play = False
 
-# --- Native Streamlit Action Buttons (No CSS overrides) ---
-_, col_rev, _ = st.columns([1, 2, 1])
-with col_rev:
-    if st.button("REVEAL", use_container_width=True, key="k_rev"):
-        st.session_state.reveal = not st.session_state.reveal
-        st.rerun()
+# Build clean, bulletproof HTML UI for top section
+top_app_html = f"""
+<!DOCTYPE html>
+<html>
+<head>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <style>
+        body {{
+            margin: 0;
+            padding: 0;
+            background: #FFFFFF;
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+            text-align: center;
+        }}
+        .flag {{
+            width: 55px;
+            height: 36px;
+            margin-top: 2px;
+            margin-bottom: 2px;
+            border-radius: 3px;
+            box-shadow: 0px 2px 4px rgba(0,0,0,0.2);
+        }}
+        h4 {{
+            margin: 0;
+            color: #000000;
+            font-weight: 600;
+        }}
+        h2 {{
+            font-size: 32px;
+            color: #000000;
+            margin: 6px 0;
+        }}
+        .english-text {{
+            color: #0066CC;
+            font-size: 20px;
+            font-weight: bold;
+            margin-bottom: 12px;
+        }}
+        .hint-text {{
+            color: #777777;
+            font-size: 13px;
+            margin-bottom: 12px;
+        }}
+        .btn-stack {{
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 8px;
+            width: 100%;
+        }}
+        .row-center {{
+            display: flex;
+            justify-content: center;
+            width: 100%;
+        }}
+        .row-three {{
+            display: flex;
+            justify-content: center;
+            gap: 6px;
+            width: 100%;
+        }}
+        .btn {{
+            height: 42px;
+            font-weight: 900;
+            font-size: 13px;
+            border-radius: 6px;
+            border: 3px solid #000000;
+            box-sizing: border-box;
+            cursor: pointer;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            text-decoration: none;
+        }}
+        .btn-rev {{ width: 50%; background-color: #0066CC; color: #FFFFFF; }}
+        .btn-phr {{ width: 50%; background-color: #FF6600; color: #FFFFFF; }}
+        .btn-nav {{ flex: 1; background-color: #1A202C; color: #FFFFFF; }}
+        .btn-rnd {{ flex: 1; background-color: #28A745; color: #FFFFFF; }}
+    </style>
+</head>
+<body>
+    <img src="https://upload.wikimedia.org/wikipedia/commons/a/a9/Flag_of_Thailand.svg" class="flag" alt="Flag">
+    <h4>Thai Listening and Reading</h4>
+    <h2>{current_phrase['thai']}</h2>
 
-_, col_phr, _ = st.columns([1, 2, 1])
-with col_phr:
-    if st.button("PHRASE", use_container_width=True, key="k_phr"):
-        play_thai_audio(current_phrase["thai"])
+    {"<div class='english-text'>" + current_phrase['english'] + "</div>" if is_revealed else "<div class='hint-text'>Click \"REVEAL\" to view English translation</div>"}
 
-c_back, c_rand, c_next = st.columns(3)
-with c_back:
-    if st.button("BACK", use_container_width=True, key="k_back"):
-        st.session_state.phrase_index = (st.session_state.phrase_index - 1) % total
-        st.session_state.reveal = False
-        st.session_state.auto_play = True
-        st.rerun()
+    <div class="btn-stack">
+        <div class="row-center">
+            <button class="btn btn-rev" onclick="nav('idx={current_idx}&rev={0 if is_revealed else 1}&play=0')">REVEAL</button>
+        </div>
+        <div class="row-center">
+            <button class="btn btn-phr" onclick="nav('idx={current_idx}&rev={1 if is_revealed else 0}&play=1')">PHRASE</button>
+        </div>
+        <div class="row-three">
+            <button class="btn btn-nav" onclick="nav('idx={(current_idx - 1) % total}&rev=0&play=1')">BACK</button>
+            <button class="btn btn-rnd" onclick="nav('idx={random.randint(0, total - 1)}&rev=0&play=1')">RANDOM</button>
+            <button class="btn btn-nav" onclick="nav('idx={(current_idx + 1) % total}&rev=0&play=1')">NEXT</button>
+        </div>
+    </div>
 
-with c_rand:
-    if st.button("RANDOM", use_container_width=True, key="k_rand"):
-        st.session_state.phrase_index = random.randint(0, total - 1)
-        st.session_state.reveal = False
-        st.session_state.auto_play = True
-        st.rerun()
+    <script>
+        function nav(params) {{
+            window.parent.location.search = "?" + params;
+        }}
+    </script>
+</body>
+</html>
+"""
 
-with c_next:
-    if st.button("NEXT", use_container_width=True, key="k_next"):
-        st.session_state.phrase_index = (st.session_state.phrase_index + 1) % total
-        st.session_state.reveal = False
-        st.session_state.auto_play = True
-        st.rerun()
+components.html(top_app_html, height=280)
 
 st.divider()
 
@@ -172,8 +219,8 @@ st_speech_html = f"""
         font-weight: 900 !important;
         border: 3px solid #000000 !important;
         border-radius: 6px !important;
-        height: 40px !important;
-        line-height: 34px !important;
+        height: 42px !important;
+        line-height: 36px !important;
         padding: 0px !important;
         width: 100% !important;
         cursor: pointer !important;
@@ -189,8 +236,8 @@ st_speech_html = f"""
         font-size: 13px !important;
         font-weight: 900 !important;
         border-radius: 6px !important;
-        height: 40px !important;
-        line-height: 34px !important;
+        height: 42px !important;
+        line-height: 36px !important;
         padding: 0px !important;
         width: 100% !important;
         cursor: pointer !important;
