@@ -10,7 +10,7 @@ import streamlit.components.v1 as components
 
 st.set_page_config(layout="centered", page_title="Thai Practice")
 
-# Hide default Streamlit elements
+# --- GLOBAL STYLING & CLEANUP ---
 st.markdown("""
     <style>
     #MainMenu {visibility: hidden;}
@@ -29,70 +29,10 @@ st.markdown("""
         padding-left: 0.5rem !important;
         padding-right: 0.5rem !important;
     }
-
-    /* Force 3 columns side-by-side on mobile */
-    div[data-testid="stHorizontalBlock"] {
-        display: flex !important;
-        flex-direction: row !important;
-        flex-wrap: nowrap !important;
-        width: 100% !important;
-        gap: 6px !important;
-    }
-
-    div[data-testid="stColumn"] {
-        flex: 1 1 0% !important;
-        min-width: 0 !important;
-        width: auto !important;
-    }
-
-    /* Uniform button dimensions */
-    div[data-testid="stButton"] > button {
-        width: 100% !important;
-        height: 42px !important;
-        font-size: 14px !important;
-        font-weight: 900 !important;
-        border-radius: 6px !important;
-        padding: 0px !important;
-        white-space: nowrap !important;
-        margin: 2px 0px !important;
-        cursor: pointer !important;
-        border: none !important;
-    }
-
-    div[data-testid="stButton"] > button p {
-        color: #FFFFFF !important;
-        font-weight: 900 !important;
-    }
-
-    hr {
-        margin: 6px 0px !important;
-    }
     </style>
 """, unsafe_allow_html=True)
 
-# Audio Player Helper
-def play_thai_audio(text):
-    tts = gTTS(text=text, lang='th')
-    fp = io.BytesIO()
-    tts.write_to_fp(fp)
-    b64_audio = base64.b64encode(fp.getvalue()).decode()
-    
-    audio_key = int(time.time() * 1000)
-    audio_html = f"""
-    <audio id="audio_{audio_key}" autoplay style="display:none;">
-        <source src="data:audio/mp3;base64,{b64_audio}" type="audio/mp3">
-    </audio>
-    <script>
-        var audio = document.getElementById('audio_{audio_key}');
-        if(audio) {{
-            audio.currentTime = 0;
-            audio.play();
-        }}
-    </script>
-    """
-    components.html(audio_html, height=0)
-
-# Load dataset
+# --- LOAD DATASET ---
 @st.cache_data(ttl=600)
 def load_phrases_with_meta():
     sheet_id = "1_vMSPtMo3-JD2qARp4zwrcvNrhEuSKHQVEOT1IMwgFw"
@@ -127,13 +67,29 @@ def load_phrases_with_meta():
 PHRASES_DB, SHEET_LAST_UPDATED = load_phrases_with_meta()
 total = len(PHRASES_DB)
 
-# Session State
+# Initialize Session State
 if "phrase_index" not in st.session_state:
     st.session_state.phrase_index = 0
 if "reveal" not in st.session_state:
     st.session_state.reveal = False
-if "auto_play" not in st.session_state:
-    st.session_state.auto_play = False
+
+# Read URL params for actions passed back from JS
+query_params = st.query_params
+if "action" in query_params:
+    action = query_params["action"]
+    if action == "reveal":
+        st.session_state.reveal = not st.session_state.reveal
+    elif action == "next":
+        st.session_state.phrase_index = (st.session_state.phrase_index + 1) % total
+        st.session_state.reveal = False
+    elif action == "back":
+        st.session_state.phrase_index = (st.session_state.phrase_index - 1) % total
+        st.session_state.reveal = False
+    elif action == "rand":
+        st.session_state.phrase_index = random.randint(0, total - 1)
+        st.session_state.reveal = False
+    st.query_params.clear()
+    st.rerun()
 
 current_phrase = PHRASES_DB[st.session_state.phrase_index]
 
@@ -149,59 +105,128 @@ st.markdown(
     unsafe_allow_html=True
 )
 
-# Display text
+# Title & Main Thai Phrase Display
 st.markdown("<h4 style='text-align: center; color: #000000; margin: 0px;'>Thai Listening and Reading</h4>", unsafe_allow_html=True)
 st.markdown(f"<h2 style='text-align: center; font-size: 32px; color: #000000; margin: 2px 0;'>{current_phrase['thai']}</h2>", unsafe_allow_html=True)
 
+# English Translation Display
 if st.session_state.reveal:
     st.markdown(f"<p style='text-align: center; color: #0066CC; font-size: 20px; font-weight: bold; margin-bottom: 4px;'>{current_phrase['english']}</p>", unsafe_allow_html=True)
 else:
     st.markdown("<p style='text-align: center; color: #777777; font-size: 13px; margin-bottom: 4px;'>Click \"REVEAL\" to view English translation</p>", unsafe_allow_html=True)
 
-if st.session_state.auto_play:
-    play_thai_audio(current_phrase["thai"])
-    st.session_state.auto_play = False
+# Generate TTS Base64 String for Speech Playback
+tts = gTTS(text=current_phrase["thai"], lang='th')
+fp = io.BytesIO()
+tts.write_to_fp(fp)
+b64_audio = base64.b64encode(fp.getvalue()).decode()
 
-# --- BUTTON CONTROLS WITH DIRECT INLINE STYLING ---
+# --- HIGH-VISIBILITY HTML CONTROL BUTTONS ---
+controls_html = f"""
+<div style="width: 100%; font-family: sans-serif; box-sizing: border-box; padding: 0 2px;">
+    <!-- REVEAL BUTTON -->
+    <button onclick="triggerAction('reveal')" style="
+        background-color: #0066CC !important;
+        color: #FFFFFF !important;
+        font-size: 14px !important;
+        font-weight: 900 !important;
+        border: none !important;
+        border-radius: 6px !important;
+        height: 42px !important;
+        width: 100% !important;
+        cursor: pointer !important;
+        margin-bottom: 6px !important;
+        box-shadow: 0px 2px 4px rgba(0,0,0,0.2);
+    ">REVEAL</button>
 
-st.html("<style>div[data-testid='stButton']:has(#btn_reveal) button { background-color: #0066CC !important; }</style>")
-if st.button("REVEAL", key="btn_reveal", use_container_width=True):
-    st.session_state.reveal = not st.session_state.reveal
-    st.rerun()
+    <!-- PHRASE BUTTON -->
+    <button onclick="playAudio()" style="
+        background-color: #FF6600 !important;
+        color: #FFFFFF !important;
+        font-size: 14px !important;
+        font-weight: 900 !important;
+        border: none !important;
+        border-radius: 6px !important;
+        height: 42px !important;
+        width: 100% !important;
+        cursor: pointer !important;
+        margin-bottom: 6px !important;
+        box-shadow: 0px 2px 4px rgba(0,0,0,0.2);
+    ">PHRASE</button>
 
-st.html("<style>div[data-testid='stButton']:has(#btn_phrase) button { background-color: #FF6600 !important; }</style>")
-if st.button("PHRASE", key="btn_phrase", use_container_width=True):
-    play_thai_audio(current_phrase["thai"])
+    <!-- 3-BUTTON ROW -->
+    <div style="display: flex; gap: 6px; width: 100%;">
+        <button onclick="triggerAction('back')" style="
+            flex: 1;
+            background-color: #1A202C !important;
+            color: #FFFFFF !important;
+            font-size: 14px !important;
+            font-weight: 900 !important;
+            border: none !important;
+            border-radius: 6px !important;
+            height: 42px !important;
+            cursor: pointer !important;
+            box-shadow: 0px 2px 4px rgba(0,0,0,0.2);
+        ">BACK</button>
 
-col_back, col_rand, col_next = st.columns(3)
+        <button onclick="triggerAction('rand')" style="
+            flex: 1;
+            background-color: #28A745 !important;
+            color: #FFFFFF !important;
+            font-size: 14px !important;
+            font-weight: 900 !important;
+            border: none !important;
+            border-radius: 6px !important;
+            height: 42px !important;
+            cursor: pointer !important;
+            box-shadow: 0px 2px 4px rgba(0,0,0,0.2);
+        ">RANDOM</button>
 
-with col_back:
-    st.html("<style>div[data-testid='stButton']:has(#btn_back) button { background-color: #1A202C !important; }</style>")
-    if st.button("BACK", key="btn_back", use_container_width=True):
-        st.session_state.phrase_index = (st.session_state.phrase_index - 1) % total
-        st.session_state.reveal = False
-        st.session_state.auto_play = True
-        st.rerun()
+        <button onclick="triggerAction('next')" style="
+            flex: 1;
+            background-color: #1A202C !important;
+            color: #FFFFFF !important;
+            font-size: 14px !important;
+            font-weight: 900 !important;
+            border: none !important;
+            border-radius: 6px !important;
+            height: 42px !important;
+            cursor: pointer !important;
+            box-shadow: 0px 2px 4px rgba(0,0,0,0.2);
+        ">NEXT</button>
+    </div>
 
-with col_rand:
-    st.html("<style>div[data-testid='stButton']:has(#btn_rand) button { background-color: #28A745 !important; }</style>")
-    if st.button("RANDOM", key="btn_rand", use_container_width=True):
-        st.session_state.phrase_index = random.randint(0, total - 1)
-        st.session_state.reveal = False
-        st.session_state.auto_play = True
-        st.rerun()
+    <audio id="tts-player" style="display:none;">
+        <source src="data:audio/mp3;base64,{b64_audio}" type="audio/mp3">
+    </audio>
+</div>
 
-with col_next:
-    st.html("<style>div[data-testid='stButton']:has(#btn_next) button { background-color: #1A202C !important; }</style>")
-    if st.button("NEXT", key="btn_next", use_container_width=True):
-        st.session_state.phrase_index = (st.session_state.phrase_index + 1) % total
-        st.session_state.reveal = False
-        st.session_state.auto_play = True
-        st.rerun()
+<script>
+    function triggerAction(actionName) {{
+        window.parent.postMessage({{
+            type: "streamlit:setComponentValue",
+            value: actionName
+        }}, "*");
+        const url = new URL(window.parent.location.href);
+        url.searchParams.set("action", actionName);
+        window.parent.location.href = url.href;
+    }}
 
-st.divider()
+    function playAudio() {{
+        const audio = document.getElementById('tts-player');
+        if (audio) {{
+            audio.currentTime = 0;
+            audio.play();
+        }}
+    }}
+</script>
+"""
 
-# --- SPEECH RECOGNITION & TRANSLATION ---
+components.html(controls_html, height=150)
+
+st.markdown("<hr style='margin: 8px 0;'>", unsafe_allow_html=True)
+
+# --- SPEECH RECOGNITION & TRANSLATION SECTION ---
 st_speech_html = f"""
 <div style="text-align: center; font-family: sans-serif;">
     <div id="output" style="color: #FF6600; font-size: 32px; font-weight: bold; min-height: 40px; margin-bottom: 2px;">
@@ -226,6 +251,7 @@ st_speech_html = f"""
         cursor: pointer !important;
         margin-bottom: 8px !important;
         box-sizing: border-box !important;
+        box-shadow: 0px 2px 4px rgba(0,0,0,0.2);
     ">TRANSLATE</button>
 
     <button id="speak-btn" style="
@@ -241,6 +267,7 @@ st_speech_html = f"""
         width: 100% !important;
         cursor: pointer !important;
         box-sizing: border-box !important;
+        box-shadow: 0px 2px 4px rgba(0,0,0,0.1);
     ">HEAR SPOKEN THAI TEXT</button>
 
     <div style="margin-top: 10px; font-size: 12px; color: #555555; line-height: 1.4;">
