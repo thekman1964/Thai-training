@@ -10,9 +10,10 @@ import streamlit.components.v1 as components
 
 st.set_page_config(layout="centered", page_title="Thai Practice")
 
-# --- Custom Page Setup ---
+# --- Custom Styling ---
 st.markdown("""
     <style>
+    /* Hide top Streamlit header bar, main menu, and footer */
     #MainMenu {visibility: hidden;}
     header {visibility: hidden;}
     footer {visibility: hidden;}
@@ -28,6 +29,59 @@ st.markdown("""
         padding-bottom: 0rem !important;
         padding-left: 0.5rem !important;
         padding-right: 0.5rem !important;
+    }
+
+    /* Force horizontal column row on mobile without vertical stacking */
+    div[data-testid="stHorizontalBlock"] {
+        display: flex !important;
+        flex-direction: row !important;
+        flex-wrap: nowrap !important;
+        gap: 6px !important;
+    }
+
+    div[data-testid="stColumn"] {
+        flex: 1 1 0% !important;
+        min-width: 0 !important;
+    }
+
+    /* Base styling for Streamlit buttons */
+    div.stButton > button {
+        width: 100% !important;
+        height: 40px !important;
+        font-weight: 900 !important;
+        font-size: 13px !important;
+        border-radius: 6px !important;
+        border: 3px solid #000000 !important;
+        box-sizing: border-box !important;
+        cursor: pointer !important;
+        padding: 0px !important;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+    }
+
+    /* Color targeting for native buttons */
+    div.stButton > button:has(p:contains("REVEAL")) {
+        background-color: #0066CC !important;
+        color: #FFFFFF !important;
+    }
+    div.stButton > button:has(p:contains("PHRASE")) {
+        background-color: #FF6600 !important;
+        color: #FFFFFF !important;
+    }
+    div.stButton > button:has(p:contains("BACK")),
+    div.stButton > button:has(p:contains("NEXT")) {
+        background-color: #1A202C !important;
+        color: #FFFFFF !important;
+    }
+    div.stButton > button:has(p:contains("RANDOM")) {
+        background-color: #28A745 !important;
+        color: #FFFFFF !important;
+    }
+
+    /* Target inner button paragraph text to stay white */
+    div.stButton > button p {
+        color: #FFFFFF !important;
+        font-weight: 900 !important;
     }
 
     hr {
@@ -93,36 +147,12 @@ def load_phrases_with_meta():
 PHRASES_DB, SHEET_LAST_UPDATED = load_phrases_with_meta()
 total = len(PHRASES_DB)
 
-# Process query parameters for button presses
-params = st.query_params
-action = params.get("act", None)
-
 if "phrase_index" not in st.session_state:
     st.session_state.phrase_index = 0
 if "reveal" not in st.session_state:
     st.session_state.reveal = False
 if "auto_play" not in st.session_state:
     st.session_state.auto_play = False
-
-if action:
-    if action == "rev":
-        st.session_state.reveal = not st.session_state.reveal
-    elif action == "phr":
-        st.session_state.auto_play = True
-    elif action == "back":
-        st.session_state.phrase_index = (st.session_state.phrase_index - 1) % total
-        st.session_state.reveal = False
-        st.session_state.auto_play = True
-    elif action == "rand":
-        st.session_state.phrase_index = random.randint(0, total - 1)
-        st.session_state.reveal = False
-        st.session_state.auto_play = True
-    elif action == "next":
-        st.session_state.phrase_index = (st.session_state.phrase_index + 1) % total
-        st.session_state.reveal = False
-        st.session_state.auto_play = True
-    st.query_params.clear()
-    st.rerun()
 
 current_phrase = PHRASES_DB[st.session_state.phrase_index]
 
@@ -153,98 +183,42 @@ if st.session_state.auto_play:
     play_thai_audio(current_phrase["thai"])
     st.session_state.auto_play = False
 
-# 3. Direct Inline HTML Buttons with Fixed Layout & Colors
-buttons_html = """
-<div style="display: flex; flex-direction: column; align-items: center; gap: 8px; width: 100%;">
-    <!-- Row 1: REVEAL -->
-    <div style="display: flex; justify-content: center; width: 100%;">
-        <button onclick="sendAction('rev')" style="
-            width: 33.33%;
-            height: 40px;
-            background-color: #0066CC;
-            color: #FFFFFF;
-            font-weight: 900;
-            font-size: 13px;
-            border-radius: 6px;
-            border: 3px solid #000000;
-            box-sizing: border-box;
-            cursor: pointer;
-            text-transform: uppercase;">REVEAL</button>
-    </div>
+# 3. Action & Navigation Buttons
+# Row 1: REVEAL
+r1_c1, r1_c2, r1_c3 = st.columns([1, 1, 1])
+with r1_c2:
+    if st.button("REVEAL", key="btn_rev"):
+        st.session_state.reveal = not st.session_state.reveal
+        st.rerun()
 
-    <!-- Row 2: PHRASE -->
-    <div style="display: flex; justify-content: center; width: 100%;">
-        <button onclick="sendAction('phr')" style="
-            width: 33.33%;
-            height: 40px;
-            background-color: #FF6600;
-            color: #FFFFFF;
-            font-weight: 900;
-            font-size: 13px;
-            border-radius: 6px;
-            border: 3px solid #000000;
-            box-sizing: border-box;
-            cursor: pointer;
-            text-transform: uppercase;">PHRASE</button>
-    </div>
+# Row 2: PHRASE
+r2_c1, r2_c2, r2_c3 = st.columns([1, 1, 1])
+with r2_c2:
+    if st.button("PHRASE", key="btn_phr"):
+        play_thai_audio(current_phrase["thai"])
 
-    <!-- Row 3: BACK, RANDOM, NEXT -->
-    <div style="display: flex; gap: 6px; width: 100%;">
-        <button onclick="sendAction('back')" style="
-            flex: 1;
-            height: 40px;
-            background-color: #1A202C;
-            color: #FFFFFF;
-            font-weight: 900;
-            font-size: 13px;
-            border-radius: 6px;
-            border: 3px solid #000000;
-            box-sizing: border-box;
-            cursor: pointer;
-            text-transform: uppercase;">BACK</button>
-            
-        <button onclick="sendAction('rand')" style="
-            flex: 1;
-            height: 40px;
-            background-color: #28A745;
-            color: #FFFFFF;
-            font-weight: 900;
-            font-size: 13px;
-            border-radius: 6px;
-            border: 3px solid #000000;
-            box-sizing: border-box;
-            cursor: pointer;
-            text-transform: uppercase;">RANDOM</button>
-            
-        <button onclick="sendAction('next')" style="
-            flex: 1;
-            height: 40px;
-            background-color: #1A202C;
-            color: #FFFFFF;
-            font-weight: 900;
-            font-size: 13px;
-            border-radius: 6px;
-            border: 3px solid #000000;
-            box-sizing: border-box;
-            cursor: pointer;
-            text-transform: uppercase;">NEXT</button>
-    </div>
-</div>
+# Row 3: BACK, RANDOM, NEXT
+c_back, c_rand, c_next = st.columns([1, 1, 1])
+with c_back:
+    if st.button("BACK", key="btn_back"):
+        st.session_state.phrase_index = (st.session_state.phrase_index - 1) % total
+        st.session_state.reveal = False
+        st.session_state.auto_play = True
+        st.rerun()
 
-<script>
-function sendAction(actionVal) {
-    const targetUrl = window.location.pathname + '?act=' + actionVal;
-    try {
-        window.parent.postMessage({type: 'streamlit:setComponentValue', value: actionVal}, '*');
-        window.parent.location.href = window.parent.location.origin + targetUrl;
-    } catch(e) {
-        window.location.href = targetUrl;
-    }
-}
-</script>
-"""
+with c_rand:
+    if st.button("RANDOM", key="btn_rand"):
+        st.session_state.phrase_index = random.randint(0, total - 1)
+        st.session_state.reveal = False
+        st.session_state.auto_play = True
+        st.rerun()
 
-components.html(buttons_html, height=150)
+with c_next:
+    if st.button("NEXT", key="btn_next"):
+        st.session_state.phrase_index = (st.session_state.phrase_index + 1) % total
+        st.session_state.reveal = False
+        st.session_state.auto_play = True
+        st.rerun()
 
 st.divider()
 
