@@ -10,7 +10,7 @@ import streamlit.components.v1 as components
 
 st.set_page_config(layout="centered", page_title="Thai Practice")
 
-# --- Mobile Compact & Responsive Force-Row Styling ---
+# --- CSS Styling for Mobile Rows & Explicit Button Colors ---
 st.markdown("""
     <style>
     /* Hide top Streamlit header bar, main menu, and footer */
@@ -31,7 +31,7 @@ st.markdown("""
         padding-right: 0.5rem !important;
     }
 
-    /* Prevent Streamlit from stacking columns vertically on mobile screens */
+    /* Force 3-column horizontal alignment on mobile */
     div[data-testid="stHorizontalBlock"] {
         display: flex !important;
         flex-direction: row !important;
@@ -44,7 +44,7 @@ st.markdown("""
         min-width: 0 !important;
     }
 
-    /* Universal styling for native Streamlit buttons */
+    /* Base styling for all native Streamlit buttons */
     div.stButton > button {
         width: 100% !important;
         height: 40px !important;
@@ -59,23 +59,24 @@ st.markdown("""
         letter-spacing: 0.5px;
     }
 
-    /* Specific Button Colors via Container Wrapper Classes */
-    .btn-blue div.stButton > button {
+    /* Direct Button Color Targeting via Key Attributes */
+    div.stButton > button[aria-label="REVEAL"] {
         background-color: #0066CC !important;
         color: #FFFFFF !important;
     }
 
-    .btn-orange div.stButton > button {
+    div.stButton > button[aria-label="PHRASE"] {
         background-color: #FF6600 !important;
         color: #FFFFFF !important;
     }
 
-    .btn-dark div.stButton > button {
+    div.stButton > button[aria-label="BACK"], 
+    div.stButton > button[aria-label="NEXT"] {
         background-color: #1A202C !important;
         color: #FFFFFF !important;
     }
 
-    .btn-green div.stButton > button {
+    div.stButton > button[aria-label="RANDOM"] {
         background-color: #28A745 !important;
         color: #FFFFFF !important;
     }
@@ -180,52 +181,42 @@ if st.session_state.auto_play:
     play_thai_audio(current_phrase["thai"])
     st.session_state.auto_play = False
 
-# 3. Forced Horizontal Action & Navigation Buttons Grid
+# 3. Action & Navigation Native Streamlit Buttons Grid
 # Row 1: REVEAL
 r1_c1, r1_c2, r1_c3 = st.columns([1, 1, 1])
 with r1_c2:
-    st.markdown('<div class="btn-blue">', unsafe_allow_html=True)
     if st.button("REVEAL", key="native_reveal", use_container_width=True):
         st.session_state.reveal = not st.session_state.reveal
         st.rerun()
-    st.markdown('</div>', unsafe_allow_html=True)
 
 # Row 2: PHRASE
 r2_c1, r2_c2, r2_c3 = st.columns([1, 1, 1])
 with r2_c2:
-    st.markdown('<div class="btn-orange">', unsafe_allow_html=True)
     if st.button("PHRASE", key="native_phrase", use_container_width=True):
         play_thai_audio(current_phrase["thai"])
-    st.markdown('</div>', unsafe_allow_html=True)
 
-# Row 3: BACK, RANDOM, NEXT (Forced side-by-side row)
+# Row 3: BACK, RANDOM, NEXT
 c_back, c_rand, c_next = st.columns([1, 1, 1])
 with c_back:
-    st.markdown('<div class="btn-dark">', unsafe_allow_html=True)
     if st.button("BACK", key="native_back", use_container_width=True):
         st.session_state.phrase_index = (st.session_state.phrase_index - 1) % total
         st.session_state.reveal = False
         st.session_state.auto_play = True
         st.rerun()
-    st.markdown('</div>', unsafe_allow_html=True)
 
 with c_rand:
-    st.markdown('<div class="btn-green">', unsafe_allow_html=True)
     if st.button("RANDOM", key="native_rand", use_container_width=True):
         st.session_state.phrase_index = random.randint(0, total - 1)
         st.session_state.reveal = False
         st.session_state.auto_play = True
         st.rerun()
-    st.markdown('</div>', unsafe_allow_html=True)
 
 with c_next:
-    st.markdown('<div class="btn-dark">', unsafe_allow_html=True)
     if st.button("NEXT", key="native_next", use_container_width=True):
         st.session_state.phrase_index = (st.session_state.phrase_index + 1) % total
         st.session_state.reveal = False
         st.session_state.auto_play = True
         st.rerun()
-    st.markdown('</div>', unsafe_allow_html=True)
 
 st.divider()
 
