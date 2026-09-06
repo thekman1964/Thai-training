@@ -10,7 +10,7 @@ import streamlit.components.v1 as components
 
 st.set_page_config(layout="centered", page_title="Thai Practice")
 
-# --- GLOBAL STYLES ---
+# --- GLOBAL STYLES & MOBILE COLUMN FORCING ---
 st.markdown("""
     <style>
     #MainMenu {visibility: hidden;}
@@ -30,18 +30,33 @@ st.markdown("""
         padding-right: 0.5rem !important;
     }
 
+    /* FORCE HORIZONTAL LAYOUT ON MOBILE FOR COLUMNS */
+    div[data-testid="stHorizontalBlock"] {
+        display: flex !important;
+        flex-direction: row !important;
+        flex-wrap: nowrap !important;
+        width: 100% !important;
+        gap: 6px !important;
+    }
+
+    div[data-testid="stColumn"] {
+        flex: 1 1 0% !important;
+        min-width: 0 !important;
+        width: auto !important;
+    }
+
     /* Base Styling for All Native Buttons */
     div[data-testid="stButton"] > button {
         width: 100% !important;
         height: 40px !important;
         min-height: 40px !important;
-        font-size: 14px !important;
+        font-size: 13px !important;
         font-weight: 900 !important;
         border-radius: 6px !important;
-        padding: 0px !important;
+        padding: 0px 2px !important;
         line-height: 32px !important;
         white-space: nowrap !important;
-        margin: 2px 0px !important;
+        margin: 0px !important;
         box-sizing: border-box !important;
         cursor: pointer !important;
     }
@@ -154,15 +169,12 @@ if st.session_state.auto_play:
 # --- BUTTON LAYOUT ---
 
 # Row 1: REVEAL
-if st.button("REVEAL", key="btn_reveal", use_container_width=True):
-    st.session_state.reveal = not st.session_state.reveal
-    st.rerun()
+st.button("REVEAL", key="btn_reveal", use_container_width=True)
 
 # Row 2: PHRASE
-if st.button("PHRASE", key="btn_phrase", use_container_width=True):
-    play_thai_audio(current_phrase["thai"])
+st.button("PHRASE", key="btn_phrase", use_container_width=True)
 
-# Row 3: BACK, RANDOM, NEXT (3 Columns Side-by-Side)
+# Row 3: BACK, RANDOM, NEXT (3 Columns side by side)
 col_back, col_rand, col_next = st.columns(3)
 with col_back:
     if st.button("BACK", key="btn_back", use_container_width=True):
