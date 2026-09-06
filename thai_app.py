@@ -10,7 +10,7 @@ import streamlit.components.v1 as components
 
 st.set_page_config(layout="centered", page_title="Thai Practice")
 
-# --- CSS OVERRIDES & STYLING ---
+# Hide standard Streamlit header/footer padding without breaking buttons
 st.markdown("""
     <style>
     #MainMenu {visibility: hidden;}
@@ -30,7 +30,7 @@ st.markdown("""
         padding-right: 0.5rem !important;
     }
 
-    /* PREVENT MOBILE COLUMN STACKING FOR THE 3-BUTTON ROW */
+    /* Force 3 columns on mobile screens */
     div[data-testid="stHorizontalBlock"] {
         display: flex !important;
         flex-direction: row !important;
@@ -43,48 +43,6 @@ st.markdown("""
         flex: 1 1 0% !important;
         min-width: 0 !important;
         width: auto !important;
-    }
-
-    /* BASE BUTTON FORMATTING FOR ALL STREAMLIT BUTTONS */
-    div[data-testid="stButton"] > button {
-        width: 100% !important;
-        height: 42px !important;
-        font-size: 14px !important;
-        font-weight: 900 !important;
-        border-radius: 6px !important;
-        padding: 0px !important;
-        white-space: nowrap !important;
-        margin: 2px 0px !important;
-        cursor: pointer !important;
-        border: none !important;
-    }
-
-    /* DIRECT BUTTON COLORING VIA TEXT LABEL CONTAINERS */
-    div[data-testid="stButton"] > button:has(p:contains("REVEAL")) {
-        background-color: #0066CC !important;
-    }
-
-    div[data-testid="stButton"] > button:has(p:contains("PHRASE")) {
-        background-color: #FF6600 !important;
-    }
-
-    div[data-testid="stButton"] > button:has(p:contains("BACK")),
-    div[data-testid="stButton"] > button:has(p:contains("NEXT")) {
-        background-color: #1A202C !important;
-    }
-
-    div[data-testid="stButton"] > button:has(p:contains("RANDOM")) {
-        background-color: #28A745 !important;
-    }
-
-    /* FORCE ALL BUTTON TEXT TO WHITE */
-    div[data-testid="stButton"] > button p {
-        color: #FFFFFF !important;
-        font-weight: 900 !important;
-    }
-
-    hr {
-        margin: 6px 0px !important;
     }
     </style>
 """, unsafe_allow_html=True)
@@ -183,14 +141,14 @@ if st.session_state.auto_play:
     play_thai_audio(current_phrase["thai"])
     st.session_state.auto_play = False
 
-# --- CLEAN NATIVE CONTROLS ---
+# --- NATIVE STREAMLIT BUTTON CONTROLS ---
 
-# Button 1: REVEAL
-if st.button("REVEAL", key="btn_reveal", use_container_width=True):
+# Row 1: REVEAL
+if st.button("REVEAL", key="btn_reveal", use_container_width=True, type="primary"):
     st.session_state.reveal = not st.session_state.reveal
     st.rerun()
 
-# Button 2: PHRASE
+# Row 2: PHRASE
 if st.button("PHRASE", key="btn_phrase", use_container_width=True):
     play_thai_audio(current_phrase["thai"])
 
