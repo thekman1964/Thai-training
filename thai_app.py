@@ -10,13 +10,81 @@ import streamlit.components.v1 as components
 
 st.set_page_config(layout="centered", page_title="Thai Practice")
 
-# Minimal layout cleanup (hides header/footer only)
+# --- GLOBAL STYLING (Targeting official Streamlit element containers) ---
 st.markdown("""
     <style>
     #MainMenu {visibility: hidden;}
     header {visibility: hidden;}
     footer {visibility: hidden;}
     div[data-testid="stHeader"] {display: none;}
+
+    .stApp {
+        background-color: #FFFFFF !important;
+        color: #000000 !important;
+    }
+
+    .block-container {
+        padding-top: 0.2rem !important;
+        padding-bottom: 0rem !important;
+        padding-left: 0.5rem !important;
+        padding-right: 0.5rem !important;
+    }
+
+    /* FORCE 3-COLUMN HORIZONTAL ROW ON MOBILE */
+    div[data-testid="stHorizontalBlock"] {
+        display: flex !important;
+        flex-direction: row !important;
+        flex-wrap: nowrap !important;
+        width: 100% !important;
+        gap: 6px !important;
+    }
+
+    div[data-testid="stHorizontalBlock"] > div {
+        flex: 1 1 0% !important;
+        min-width: 0 !important;
+    }
+
+    /* BASE BUTTON STYLING */
+    div[data-testid="stButton"] > button {
+        width: 100% !important;
+        height: 44px !important;
+        border-radius: 6px !important;
+        border: none !important;
+        box-shadow: 0px 2px 4px rgba(0,0,0,0.15) !important;
+        font-weight: 800 !important;
+        font-size: 15px !important;
+    }
+
+    /* BUTTON COLORS BY ELEMENT POSITION */
+    /* 1. REVEAL (Blue) */
+    .main .block-container > div:nth-child(5) button {
+        background-color: #0066CC !important;
+        color: #FFFFFF !important;
+    }
+
+    /* 2. PHRASE (Orange) */
+    .main .block-container > div:nth-child(6) button {
+        background-color: #FF6600 !important;
+        color: #FFFFFF !important;
+    }
+
+    /* 3. BACK & NEXT (Dark Grey/Black) */
+    div[data-testid="stHorizontalBlock"] > div:nth-child(1) button,
+    div[data-testid="stHorizontalBlock"] > div:nth-child(3) button {
+        background-color: #1A202C !important;
+        color: #FFFFFF !important;
+    }
+
+    /* 4. RANDOM (Green) */
+    div[data-testid="stHorizontalBlock"] > div:nth-child(2) button {
+        background-color: #28A745 !important;
+        color: #FFFFFF !important;
+    }
+
+    /* Ensure text inside all buttons stays white */
+    div[data-testid="stButton"] > button p {
+        color: #FFFFFF !important;
+    }
     </style>
 """, unsafe_allow_html=True)
 
@@ -65,13 +133,13 @@ if "play_audio" not in st.session_state:
 
 current_phrase = PHRASES_DB[st.session_state.phrase_index]
 
-# Header
+# Flag Header
 st.markdown(
     """
     <div style="text-align: center; margin-top: 2px; margin-bottom: 2px;">
         <img src="https://upload.wikimedia.org/wikipedia/commons/a/a9/Flag_of_Thailand.svg" 
              alt="Thailand Flag" 
-             style="width: 55px; height: 36px; display: inline-block; border-radius: 3px;">
+             style="width: 55px; height: 36px; display: inline-block; border-radius: 3px; box-shadow: 0px 2px 4px rgba(0,0,0,0.2);">
     </div>
     """,
     unsafe_allow_html=True
@@ -100,7 +168,7 @@ if st.session_state.play_audio:
     components.html(audio_html, height=0)
     st.session_state.play_audio = False
 
-# --- STABLE NATIVE CONTROLS ---
+# --- NATIVE STREAMLIT BUTTONS ---
 if st.button("REVEAL", use_container_width=True):
     st.session_state.reveal = not st.session_state.reveal
 
