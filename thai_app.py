@@ -10,7 +10,7 @@ import streamlit.components.v1 as components
 
 st.set_page_config(layout="centered", page_title="Thai Practice")
 
-# --- CSS OVERRIDES ---
+# --- CSS INJECTION & LAYOUT FIXES ---
 st.markdown("""
     <style>
     #MainMenu {visibility: hidden;}
@@ -45,7 +45,7 @@ st.markdown("""
         width: auto !important;
     }
 
-    /* BASE BUTTON FORMATTING */
+    /* UNIFORM BUTTON DIMENSIONS */
     div[data-testid="stButton"] > button {
         width: 100% !important;
         height: 42px !important;
@@ -59,13 +59,25 @@ st.markdown("""
         border: none !important;
     }
 
-    /* BUTTON COLORS BY CLASS WRAPPERS */
-    .btn-blue div[data-testid="stButton"] > button { background-color: #0066CC !important; color: #FFFFFF !important; }
-    .btn-orange div[data-testid="stButton"] > button { background-color: #FF6600 !important; color: #FFFFFF !important; }
-    .btn-dark div[data-testid="stButton"] > button { background-color: #1A202C !important; color: #FFFFFF !important; }
-    .btn-green div[data-testid="stButton"] > button { background-color: #28A745 !important; color: #FFFFFF !important; }
+    /* BUTTON COLORS BY ELEMENT KEY */
+    div[data-testid="stButton"] > button[key="btn_reveal"] {
+        background-color: #0066CC !important;
+    }
+    
+    div[data-testid="stButton"] > button[key="btn_phrase"] {
+        background-color: #FF6600 !important;
+    }
+    
+    div[data-testid="stButton"] > button[key="btn_back"],
+    div[data-testid="stButton"] > button[key="btn_next"] {
+        background-color: #1A202C !important;
+    }
+    
+    div[data-testid="stButton"] > button[key="btn_rand"] {
+        background-color: #28A745 !important;
+    }
 
-    /* ENSURE TEXT STAYS WHITE */
+    /* FORCE BUTTON TEXT TO REMAIN WHITE */
     div[data-testid="stButton"] > button p {
         color: #FFFFFF !important;
         font-weight: 900 !important;
@@ -99,7 +111,7 @@ def play_thai_audio(text):
     """
     components.html(audio_html, height=0)
 
-# Fetch phrases from Google Sheet along with last updated timestamp
+# Load phrases from Google Sheet with meta
 @st.cache_data(ttl=600)
 def load_phrases_with_meta():
     sheet_id = "1_vMSPtMo3-JD2qARp4zwrcvNrhEuSKHQVEOT1IMwgFw"
@@ -166,61 +178,49 @@ if st.session_state.reveal:
 else:
     st.markdown("<p style='text-align: center; color: #777777; font-size: 13px; margin-bottom: 4px;'>Click \"REVEAL\" to view English translation</p>", unsafe_allow_html=True)
 
-# Trigger auto audio play if needed
+# Auto play audio if toggled via state
 if st.session_state.auto_play:
     play_thai_audio(current_phrase["thai"])
     st.session_state.auto_play = False
 
-# --- NATIVE WORKING BUTTONS WITH CSS CLASS WRAPPERS ---
+# --- PRIMARY CONTROLS ---
 
 # Row 1: REVEAL
-with st.container():
-    st.markdown('<div class="btn-blue">', unsafe_allow_html=True)
-    if st.button("REVEAL", key="btn_reveal", use_container_width=True):
-        st.session_state.reveal = not st.session_state.reveal
-        st.rerun()
-    st.markdown('</div>', unsafe_allow_html=True)
+if st.button("REVEAL", key="btn_reveal", use_container_width=True):
+    st.session_state.reveal = not st.session_state.reveal
+    st.rerun()
 
 # Row 2: PHRASE
-with st.container():
-    st.markdown('<div class="btn-orange">', unsafe_allow_html=True)
-    if st.button("PHRASE", key="btn_phrase", use_container_width=True):
-        play_thai_audio(current_phrase["thai"])
-    st.markdown('</div>', unsafe_allow_html=True)
+if st.button("PHRASE", key="btn_phrase", use_container_width=True):
+    play_thai_audio(current_phrase["thai"])
 
 # Row 3: BACK, RANDOM, NEXT (Forced 3 Columns Side-by-Side)
 col_back, col_rand, col_next = st.columns(3)
 
 with col_back:
-    st.markdown('<div class="btn-dark">', unsafe_allow_html=True)
     if st.button("BACK", key="btn_back", use_container_width=True):
         st.session_state.phrase_index = (st.session_state.phrase_index - 1) % total
         st.session_state.reveal = False
         st.session_state.auto_play = True
         st.rerun()
-    st.markdown('</div>', unsafe_allow_html=True)
 
 with col_rand:
-    st.markdown('<div class="btn-green">', unsafe_allow_html=True)
     if st.button("RANDOM", key="btn_rand", use_container_width=True):
         st.session_state.phrase_index = random.randint(0, total - 1)
         st.session_state.reveal = False
         st.session_state.auto_play = True
         st.rerun()
-    st.markdown('</div>', unsafe_allow_html=True)
 
 with col_next:
-    st.markdown('<div class="btn-dark">', unsafe_allow_html=True)
     if st.button("NEXT", key="btn_next", use_container_width=True):
         st.session_state.phrase_index = (st.session_state.phrase_index + 1) % total
         st.session_state.reveal = False
         st.session_state.auto_play = True
         st.rerun()
-    st.markdown('</div>', unsafe_allow_html=True)
 
 st.divider()
 
-# Speech Recognition & Translation Section
+# --- SPEECH RECOGNITION & TRANSLATION SECTION ---
 st_speech_html = f"""
 <div style="text-align: center; font-family: sans-serif;">
     <div id="output" style="color: #FF6600; font-size: 32px; font-weight: bold; min-height: 40px; margin-bottom: 2px;">
