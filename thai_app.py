@@ -9,7 +9,7 @@ import streamlit.components.v1 as components
 
 st.set_page_config(layout="centered", page_title="Thai Practice")
 
-# --- GLOBAL STYLING ---
+# --- GLOBAL STYLING (Matches exact visual design from reference image) ---
 st.markdown("""
     <style>
     #MainMenu {visibility: hidden;}
@@ -29,36 +29,57 @@ st.markdown("""
         padding-right: 0.5rem !important;
     }
 
-    /* Base look for every native button, matching the old HTML .btn class */
+    /* Force 3 columns into 1 horizontal row on mobile */
+    div[data-testid="stHorizontalBlock"] {
+        display: flex !important;
+        flex-direction: row !important;
+        flex-wrap: nowrap !important;
+        width: 100% !important;
+        gap: 6px !important;
+    }
+
+    div[data-testid="stHorizontalBlock"] > div {
+        flex: 1 1 0% !important;
+        min-width: 0 !important;
+    }
+
+    /* Base Styling for Native Streamlit Buttons */
     div.stButton > button {
         width: 100% !important;
         height: 44px !important;
-        border: none !important;
-        border-radius: 6px !important;
+        border: 2px solid #000000 !important; /* Distinct black border */
+        border-radius: 8px !important;
         font-weight: 800 !important;
         font-size: 15px !important;
-        color: #FFFFFF !important;
         cursor: pointer !important;
         box-shadow: 0px 2px 4px rgba(0,0,0,0.15) !important;
-        margin-top: 3px !important;
-        margin-bottom: 3px !important;
+        margin-top: 2px !important;
+        margin-bottom: 2px !important;
         box-sizing: border-box !important;
     }
 
-    /* Per-button colors, targeted by widget KEY so styling can never
-       mis-target the wrong element regardless of layout changes. */
+    /* Explicit button colors via widget keys */
     .st-key-btn_reveal button { background-color: #0066CC !important; }
     .st-key-btn_phrase button { background-color: #FF6600 !important; }
     .st-key-btn_back button,
     .st-key-btn_next button   { background-color: #1A202C !important; }
     .st-key-btn_rand button   { background-color: #28A745 !important; }
 
-    /* Hide the native audio player visually (still functions/attempts
-       autoplay) so it doesn't take up space or shift the button layout.
-       Note: the data-testid sits on the <audio> tag itself, not a
-       wrapping div - targeting "div[data-testid=stAudio]" never matches. */
+    /* Force button labels to remain bold white text */
+    div.stButton > button p {
+        color: #FFFFFF !important;
+        font-weight: 800 !important;
+    }
+
     audio[data-testid="stAudio"] {
-        display: none !important;
+        position: absolute !important;
+        width: 1px !important;
+        height: 1px !important;
+        opacity: 0 !important;
+        overflow: hidden !important;
+        pointer-events: none !important;
+        margin: 0 !important;
+        padding: 0 !important;
     }
     </style>
 """, unsafe_allow_html=True)
@@ -108,11 +129,6 @@ if "auto_play" not in st.session_state:
 
 current_phrase = PHRASES_DB[st.session_state.phrase_index]
 
-# Helper to play TTS audio for the current phrase.
-# Uses Streamlit's native st.audio widget (with autoplay) instead of a hidden
-# iframe: it attempts autoplay the same way, but also shows a real, visible
-# player so there's a manual tap-to-play fallback if a browser blocks
-# autoplay outright (common on iOS Safari) instead of silently doing nothing.
 def play_thai_audio(text):
     tts = gTTS(text=text, lang='th')
     fp = io.BytesIO()
@@ -120,10 +136,6 @@ def play_thai_audio(text):
     fp.seek(0)
     st.audio(fp.getvalue(), format="audio/mp3", autoplay=True)
 
-# Play audio for BACK/RANDOM/NEXT navigation here, on the run AFTER the
-# rerun triggered by those buttons. Playing it in the same run as the
-# rerun() call cuts the widget off before the browser can start playback -
-# this runs after that rerun has already completed, so nothing interrupts it.
 if st.session_state.auto_play:
     play_thai_audio(current_phrase["thai"])
     st.session_state.auto_play = False
@@ -148,17 +160,14 @@ if st.session_state.reveal:
 else:
     st.markdown("<p style='text-align: center; color: #777777; font-size: 13px; margin-bottom: 4px;'>Click \"REVEAL\" to view English translation</p>", unsafe_allow_html=True)
 
-# --- NAV BUTTONS (native st.button, styled via CSS above to match old layout) ---
-# REVEAL: full width
+# --- NAV BUTTONS ---
 if st.button("REVEAL", key="btn_reveal", use_container_width=True):
     st.session_state.reveal = not st.session_state.reveal
     st.rerun()
 
-# PHRASE: full width
 if st.button("PHRASE", key="btn_phrase", use_container_width=True):
     play_thai_audio(current_phrase["thai"])
 
-# BACK / RANDOM / NEXT: one row, small gap between them
 col_back, col_rand, col_next = st.columns([1, 1, 1], gap="small")
 with col_back:
     if st.button("BACK", key="btn_back", use_container_width=True):
@@ -199,10 +208,10 @@ st_speech_html = f"""
         color: #FFFFFF !important;
         font-size: 15px !important;
         font-weight: 800 !important;
-        border: none !important;
-        border-radius: 6px !important;
+        border: 2px solid #000000 !important;
+        border-radius: 8px !important;
         height: 44px !important;
-        line-height: 44px !important;
+        line-height: 40px !important;
         padding: 0px !important;
         width: 100% !important;
         cursor: pointer !important;
@@ -217,7 +226,7 @@ st_speech_html = f"""
         border: 2px solid #FF6600 !important;
         font-size: 14px !important;
         font-weight: 800 !important;
-        border-radius: 6px !important;
+        border-radius: 8px !important;
         height: 44px !important;
         line-height: 40px !important;
         padding: 0px !important;
