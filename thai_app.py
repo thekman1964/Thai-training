@@ -10,10 +10,9 @@ import streamlit.components.v1 as components
 
 st.set_page_config(layout="centered", page_title="Thai Practice")
 
-# --- Custom Styling ---
+# --- Global CSS ---
 st.markdown("""
     <style>
-    /* Hide top Streamlit header bar, main menu, and footer */
     #MainMenu {visibility: hidden;}
     header {visibility: hidden;}
     footer {visibility: hidden;}
@@ -31,66 +30,12 @@ st.markdown("""
         padding-right: 0.5rem !important;
     }
 
-    /* Force horizontal column row on mobile without vertical stacking */
-    div[data-testid="stHorizontalBlock"] {
-        display: flex !important;
-        flex-direction: row !important;
-        flex-wrap: nowrap !important;
-        gap: 6px !important;
-    }
-
-    div[data-testid="stColumn"] {
-        flex: 1 1 0% !important;
-        min-width: 0 !important;
-    }
-
-    /* Base styling for Streamlit buttons */
-    div.stButton > button {
-        width: 100% !important;
-        height: 40px !important;
-        font-weight: 900 !important;
-        font-size: 13px !important;
-        border-radius: 6px !important;
-        border: 3px solid #000000 !important;
-        box-sizing: border-box !important;
-        cursor: pointer !important;
-        padding: 0px !important;
-        text-transform: uppercase;
-        letter-spacing: 0.5px;
-    }
-
-    /* Color targeting for native buttons */
-    div.stButton > button:has(p:contains("REVEAL")) {
-        background-color: #0066CC !important;
-        color: #FFFFFF !important;
-    }
-    div.stButton > button:has(p:contains("PHRASE")) {
-        background-color: #FF6600 !important;
-        color: #FFFFFF !important;
-    }
-    div.stButton > button:has(p:contains("BACK")),
-    div.stButton > button:has(p:contains("NEXT")) {
-        background-color: #1A202C !important;
-        color: #FFFFFF !important;
-    }
-    div.stButton > button:has(p:contains("RANDOM")) {
-        background-color: #28A745 !important;
-        color: #FFFFFF !important;
-    }
-
-    /* Target inner button paragraph text to stay white */
-    div.stButton > button p {
-        color: #FFFFFF !important;
-        font-weight: 900 !important;
-    }
-
     hr {
         margin: 10px 0px !important;
     }
     </style>
 """, unsafe_allow_html=True)
 
-# Helper function to play audio dynamically
 def play_thai_audio(text):
     tts = gTTS(text=text, lang='th')
     fp = io.BytesIO()
@@ -112,7 +57,6 @@ def play_thai_audio(text):
     """
     components.html(audio_html, height=0)
 
-# Fetch phrases from Google Sheet along with last updated timestamp
 @st.cache_data(ttl=600)
 def load_phrases_with_meta():
     sheet_id = "1_vMSPtMo3-JD2qARp4zwrcvNrhEuSKHQVEOT1IMwgFw"
@@ -156,7 +100,7 @@ if "auto_play" not in st.session_state:
 
 current_phrase = PHRASES_DB[st.session_state.phrase_index]
 
-# 0. Header Flag
+# Header Flag
 st.markdown(
     """
     <div style="text-align: center; margin-top: 2px; margin-bottom: 2px;">
@@ -168,61 +112,93 @@ st.markdown(
     unsafe_allow_html=True
 )
 
-# 1. Title & Phrase Display
 st.markdown("<h4 style='text-align: center; color: #000000; margin: 0px;'>Thai Listening and Reading</h4>", unsafe_allow_html=True)
 st.markdown(f"<h2 style='text-align: center; font-size: 32px; color: #000000; margin: 4px 0;'>{current_phrase['thai']}</h2>", unsafe_allow_html=True)
 
-# 2. English Hint Display
 if st.session_state.reveal:
     st.markdown(f"<p style='text-align: center; color: #0066CC; font-size: 20px; font-weight: bold; margin-bottom: 8px;'>{current_phrase['english']}</p>", unsafe_allow_html=True)
 else:
     st.markdown("<p style='text-align: center; color: #777777; font-size: 13px; margin-bottom: 8px;'>Click \"REVEAL\" to view English translation</p>", unsafe_allow_html=True)
 
-# Trigger audio playback if requested
 if st.session_state.auto_play:
     play_thai_audio(current_phrase["thai"])
     st.session_state.auto_play = False
 
-# 3. Action & Navigation Buttons
-# Row 1: REVEAL
-r1_c1, r1_c2, r1_c3 = st.columns([1, 1, 1])
-with r1_c2:
-    if st.button("REVEAL", key="btn_rev"):
+# HTML Component with Native Event Listener Bridge
+button_component = components.declare_component(
+    "custom_nav_buttons",
+    html="""
+    <style>
+      body { margin: 0; padding: 0; background: transparent; font-family: sans-serif; }
+      .btn-container { display: flex; flex-direction: column; align-items: center; gap: 8px; width: 100%; }
+      .row-center { display: flex; justify-content: center; width: 100%; }
+      .row-three { display: flex; gap: 6px; width: 100%; }
+      button {
+        height: 42px;
+        font-weight: 900;
+        font-size: 13px;
+        border-radius: 6px;
+        border: 3px solid #000000;
+        box-sizing: border-box;
+        cursor: pointer;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+      }
+      .btn-reveal { width: 35%; background-color: #0066CC; color: #FFFFFF; }
+      .btn-phrase { width: 35%; background-color: #FF6600; color: #FFFFFF; }
+      .btn-back, .btn-next { flex: 1; background-color: #1A202C; color: #FFFFFF; }
+      .btn-rand { flex: 1; background-color: #28A745; color: #FFFFFF; }
+    </style>
+
+    <div class="btn-container">
+      <div class="row-center">
+        <button class="btn-reveal" onclick="sendAction('rev')">REVEAL</button>
+      </div>
+      <div class="row-center">
+        <button class="btn-phrase" onclick="sendAction('phr')">PHRASE</button>
+      </div>
+      <div class="row-three">
+        <button class="btn-back" onclick="sendAction('back')">BACK</button>
+        <button class="btn-rand" onclick="sendAction('rand')">RANDOM</button>
+        <button class="btn-next" onclick="sendAction('next')">NEXT</button>
+      </div>
+    </div>
+
+    <script>
+      function sendAction(actionVal) {
+        if (window.Streamlit) {
+          Streamlit.setComponentValue(actionVal + '_' + Date.now());
+        }
+      }
+    </script>
+    """
+)
+
+btn_action = button_component(key="nav_buttons", default=None)
+
+if btn_action:
+    action_type = str(btn_action).split('_')[0]
+    if action_type == "rev":
         st.session_state.reveal = not st.session_state.reveal
-        st.rerun()
-
-# Row 2: PHRASE
-r2_c1, r2_c2, r2_c3 = st.columns([1, 1, 1])
-with r2_c2:
-    if st.button("PHRASE", key="btn_phr"):
+    elif action_type == "phr":
         play_thai_audio(current_phrase["thai"])
-
-# Row 3: BACK, RANDOM, NEXT
-c_back, c_rand, c_next = st.columns([1, 1, 1])
-with c_back:
-    if st.button("BACK", key="btn_back"):
+    elif action_type == "back":
         st.session_state.phrase_index = (st.session_state.phrase_index - 1) % total
         st.session_state.reveal = False
         st.session_state.auto_play = True
-        st.rerun()
-
-with c_rand:
-    if st.button("RANDOM", key="btn_rand"):
+    elif action_type == "rand":
         st.session_state.phrase_index = random.randint(0, total - 1)
         st.session_state.reveal = False
         st.session_state.auto_play = True
-        st.rerun()
-
-with c_next:
-    if st.button("NEXT", key="btn_next"):
+    elif action_type == "next":
         st.session_state.phrase_index = (st.session_state.phrase_index + 1) % total
         st.session_state.reveal = False
         st.session_state.auto_play = True
-        st.rerun()
+    st.rerun()
 
 st.divider()
 
-# 4. Speech Recognition Section
+# Speech Recognition Section
 st_speech_html = f"""
 <div style="text-align: center; font-family: sans-serif;">
     <div id="output" style="color: #FF6600; font-size: 32px; font-weight: bold; min-height: 40px; margin-bottom: 2px;">
