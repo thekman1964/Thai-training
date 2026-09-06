@@ -42,24 +42,17 @@ st.markdown("""
         margin-bottom: 2px !important;
     }
 
-    /* PRIMARY BUTTONS (PHRASE, TRANSLATE) */
+    /* Primary Button: Orange (#FF6600) */
     div.stButton > button[kind="primary"] {
         background-color: #FF6600 !important;
         color: #FFFFFF !important;
         border: none !important;
     }
 
-    /* SECONDARY BUTTONS (REVEAL, BACK, NEXT) */
+    /* Secondary Button: Dark Blue/Dark Slate (#1A202C) */
     div.stButton > button[kind="secondary"] {
         background-color: #1A202C !important;
         color: #FFFFFF !important;
-        border: none !important;
-    }
-
-    /* FORCE RANDOM BUTTON (2nd column in 3-button row) TO BE GREEN WITH BLACK TEXT */
-    div[data-testid="stHorizontalBlock"] > div:nth-child(2) button {
-        background-color: #28A745 !important;
-        color: #000000 !important;
         border: none !important;
     }
 
@@ -173,13 +166,23 @@ if st.session_state.reveal:
 else:
     st.markdown("<p style='text-align: center; color: #777777; font-size: 13px; margin-bottom: 4px;'>Click \"REVEAL\" to view English translation</p>", unsafe_allow_html=True)
 
-# 3. REVEAL Button
+# 3. REVEAL Button (Custom Blue Style)
+st.markdown("""
+    <style>
+    div.stButton > button[key="btn_reveal"] {
+        background-color: #0066CC !important;
+        color: #FFFFFF !important;
+        border: none !important;
+    }
+    </style>
+""", unsafe_allow_html=True)
+
 _, col_rev, _ = st.columns([1, 4, 1])
 with col_rev:
-    if st.button("REVEAL", key="btn_reveal", type="secondary", use_container_width=True):
+    if st.button("REVEAL", key="btn_reveal", use_container_width=True):
         st.session_state.reveal = not st.session_state.reveal
 
-# 4. PHRASE Button
+# 4. PHRASE Button (Orange - Same as TRANSLATE)
 _, col_play, _ = st.columns([1, 4, 1])
 with col_play:
     if st.button("PHRASE", key="btn_play", type="primary", use_container_width=True):
@@ -216,19 +219,20 @@ with nav_col3:
 
 st.divider()
 
-# 6. Integrated Speech-to-Text Component
+# 6. Speech Recognition + Translate + "HEAR SPOKEN THAI TEXT" Button
 st_speech_html = f"""
 <div style="text-align: center; font-family: sans-serif;">
-    <!-- Spoken Thai Output -->
+    <!-- Spoken Thai Output (32px Orange) -->
     <div id="output" style="color: #FF6600; font-size: 32px; font-weight: bold; min-height: 40px; margin-bottom: 2px;">
         Spoken Thai text...
     </div>
     
-    <!-- English Translation Output -->
+    <!-- English Translation Output (20px Blue) -->
     <div id="translation" style="color: #0066CC; font-size: 20px; font-weight: bold; min-height: 28px; margin-bottom: 6px;">
         English translation...
     </div>
     
+    <!-- TRANSLATE Button (Solid Orange) -->
     <button id="stt-btn" style="
         background-color: #FF6600;
         color: white;
@@ -240,10 +244,26 @@ st_speech_html = f"""
         width: 70%;
         max-width: 260px;
         cursor: pointer;
+        margin-bottom: 8px;
     ">TRANSLATE</button>
+    <br>
 
-    <!-- Spreadsheet Stats Fields under TRANSLATE Button -->
-    <div style="margin-top: 8px; font-size: 12px; color: #555555; line-height: 1.4;">
+    <!-- HEAR SPOKEN THAI TEXT Button (White with Orange Border) -->
+    <button id="speak-btn" style="
+        background-color: #FFFFFF;
+        color: #FF6600;
+        border: 2px solid #FF6600;
+        font-size: 13px;
+        font-weight: bold;
+        border-radius: 6px;
+        padding: 8px 0px;
+        width: 75%;
+        max-width: 280px;
+        cursor: pointer;
+    ">HEAR SPOKEN THAI TEXT</button>
+
+    <!-- Spreadsheet Stats Fields -->
+    <div style="margin-top: 10px; font-size: 12px; color: #555555; line-height: 1.4;">
         <div><b>Available Records:</b> {total}</div>
         <div><b>Spreadsheet Last Updated:</b> {SHEET_LAST_UPDATED}</div>
     </div>
@@ -251,6 +271,7 @@ st_speech_html = f"""
 
 <script>
     const btn = document.getElementById('stt-btn');
+    const speakBtn = document.getElementById('speak-btn');
     const output = document.getElementById('output');
     const translation = document.getElementById('translation');
     
@@ -270,6 +291,16 @@ st_speech_html = f"""
             translation.innerText = "Translation error";
         }}
     }}
+
+    // Text-to-Speech logic for HEAR SPOKEN THAI TEXT button
+    speakBtn.onclick = () => {{
+        const textToSpeak = output.innerText.trim();
+        if (textToSpeak && textToSpeak !== "Spoken Thai text...") {{
+            const utterance = new SpeechSynthesisUtterance(textToSpeak);
+            utterance.lang = 'th-TH';
+            window.speechSynthesis.speak(utterance);
+        }}
+    }};
 
     if (SpeechRecognition) {{
         const recognition = new SpeechRecognition();
@@ -310,4 +341,4 @@ st_speech_html = f"""
 </script>
 """
 
-components.html(st_speech_html, height=185)
+components.html(st_speech_html, height=230)
