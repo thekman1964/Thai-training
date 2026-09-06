@@ -47,39 +47,45 @@ st.markdown("""
         width: 100% !important;
     }
 
-    /* 1. REVEAL Button (1st Block -> Blue) */
-    div[data-testid="stVerticalBlock"] > div:nth-child(5) button {
+    /* Target Buttons Specifically by Key/Aria Label */
+    
+    /* REVEAL Button (Blue) */
+    div.stButton > button[key="btn_reveal"] {
         background-color: #0066CC !important;
         color: #FFFFFF !important;
     }
 
-    /* 2. PHRASE Button (2nd Block -> Orange, Border Removed) */
-    div[data-testid="stVerticalBlock"] > div:nth-child(6) button {
+    /* PHRASE Button (Orange, No Border) */
+    div.stButton > button[key="btn_play"] {
         background-color: #FF6600 !important;
         color: #FFFFFF !important;
         border: none !important;
     }
 
-    /* 3. Navigation Block (BACK, RANDOM, NEXT Buttons with Borders) */
-    div[data-testid="stVerticalBlock"] > div:nth-child(7) div[data-testid="stColumn"]:nth-child(1) button {
-        background-color: #1A202C !important; /* BACK */
+    /* BACK Button (Solid White Border) */
+    div.stButton > button[key="btn_prev"] {
+        background-color: #1A202C !important;
         color: #FFFFFF !important;
         font-weight: 900 !important;
-        border: 2px solid #FFFFFF !important; /* White Border */
+        border: 2px solid #FFFFFF !important;
         box-sizing: border-box !important;
     }
-    div[data-testid="stVerticalBlock"] > div:nth-child(7) div[data-testid="stColumn"]:nth-child(2) button {
-        background-color: #28A745 !important; /* RANDOM */
+
+    /* RANDOM Button (Thick Black Border) */
+    div.stButton > button[key="btn_rand"] {
+        background-color: #28A745 !important;
         color: #FFFFFF !important;
         font-weight: 900 !important;
-        border: 3px solid #000000 !important; /* Thick Black Border */
+        border: 3px solid #000000 !important;
         box-sizing: border-box !important;
     }
-    div[data-testid="stVerticalBlock"] > div:nth-child(7) div[data-testid="stColumn"]:nth-child(3) button {
-        background-color: #1A202C !important; /* NEXT */
+
+    /* NEXT Button (Solid White Border) */
+    div.stButton > button[key="btn_next"] {
+        background-color: #1A202C !important;
         color: #FFFFFF !important;
         font-weight: 900 !important;
-        border: 2px solid #FFFFFF !important; /* White Border */
+        border: 2px solid #FFFFFF !important;
         box-sizing: border-box !important;
     }
 
