@@ -10,7 +10,7 @@ import streamlit.components.v1 as components
 
 st.set_page_config(layout="centered", page_title="Thai Practice")
 
-# --- GLOBAL BASE STYLES ---
+# --- GLOBAL STYLES ---
 st.markdown("""
     <style>
     #MainMenu {visibility: hidden;}
@@ -30,7 +30,7 @@ st.markdown("""
         padding-right: 0.5rem !important;
     }
 
-    /* Universal Base Styling for Streamlit Buttons */
+    /* Base Styling for All Native Buttons */
     div[data-testid="stButton"] > button {
         width: 100% !important;
         height: 40px !important;
@@ -151,23 +151,19 @@ if st.session_state.auto_play:
     play_thai_audio(current_phrase["thai"])
     st.session_state.auto_play = False
 
-# --- NATIVE STREAMLIT BUTTONS ---
+# --- BUTTON LAYOUT ---
 
 # Row 1: REVEAL
-c1, c2, c3 = st.columns([1, 1, 1])
-with c2:
-    if st.button("REVEAL", key="btn_reveal", use_container_width=True):
-        st.session_state.reveal = not st.session_state.reveal
-        st.rerun()
+if st.button("REVEAL", key="btn_reveal", use_container_width=True):
+    st.session_state.reveal = not st.session_state.reveal
+    st.rerun()
 
 # Row 2: PHRASE
-c1, c2, c3 = st.columns([1, 1, 1])
-with c2:
-    if st.button("PHRASE", key="btn_phrase", use_container_width=True):
-        play_thai_audio(current_phrase["thai"])
+if st.button("PHRASE", key="btn_phrase", use_container_width=True):
+    play_thai_audio(current_phrase["thai"])
 
-# Row 3: BACK, RANDOM, NEXT
-col_back, col_rand, col_next = st.columns([1, 1, 1])
+# Row 3: BACK, RANDOM, NEXT (3 Columns Side-by-Side)
+col_back, col_rand, col_next = st.columns(3)
 with col_back:
     if st.button("BACK", key="btn_back", use_container_width=True):
         st.session_state.phrase_index = (st.session_state.phrase_index - 1) % total
@@ -189,7 +185,7 @@ with col_next:
         st.session_state.auto_play = True
         st.rerun()
 
-# --- JAVASCRIPT DIRECT DOM INJECTION (FORCE COLORS POST-RENDER) ---
+# --- JS INJECTION FOR COLORIZATION ONLY ---
 components.html("""
 <script>
     function colorizeButtons() {
