@@ -47,23 +47,23 @@ st.markdown("""
         width: 100% !important;
     }
 
-    /* Target Buttons Specifically by Key/Aria Label */
+    /* Wrapper-Based Targeted Styling */
     
     /* REVEAL Button (Blue) */
-    div.stButton > button[key="btn_reveal"] {
+    .btn-reveal-wrapper div.stButton > button {
         background-color: #0066CC !important;
         color: #FFFFFF !important;
     }
 
     /* PHRASE Button (Orange, No Border) */
-    div.stButton > button[key="btn_play"] {
+    .btn-phrase-wrapper div.stButton > button {
         background-color: #FF6600 !important;
         color: #FFFFFF !important;
         border: none !important;
     }
 
     /* BACK Button (Solid White Border) */
-    div.stButton > button[key="btn_prev"] {
+    .btn-back-wrapper div.stButton > button {
         background-color: #1A202C !important;
         color: #FFFFFF !important;
         font-weight: 900 !important;
@@ -72,7 +72,7 @@ st.markdown("""
     }
 
     /* RANDOM Button (Thick Black Border) */
-    div.stButton > button[key="btn_rand"] {
+    .btn-random-wrapper div.stButton > button {
         background-color: #28A745 !important;
         color: #FFFFFF !important;
         font-weight: 900 !important;
@@ -81,7 +81,7 @@ st.markdown("""
     }
 
     /* NEXT Button (Solid White Border) */
-    div.stButton > button[key="btn_next"] {
+    .btn-next-wrapper div.stButton > button {
         background-color: #1A202C !important;
         color: #FFFFFF !important;
         font-weight: 900 !important;
@@ -202,14 +202,18 @@ else:
 # 3. REVEAL Button (Blue)
 _, col_rev, _ = st.columns([1, 4, 1])
 with col_rev:
+    st.markdown('<div class="btn-reveal-wrapper">', unsafe_allow_html=True)
     if st.button("REVEAL", key="btn_reveal", use_container_width=True):
         st.session_state.reveal = not st.session_state.reveal
+    st.markdown('</div>', unsafe_allow_html=True)
 
 # 4. PHRASE Button (Orange)
 _, col_play, _ = st.columns([1, 4, 1])
 with col_play:
+    st.markdown('<div class="btn-phrase-wrapper">', unsafe_allow_html=True)
     if st.button("PHRASE", key="btn_play", use_container_width=True):
         play_thai_audio(current_phrase["thai"])
+    st.markdown('</div>', unsafe_allow_html=True)
 
 # Trigger audio playback if requested by Navigation
 if st.session_state.auto_play:
@@ -220,25 +224,31 @@ if st.session_state.auto_play:
 nav_col1, nav_col2, nav_col3 = st.columns([1, 1, 1])
 
 with nav_col1:
+    st.markdown('<div class="btn-back-wrapper">', unsafe_allow_html=True)
     if st.button("**BACK**", key="btn_prev", use_container_width=True):
         st.session_state.phrase_index = (st.session_state.phrase_index - 1) % total
         st.session_state.reveal = False
         st.session_state.auto_play = True
         st.rerun()
+    st.markdown('</div>', unsafe_allow_html=True)
 
 with nav_col2:
+    st.markdown('<div class="btn-random-wrapper">', unsafe_allow_html=True)
     if st.button("**RANDOM**", key="btn_rand", use_container_width=True):
         st.session_state.phrase_index = random.randint(0, total - 1)
         st.session_state.reveal = False
         st.session_state.auto_play = True
         st.rerun()
+    st.markdown('</div>', unsafe_allow_html=True)
 
 with nav_col3:
+    st.markdown('<div class="btn-next-wrapper">', unsafe_allow_html=True)
     if st.button("**NEXT**", key="btn_next", use_container_width=True):
         st.session_state.phrase_index = (st.session_state.phrase_index + 1) % total
         st.session_state.reveal = False
         st.session_state.auto_play = True
         st.rerun()
+    st.markdown('</div>', unsafe_allow_html=True)
 
 st.divider()
 
