@@ -10,99 +10,22 @@ import streamlit.components.v1 as components
 
 st.set_page_config(layout="centered", page_title="Thai Practice")
 
-# Global Reset & Mobile Layout CSS
+# Hide default Streamlit padding & headers
 st.markdown("""
     <style>
     #MainMenu {visibility: hidden;}
     header {visibility: hidden;}
     footer {visibility: hidden;}
     div[data-testid="stHeader"] {display: none;}
-
-    .stApp {
-        background-color: #FFFFFF !important;
-        color: #000000 !important;
-    }
-
+    .stApp { background-color: #FFFFFF !important; }
     .block-container {
         padding-top: 0.2rem !important;
         padding-bottom: 0rem !important;
         padding-left: 0.5rem !important;
         padding-right: 0.5rem !important;
     }
-
-    /* Force 3 columns side-by-side on mobile screens */
-    div[data-testid="stHorizontalBlock"] {
-        display: flex !important;
-        flex-direction: row !important;
-        flex-wrap: nowrap !important;
-        width: 100% !important;
-        gap: 6px !important;
-    }
-
-    div[data-testid="stColumn"] {
-        flex: 1 1 0% !important;
-        min-width: 0 !important;
-        width: auto !important;
-    }
-
-    /* Base native button styling */
-    div[data-testid="stButton"] > button {
-        width: 100% !important;
-        height: 42px !important;
-        border-radius: 6px !important;
-        padding: 0px !important;
-        border: none !important;
-        box-shadow: 0px 2px 4px rgba(0,0,0,0.2) !important;
-    }
-
-    /* Explicit styling for specific custom class wrappers */
-    .btn-reveal div[data-testid="stButton"] > button {
-        background-color: #0066CC !important;
-    }
-    .btn-phrase div[data-testid="stButton"] > button {
-        background-color: #FF6600 !important;
-    }
-    .btn-back div[data-testid="stButton"] > button {
-        background-color: #1A202C !important;
-    }
-    .btn-rand div[data-testid="stButton"] > button {
-        background-color: #28A745 !important;
-    }
-    .btn-next div[data-testid="stButton"] > button {
-        background-color: #1A202C !important;
-    }
-
-    /* Ensure text inside ALL native buttons is bold white */
-    div[data-testid="stButton"] > button p,
-    div[data-testid="stButton"] > button div,
-    div[data-testid="stButton"] > button span {
-        color: #FFFFFF !important;
-        font-size: 14px !important;
-        font-weight: 900 !important;
-    }
     </style>
 """, unsafe_allow_html=True)
-
-def play_thai_audio(text):
-    tts = gTTS(text=text, lang='th')
-    fp = io.BytesIO()
-    tts.write_to_fp(fp)
-    b64_audio = base64.b64encode(fp.getvalue()).decode()
-    
-    audio_key = int(time.time() * 1000)
-    audio_html = f"""
-    <audio id="audio_{audio_key}" autoplay style="display:none;">
-        <source src="data:audio/mp3;base64,{b64_audio}" type="audio/mp3">
-    </audio>
-    <script>
-        var audio = document.getElementById('audio_{audio_key}');
-        if(audio) {{
-            audio.currentTime = 0;
-            audio.play();
-        }}
-    </script>
-    """
-    components.html(audio_html, height=0)
 
 @st.cache_data(ttl=600)
 def load_phrases_with_meta():
@@ -143,8 +66,27 @@ if "phrase_index" not in st.session_state:
 if "reveal" not in st.session_state:
     st.session_state.reveal = False
 
+# Handle button trigger signals
+query_params = st.query_params
+if "action" in query_params:
+    act = query_params["action"]
+    if act == "reveal":
+        st.session_state.reveal = not st.session_state.reveal
+    elif act == "back":
+        st.session_state.phrase_index = (st.session_state.phrase_index - 1) % total
+        st.session_state.reveal = False
+    elif act == "rand":
+        st.session_state.phrase_index = random.randint(0, total - 1)
+        st.session_state.reveal = False
+    elif act == "next":
+        st.session_state.phrase_index = (st.session_state.phrase_index + 1) % total
+        st.session_state.reveal = False
+    st.query_params.clear()
+    st.rerun()
+
 current_phrase = PHRASES_DB[st.session_state.phrase_index]
 
+# Header Flag Image
 st.markdown(
     """
     <div style="text-align: center; margin-top: 2px; margin-bottom: 2px;">
@@ -164,50 +106,113 @@ if st.session_state.reveal:
 else:
     st.markdown("<p style='text-align: center; color: #777777; font-size: 13px; margin-bottom: 4px;'>Click \"REVEAL\" to view English translation</p>", unsafe_allow_html=True)
 
-# --- DIRECTLY WRAPPED NATIVE STREAMLIT BUTTONS ---
+# Generate TTS Audio
+tts = gTTS(text=current_phrase["thai"], lang='th')
+fp = io.BytesIO()
+tts.write_to_fp(fp)
+b64_audio = base64.b64encode(fp.getvalue()).decode()
 
-st.markdown('<div class="btn-reveal">', unsafe_allow_html=True)
-if st.button("REVEAL", key="btn_reveal", use_container_width=True):
-    st.session_state.reveal = not st.session_state.reveal
-    st.rerun()
-st.markdown('</div>', unsafe_allow_html=True)
+# Render Raw HTML Control Panel (Guarantees Visibility & Crisp Text)
+controls_html = f"""
+<div style="width: 100%; font-family: system-ui, -apple-system, sans-serif; box-sizing: border-box;">
+    <button onclick="nav('reveal')" style="
+        background-color: #0066CC !important;
+        color: #FFFFFF !important;
+        font-size: 15px !important;
+        font-weight: 800 !important;
+        border: none !important;
+        border-radius: 6px !important;
+        height: 44px !important;
+        width: 100% !important;
+        cursor: pointer !important;
+        margin-bottom: 8px !important;
+        box-shadow: 0px 2px 4px rgba(0,0,0,0.15);
+    ">REVEAL</button>
 
-st.markdown('<div class="btn-phrase">', unsafe_allow_html=True)
-if st.button("PHRASE", key="btn_phrase", use_container_width=True):
-    play_thai_audio(current_phrase["thai"])
-st.markdown('</div>', unsafe_allow_html=True)
+    <button onclick="playAudio()" style="
+        background-color: #FF6600 !important;
+        color: #FFFFFF !important;
+        font-size: 15px !important;
+        font-weight: 800 !important;
+        border: none !important;
+        border-radius: 6px !important;
+        height: 44px !important;
+        width: 100% !important;
+        cursor: pointer !important;
+        margin-bottom: 8px !important;
+        box-shadow: 0px 2px 4px rgba(0,0,0,0.15);
+    ">PHRASE</button>
 
-col_back, col_rand, col_next = st.columns(3)
+    <div style="display: flex; gap: 6px; width: 100%;">
+        <button onclick="nav('back')" style="
+            flex: 1;
+            background-color: #1A202C !important;
+            color: #FFFFFF !important;
+            font-size: 14px !important;
+            font-weight: 800 !important;
+            border: none !important;
+            border-radius: 6px !important;
+            height: 44px !important;
+            cursor: pointer !important;
+            box-shadow: 0px 2px 4px rgba(0,0,0,0.15);
+        ">BACK</button>
 
-with col_back:
-    st.markdown('<div class="btn-back">', unsafe_allow_html=True)
-    if st.button("BACK", key="btn_back", use_container_width=True):
-        st.session_state.phrase_index = (st.session_state.phrase_index - 1) % total
-        st.session_state.reveal = False
-        st.rerun()
-    st.markdown('</div>', unsafe_allow_html=True)
+        <button onclick="nav('rand')" style="
+            flex: 1;
+            background-color: #28A745 !important;
+            color: #FFFFFF !important;
+            font-size: 14px !important;
+            font-weight: 800 !important;
+            border: none !important;
+            border-radius: 6px !important;
+            height: 44px !important;
+            cursor: pointer !important;
+            box-shadow: 0px 2px 4px rgba(0,0,0,0.15);
+        ">RANDOM</button>
 
-with col_rand:
-    st.markdown('<div class="btn-rand">', unsafe_allow_html=True)
-    if st.button("RANDOM", key="btn_rand", use_container_width=True):
-        st.session_state.phrase_index = random.randint(0, total - 1)
-        st.session_state.reveal = False
-        st.rerun()
-    st.markdown('</div>', unsafe_allow_html=True)
+        <button onclick="nav('next')" style="
+            flex: 1;
+            background-color: #1A202C !important;
+            color: #FFFFFF !important;
+            font-size: 14px !important;
+            font-weight: 800 !important;
+            border: none !important;
+            border-radius: 6px !important;
+            height: 44px !important;
+            cursor: pointer !important;
+            box-shadow: 0px 2px 4px rgba(0,0,0,0.15);
+        ">NEXT</button>
+    </div>
 
-with col_next:
-    st.markdown('<div class="btn-next">', unsafe_allow_html=True)
-    if st.button("NEXT", key="btn_next", use_container_width=True):
-        st.session_state.phrase_index = (st.session_state.phrase_index + 1) % total
-        st.session_state.reveal = False
-        st.rerun()
-    st.markdown('</div>', unsafe_allow_html=True)
+    <audio id="tts-player" style="display:none;">
+        <source src="data:audio/mp3;base64,{b64_audio}" type="audio/mp3">
+    </audio>
+</div>
+
+<script>
+    function nav(action) {{
+        const targetUrl = new URL(window.parent.location.href);
+        targetUrl.searchParams.set("action", action);
+        window.parent.location.href = targetUrl.href;
+    }}
+
+    function playAudio() {{
+        const audio = document.getElementById('tts-player');
+        if (audio) {{
+            audio.currentTime = 0;
+            audio.play();
+        }}
+    }}
+</script>
+"""
+
+components.html(controls_html, height=160)
 
 st.markdown("<hr style='margin: 8px 0;'>", unsafe_allow_html=True)
 
-# --- SPEECH RECOGNITION & TRANSLATION SECTION ---
+# Speech Recognition & Translation
 st_speech_html = f"""
-<div style="text-align: center; font-family: sans-serif;">
+<div style="text-align: center; font-family: system-ui, -apple-system, sans-serif;">
     <div id="output" style="color: #FF6600; font-size: 32px; font-weight: bold; min-height: 40px; margin-bottom: 2px;">
         Spoken Thai text...
     </div>
@@ -219,29 +224,29 @@ st_speech_html = f"""
     <button id="stt-btn" style="
         background-color: #FF6600 !important;
         color: #FFFFFF !important;
-        font-size: 14px !important;
-        font-weight: 900 !important;
+        font-size: 15px !important;
+        font-weight: 800 !important;
         border: none !important;
         border-radius: 6px !important;
-        height: 42px !important;
-        line-height: 42px !important;
+        height: 44px !important;
+        line-height: 44px !important;
         padding: 0px !important;
         width: 100% !important;
         cursor: pointer !important;
         margin-bottom: 8px !important;
         box-sizing: border-box !important;
-        box-shadow: 0px 2px 4px rgba(0,0,0,0.2);
+        box-shadow: 0px 2px 4px rgba(0,0,0,0.15);
     ">TRANSLATE</button>
 
     <button id="speak-btn" style="
         background-color: #FFFFFF !important;
         color: #FF6600 !important;
         border: 2px solid #FF6600 !important;
-        font-size: 13px !important;
-        font-weight: 900 !important;
+        font-size: 14px !important;
+        font-weight: 800 !important;
         border-radius: 6px !important;
-        height: 42px !important;
-        line-height: 38px !important;
+        height: 44px !important;
+        line-height: 40px !important;
         padding: 0px !important;
         width: 100% !important;
         cursor: pointer !important;
