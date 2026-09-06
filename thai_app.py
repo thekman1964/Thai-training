@@ -53,10 +53,11 @@ st.markdown("""
         color: #FFFFFF !important;
     }
 
-    /* 2. PHRASE Button (2nd Block -> Orange) */
+    /* 2. PHRASE Button (2nd Block -> Orange, Border Removed) */
     div[data-testid="stVerticalBlock"] > div:nth-child(6) button {
         background-color: #FF6600 !important;
         color: #FFFFFF !important;
+        border: none !important;
     }
 
     /* 3. Navigation Block (3rd Block -> BACK, RANDOM, NEXT) */
