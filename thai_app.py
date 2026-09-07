@@ -30,7 +30,7 @@ st.markdown("""
         padding-right: 0.5rem !important;
     }
 
-    /* Force 3 columns side-by-side on mobile */
+    /* Keep 3 columns side-by-side on mobile devices */
     div[data-testid="stHorizontalBlock"] {
         display: flex !important;
         flex-direction: row !important;
@@ -42,42 +42,6 @@ st.markdown("""
     div[data-testid="stHorizontalBlock"] > div {
         flex: 1 1 0% !important;
         min-width: 0 !important;
-    }
-
-    /* Base button container */
-    div[data-testid="stButton"] > button {
-        width: 100% !important;
-        height: 44px !important;
-        border-radius: 6px !important;
-        border: none !important;
-        box-shadow: 0px 2px 4px rgba(0,0,0,0.15) !important;
-    }
-
-    /* Target inner <p> tags so button text never vanishes */
-    div[data-testid="stButton"] > button p {
-        font-weight: 800 !important;
-        font-size: 15px !important;
-        color: #FFFFFF !important;
-        margin: 0 !important;
-        padding: 0 !important;
-    }
-
-    /* Color assignments by button key */
-    div[data-testid="stElementContainer"]:has(button[key="btn_reveal"]) button {
-        background-color: #0066CC !important;
-    }
-
-    div[data-testid="stElementContainer"]:has(button[key="btn_phrase"]) button {
-        background-color: #FF6600 !important;
-    }
-
-    div[data-testid="stElementContainer"]:has(button[key="btn_back"]) button,
-    div[data-testid="stElementContainer"]:has(button[key="btn_next"]) button {
-        background-color: #1A202C !important;
-    }
-
-    div[data-testid="stElementContainer"]:has(button[key="btn_random"]) button {
-        background-color: #28A745 !important;
     }
     </style>
 """, unsafe_allow_html=True)
@@ -168,33 +132,49 @@ if st.session_state.play_audio:
     components.html(audio_html, height=0)
     st.session_state.play_audio = False
 
-# --- NATIVE ACTION BUTTONS ---
-if st.button("REVEAL", use_container_width=True, key="btn_reveal"):
+# Helper to render styled button text cleanly
+def colored_label(text, bg_color):
+    return f"""<span style="
+        display: block;
+        width: 100%;
+        height: 44px;
+        line-height: 44px;
+        background-color: {bg_color};
+        color: #FFFFFF !important;
+        font-weight: 800;
+        font-size: 15px;
+        border-radius: 6px;
+        text-align: center;
+        box-shadow: 0px 2px 4px rgba(0,0,0,0.15);
+    ">{text}</span>"""
+
+# --- BULLETPROOF BUTTONS WITH INLINE HTML LABELS ---
+if st.button(colored_label("REVEAL", "#0066CC"), use_container_width=True, key="btn_reveal"):
     st.session_state.reveal = not st.session_state.reveal
     st.rerun()
 
-if st.button("PHRASE", use_container_width=True, key="btn_phrase"):
+if st.button(colored_label("PHRASE", "#FF6600"), use_container_width=True, key="btn_phrase"):
     st.session_state.play_audio = True
     st.rerun()
 
 col_back, col_rand, col_next = st.columns(3)
 
 with col_back:
-    if st.button("BACK", use_container_width=True, key="btn_back"):
+    if st.button(colored_label("BACK", "#1A202C"), use_container_width=True, key="btn_back"):
         st.session_state.phrase_index = (st.session_state.phrase_index - 1) % total
         st.session_state.reveal = False
         st.session_state.play_audio = True
         st.rerun()
 
 with col_rand:
-    if st.button("RANDOM", use_container_width=True, key="btn_random"):
+    if st.button(colored_label("RANDOM", "#28A745"), use_container_width=True, key="btn_random"):
         st.session_state.phrase_index = random.randint(0, total - 1)
         st.session_state.reveal = False
         st.session_state.play_audio = True
         st.rerun()
 
 with col_next:
-    if st.button("NEXT", use_container_width=True, key="btn_next"):
+    if st.button(colored_label("NEXT", "#1A202C"), use_container_width=True, key="btn_next"):
         st.session_state.phrase_index = (st.session_state.phrase_index + 1) % total
         st.session_state.reveal = False
         st.session_state.play_audio = True
