@@ -10,7 +10,7 @@ import streamlit.components.v1 as components
 
 st.set_page_config(layout="centered", page_title="Thai Practice")
 
-# --- GLOBAL STYLING (Targets native buttons directly by explicit keys) ---
+# --- GLOBAL PAGE STYLING ---
 st.markdown("""
     <style>
     #MainMenu {visibility: hidden;}
@@ -29,58 +29,6 @@ st.markdown("""
         padding-left: 0.5rem !important;
         padding-right: 0.5rem !important;
     }
-
-    /* Keep 3 columns side-by-side on mobile devices */
-    div[data-testid="stHorizontalBlock"] {
-        display: flex !important;
-        flex-direction: row !important;
-        flex-wrap: nowrap !important;
-        width: 100% !important;
-        gap: 6px !important;
-    }
-
-    div[data-testid="stHorizontalBlock"] > div {
-        flex: 1 1 0% !important;
-        min-width: 0 !important;
-    }
-
-    /* Standard Button Styling */
-    div[data-testid="stButton"] > button {
-        width: 100% !important;
-        height: 44px !important;
-        border-radius: 6px !important;
-        border: none !important;
-        box-shadow: 0px 2px 4px rgba(0,0,0,0.15) !important;
-        font-weight: 800 !important;
-        font-size: 15px !important;
-    }
-
-    /* Explicit key selectors to preserve button visibility & colors */
-    div[data-testid="stButton"] > button[key="btn_reveal"] {
-        background-color: #0066CC !important;
-        color: #FFFFFF !important;
-    }
-
-    div[data-testid="stButton"] > button[key="btn_phrase"] {
-        background-color: #FF6600 !important;
-        color: #FFFFFF !important;
-    }
-
-    div[data-testid="stButton"] > button[key="btn_back"],
-    div[data-testid="stButton"] > button[key="btn_next"] {
-        background-color: #1A202C !important;
-        color: #FFFFFF !important;
-    }
-
-    div[data-testid="stButton"] > button[key="btn_random"] {
-        background-color: #28A745 !important;
-        color: #FFFFFF !important;
-    }
-
-    /* Force button text color to solid white */
-    div[data-testid="stButton"] > button p {
-        color: #FFFFFF !important;
-    }
     </style>
 """, unsafe_allow_html=True)
 
@@ -91,7 +39,6 @@ def load_phrases_with_meta():
     url = f"https://docs.google.com/spreadsheets/d/{sheet_id}/export?format=csv"
     last_updated = "Unknown"
     
-    # Try fetching live Google Sheet
     try:
         head_res = requests.head(url)
         if "Last-Modified" in head_res.headers:
@@ -108,7 +55,6 @@ def load_phrases_with_meta():
     except Exception:
         pass
 
-    # Local fallback if Google Sheets fetch fails
     try:
         df_local = pd.read_csv("Thai_Phrases_for_app.csv")
         phrases = df_local[['Thai', 'English']].dropna().to_dict('records')
@@ -135,9 +81,33 @@ if "reveal" not in st.session_state:
 if "play_audio" not in st.session_state:
     st.session_state.play_audio = False
 
+# Handle Query Params for Button Navigation
+query_params = st.query_params
+if "action" in query_params:
+    action = query_params["action"]
+    st.query_params.clear()
+    
+    if action == "reveal":
+        st.session_state.reveal = not st.session_state.reveal
+    elif action == "phrase":
+        st.session_state.play_audio = True
+    elif action == "back":
+        st.session_state.phrase_index = (st.session_state.phrase_index - 1) % total
+        st.session_state.reveal = False
+        st.session_state.play_audio = True
+    elif action == "random":
+        st.session_state.phrase_index = random.randint(0, total - 1)
+        st.session_state.reveal = False
+        st.session_state.play_audio = True
+    elif action == "next":
+        st.session_state.phrase_index = (st.session_state.phrase_index + 1) % total
+        st.session_state.reveal = False
+        st.session_state.play_audio = True
+    st.rerun()
+
 current_phrase = PHRASES_DB[st.session_state.phrase_index]
 
-# Flag Header
+# Header Flag
 st.markdown(
     """
     <div style="text-align: center; margin-top: 2px; margin-bottom: 2px;">
@@ -172,32 +142,29 @@ if st.session_state.play_audio:
     components.html(audio_html, height=0)
     st.session_state.play_audio = False
 
-# --- PREFERRED NATIVE BUTTON LAYOUT WITH KEY ATTR ---
-if st.button("REVEAL", use_container_width=True, key="btn_reveal"):
-    st.session_state.reveal = not st.session_state.reveal
-
-if st.button("PHRASE", use_container_width=True, key="btn_phrase"):
-    st.session_state.play_audio = True
-
-col_back, col_rand, col_next = st.columns(3)
-
-with col_back:
-    if st.button("BACK", use_container_width=True, key="btn_back"):
-        st.session_state.phrase_index = (st.session_state.phrase_index - 1) % total
-        st.session_state.reveal = False
-        st.session_state.play_audio = True
-
-with col_rand:
-    if st.button("RANDOM", use_container_width=True, key="btn_random"):
-        st.session_state.phrase_index = random.randint(0, total - 1)
-        st.session_state.reveal = False
-        st.session_state.play_audio = True
-
-with col_next:
-    if st.button("NEXT", use_container_width=True, key="btn_next"):
-        st.session_state.phrase_index = (st.session_state.phrase_index + 1) % total
-        st.session_state.reveal = False
-        st.session_state.play_audio = True
+# --- BULLETPROOF ACTION BUTTONS (HTML/CSS) ---
+nav_buttons_html = """
+<div style="font-family: system-ui, -apple-system, sans-serif;">
+    <a href="?action=reveal" target="_self" style="text-decoration:none;">
+        <button style="width:100%; height:44px; background-color:#0066CC; color:#FFFFFF; border:none; border-radius:6px; font-weight:800; font-size:15px; margin-bottom:8px; cursor:pointer; box-shadow:0px 2px 4px rgba(0,0,0,0.15);">REVEAL</button>
+    </a>
+    <a href="?action=phrase" target="_self" style="text-decoration:none;">
+        <button style="width:100%; height:44px; background-color:#FF6600; color:#FFFFFF; border:none; border-radius:6px; font-weight:800; font-size:15px; margin-bottom:8px; cursor:pointer; box-shadow:0px 2px 4px rgba(0,0,0,0.15);">PHRASE</button>
+    </a>
+    <div style="display:flex; flex-direction:row; gap:6px; width:100%;">
+        <a href="?action=back" target="_self" style="flex:1; text-decoration:none;">
+            <button style="width:100%; height:44px; background-color:#1A202C; color:#FFFFFF; border:none; border-radius:6px; font-weight:800; font-size:15px; cursor:pointer; box-shadow:0px 2px 4px rgba(0,0,0,0.15);">BACK</button>
+        </a>
+        <a href="?action=random" target="_self" style="flex:1; text-decoration:none;">
+            <button style="width:100%; height:44px; background-color:#28A745; color:#FFFFFF; border:none; border-radius:6px; font-weight:800; font-size:15px; cursor:pointer; box-shadow:0px 2px 4px rgba(0,0,0,0.15);">RANDOM</button>
+        </a>
+        <a href="?action=next" target="_self" style="flex:1; text-decoration:none;">
+            <button style="width:100%; height:44px; background-color:#1A202C; color:#FFFFFF; border:none; border-radius:6px; font-weight:800; font-size:15px; cursor:pointer; box-shadow:0px 2px 4px rgba(0,0,0,0.15);">NEXT</button>
+        </a>
+    </div>
+</div>
+"""
+components.html(nav_buttons_html, height=155)
 
 st.markdown("<hr style='margin: 8px 0;'>", unsafe_allow_html=True)
 
