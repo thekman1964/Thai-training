@@ -30,7 +30,7 @@ st.markdown("""
         padding-right: 0.5rem !important;
     }
 
-    /* Keep 3 columns side-by-side on mobile devices */
+    /* Force 3 columns side-by-side on mobile */
     div[data-testid="stHorizontalBlock"] {
         display: flex !important;
         flex-direction: row !important;
@@ -42,6 +42,36 @@ st.markdown("""
     div[data-testid="stHorizontalBlock"] > div {
         flex: 1 1 0% !important;
         min-width: 0 !important;
+    }
+
+    /* Base button layout styling */
+    div[data-testid="stButton"] > button {
+        width: 100% !important;
+        height: 44px !important;
+        border-radius: 6px !important;
+        border: none !important;
+        box-shadow: 0px 2px 4px rgba(0,0,0,0.15) !important;
+    }
+
+    div[data-testid="stButton"] > button p {
+        font-weight: 800 !important;
+        font-size: 15px !important;
+        color: #FFFFFF !important;
+        margin: 0 !important;
+    }
+
+    /* Button specific background colors via custom wrapper classes */
+    .btn-reveal div[data-testid="stButton"] > button {
+        background-color: #0066CC !important;
+    }
+    .btn-phrase div[data-testid="stButton"] > button {
+        background-color: #FF6600 !important;
+    }
+    .btn-nav div[data-testid="stButton"] > button {
+        background-color: #1A202C !important;
+    }
+    .btn-rand div[data-testid="stButton"] > button {
+        background-color: #28A745 !important;
     }
     </style>
 """, unsafe_allow_html=True)
@@ -132,53 +162,47 @@ if st.session_state.play_audio:
     components.html(audio_html, height=0)
     st.session_state.play_audio = False
 
-# Helper to render styled button text cleanly
-def colored_label(text, bg_color):
-    return f"""<span style="
-        display: block;
-        width: 100%;
-        height: 44px;
-        line-height: 44px;
-        background-color: {bg_color};
-        color: #FFFFFF !important;
-        font-weight: 800;
-        font-size: 15px;
-        border-radius: 6px;
-        text-align: center;
-        box-shadow: 0px 2px 4px rgba(0,0,0,0.15);
-    ">{text}</span>"""
-
-# --- BULLETPROOF BUTTONS WITH INLINE HTML LABELS ---
-if st.button(colored_label("REVEAL", "#0066CC"), use_container_width=True, key="btn_reveal"):
+# --- STYLED BUTTON CONTAINER WRAPPERS ---
+st.markdown('<div class="btn-reveal">', unsafe_allow_html=True)
+if st.button("REVEAL", use_container_width=True, key="k_reveal"):
     st.session_state.reveal = not st.session_state.reveal
     st.rerun()
+st.markdown('</div>', unsafe_allow_html=True)
 
-if st.button(colored_label("PHRASE", "#FF6600"), use_container_width=True, key="btn_phrase"):
+st.markdown('<div class="btn-phrase">', unsafe_allow_html=True)
+if st.button("PHRASE", use_container_width=True, key="k_phrase"):
     st.session_state.play_audio = True
     st.rerun()
+st.markdown('</div>', unsafe_allow_html=True)
 
 col_back, col_rand, col_next = st.columns(3)
 
 with col_back:
-    if st.button(colored_label("BACK", "#1A202C"), use_container_width=True, key="btn_back"):
+    st.markdown('<div class="btn-nav">', unsafe_allow_html=True)
+    if st.button("BACK", use_container_width=True, key="k_back"):
         st.session_state.phrase_index = (st.session_state.phrase_index - 1) % total
         st.session_state.reveal = False
         st.session_state.play_audio = True
         st.rerun()
+    st.markdown('</div>', unsafe_allow_html=True)
 
 with col_rand:
-    if st.button(colored_label("RANDOM", "#28A745"), use_container_width=True, key="btn_random"):
+    st.markdown('<div class="btn-rand">', unsafe_allow_html=True)
+    if st.button("RANDOM", use_container_width=True, key="k_rand"):
         st.session_state.phrase_index = random.randint(0, total - 1)
         st.session_state.reveal = False
         st.session_state.play_audio = True
         st.rerun()
+    st.markdown('</div>', unsafe_allow_html=True)
 
 with col_next:
-    if st.button(colored_label("NEXT", "#1A202C"), use_container_width=True, key="btn_next"):
+    st.markdown('<div class="btn-nav">', unsafe_allow_html=True)
+    if st.button("NEXT", use_container_width=True, key="k_next"):
         st.session_state.phrase_index = (st.session_state.phrase_index + 1) % total
         st.session_state.reveal = False
         st.session_state.play_audio = True
         st.rerun()
+    st.markdown('</div>', unsafe_allow_html=True)
 
 st.markdown("<hr style='margin: 8px 0;'>", unsafe_allow_html=True)
 
