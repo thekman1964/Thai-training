@@ -10,7 +10,7 @@ import streamlit.components.v1 as components
 
 st.set_page_config(layout="centered", page_title="Thai Practice")
 
-# --- GLOBAL STYLING (Targets native buttons directly by text content) ---
+# --- GLOBAL STYLING (Targets native buttons directly by explicit keys) ---
 st.markdown("""
     <style>
     #MainMenu {visibility: hidden;}
@@ -55,19 +55,26 @@ st.markdown("""
         font-size: 15px !important;
     }
 
-    /* Target specific buttons via text content to keep colors intact */
-    div[data-testid="stButton"] > button:has(p:contains("REVEAL")) {
+    /* Explicit key selectors to preserve button visibility & colors */
+    div[data-testid="stButton"] > button[key="btn_reveal"] {
         background-color: #0066CC !important;
+        color: #FFFFFF !important;
     }
-    div[data-testid="stButton"] > button:has(p:contains("PHRASE")) {
+
+    div[data-testid="stButton"] > button[key="btn_phrase"] {
         background-color: #FF6600 !important;
+        color: #FFFFFF !important;
     }
-    div[data-testid="stButton"] > button:has(p:contains("BACK")),
-    div[data-testid="stButton"] > button:has(p:contains("NEXT")) {
+
+    div[data-testid="stButton"] > button[key="btn_back"],
+    div[data-testid="stButton"] > button[key="btn_next"] {
         background-color: #1A202C !important;
+        color: #FFFFFF !important;
     }
-    div[data-testid="stButton"] > button:has(p:contains("RANDOM")) {
+
+    div[data-testid="stButton"] > button[key="btn_random"] {
         background-color: #28A745 !important;
+        color: #FFFFFF !important;
     }
 
     /* Force button text color to solid white */
@@ -101,7 +108,7 @@ def load_phrases_with_meta():
     except Exception:
         pass
 
-    # Local fallback to attached CSV file if Google Sheets fetch fails
+    # Local fallback if Google Sheets fetch fails
     try:
         df_local = pd.read_csv("Thai_Phrases_for_app.csv")
         phrases = df_local[['Thai', 'English']].dropna().to_dict('records')
@@ -111,7 +118,6 @@ def load_phrases_with_meta():
     except Exception:
         pass
 
-    # Final hardcoded fallback if both web fetch and local CSV fail
     return [
         {"thai": "เลี้ยวขวาครับ", "english": "Turn right please."},
         {"thai": "ตรงไปแล้วเลี้ยวซ้าย", "english": "Go straight then turn left."},
@@ -166,29 +172,29 @@ if st.session_state.play_audio:
     components.html(audio_html, height=0)
     st.session_state.play_audio = False
 
-# --- PREFERRED NATIVE BUTTON LAYOUT ---
-if st.button("REVEAL", use_container_width=True):
+# --- PREFERRED NATIVE BUTTON LAYOUT WITH KEY ATTR ---
+if st.button("REVEAL", use_container_width=True, key="btn_reveal"):
     st.session_state.reveal = not st.session_state.reveal
 
-if st.button("PHRASE", use_container_width=True):
+if st.button("PHRASE", use_container_width=True, key="btn_phrase"):
     st.session_state.play_audio = True
 
 col_back, col_rand, col_next = st.columns(3)
 
 with col_back:
-    if st.button("BACK", use_container_width=True):
+    if st.button("BACK", use_container_width=True, key="btn_back"):
         st.session_state.phrase_index = (st.session_state.phrase_index - 1) % total
         st.session_state.reveal = False
         st.session_state.play_audio = True
 
 with col_rand:
-    if st.button("RANDOM", use_container_width=True):
+    if st.button("RANDOM", use_container_width=True, key="btn_random"):
         st.session_state.phrase_index = random.randint(0, total - 1)
         st.session_state.reveal = False
         st.session_state.play_audio = True
 
 with col_next:
-    if st.button("NEXT", use_container_width=True):
+    if st.button("NEXT", use_container_width=True, key="btn_next"):
         st.session_state.phrase_index = (st.session_state.phrase_index + 1) % total
         st.session_state.reveal = False
         st.session_state.play_audio = True
