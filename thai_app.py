@@ -176,7 +176,7 @@ html_code = f"""
             playCurrentAudio();
         }}
 
-        // Speech Recognition Setup
+        // Speech Recognition & Google Translation Setup
         const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
         let recognition;
         
@@ -190,12 +190,18 @@ html_code = f"""
                 document.getElementById('sttBtn').innerText = "TRANSLATE";
                 document.getElementById('sttBtn').style.backgroundColor = "#FF6600";
                 
-                // Fetch translation
+                // Fetch translation via Google Translate endpoint
                 document.getElementById('speechTrans').innerText = "Translating...";
                 try {{
-                    const res = await fetch(`https://api.mymemory.translated.net/get?q=${{encodeURIComponent(text)}}&langpair=th|en`);
+                    const url = `https://translate.googleapis.com/translate_a/single?client=gtx&sl=th&tl=en&dt=t&q=${{encodeURIComponent(text)}}`;
+                    const res = await fetch(url);
                     const data = await res.json();
-                    document.getElementById('speechTrans').innerText = data.responseData.translatedText || "Translation unavailable";
+                    
+                    if (data && data[0] && data[0][0] && data[0][0][0]) {{
+                        document.getElementById('speechTrans').innerText = data[0][0][0];
+                    }} else {{
+                        document.getElementById('speechTrans').innerText = "Translation unavailable";
+                    }}
                 }} catch(e) {{
                     document.getElementById('speechTrans').innerText = "Translation error";
                 }}
