@@ -176,7 +176,7 @@ html_code = f"""
             playCurrentAudio();
         }}
 
-        // Speech Recognition & Google Translation Setup
+        // Speech Recognition Setup
         const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
         let recognition;
         
@@ -190,15 +190,15 @@ html_code = f"""
                 document.getElementById('sttBtn').innerText = "TRANSLATE";
                 document.getElementById('sttBtn').style.backgroundColor = "#FF6600";
                 
-                // Fetch translation via Google Translate endpoint
+                // Fetch translation via Lingva CORS-enabled proxy
                 document.getElementById('speechTrans').innerText = "Translating...";
                 try {{
-                    const url = `https://translate.googleapis.com/translate_a/single?client=gtx&sl=th&tl=en&dt=t&q=${{encodeURIComponent(text)}}`;
+                    const url = `https://lingva.ml/api/v1/th/en/${{encodeURIComponent(text)}}`;
                     const res = await fetch(url);
                     const data = await res.json();
                     
-                    if (data && data[0] && data[0][0] && data[0][0][0]) {{
-                        document.getElementById('speechTrans').innerText = data[0][0][0];
+                    if (data && data.translation) {{
+                        document.getElementById('speechTrans').innerText = data.translation;
                     }} else {{
                         document.getElementById('speechTrans').innerText = "Translation unavailable";
                     }}
