@@ -132,6 +132,14 @@ html_code = f"""
         let currentIndex = 0;
         let isRevealed = false;
 
+        // Local Dictionary Fallback
+        const dict = {{
+            "แล้ว": "then", "เจอ": "meet", "กัน": "each other", "ใหม่": "again",
+            "แล้วเจอกันใหม่": "See you again", "อยู่ที่ไหน": "where is it",
+            "คุณ": "you", "ของ": "of", "มีด": "knife", "ขอ": "request",
+            "สี": "color", "เข้ม": "dark", "กว่า": "more", "นี้": "this", "ครับ": "polite particle"
+        }};
+
         function updateCard() {{
             const item = db[currentIndex];
             document.getElementById('thaiDisplay').innerText = item.thai;
@@ -176,6 +184,32 @@ html_code = f"""
             playCurrentAudio();
         }}
 
+        // Offline / In-Memory Translation Engine
+        function translateLocal(text) {{
+            const cleanText = text.trim();
+            
+            // 1. Check exact match in active dataset
+            const match = db.find(item => item.thai === cleanText);
+            if (match) return match.english;
+
+            // 2. Check exact match in local dictionary
+            if (dict[cleanText]) return dict[cleanText];
+
+            // 3. Fallback word parsing
+            let words = [];
+            for (let key in dict) {{
+                if (cleanText.includes(key)) {{
+                    words.push(dict[key]);
+                }}
+            }}
+
+            if (words.length > 0) {{
+                return words.join(" ");
+            }}
+
+            return cleanText;
+        }}
+
         // Speech Recognition Setup
         const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
         let recognition;
@@ -190,38 +224,13 @@ html_code = f"""
                 document.getElementById('sttBtn').innerText = "TRANSLATE";
                 document.getElementById('sttBtn').style.backgroundColor = "#FF6600";
                 
-                // Fallback translation endpoint via Google translate script JSONP
-                translateText(text);
+                // Perform Instant Zero-Network Local Translation
+                const translation = translateLocal(text);
+                document.getElementById('speechTrans').innerText = translation;
             }};
 
             recognition.onerror = () => resetSttBtn();
             recognition.onend = () => resetSttBtn();
-        }}
-
-        function translateText(text) {{
-            document.getElementById('speechTrans').innerText = "Translating...";
-            
-            const script = document.createElement('script');
-            const callbackName = 'googleTranslateCB_' + Math.floor(Math.random() * 1000000);
-            
-            window[callbackName] = function(data) {{
-                if (data && data[0] && data[0][0] && data[0][0][0]) {{
-                    document.getElementById('speechTrans').innerText = data[0][0][0];
-                }} else {{
-                    document.getElementById('speechTrans').innerText = "Translation unavailable";
-                }}
-                delete window[callbackName];
-                document.body.removeChild(script);
-            }};
-            
-            script.src = `https://translate.googleapis.com/translate_a/single?client=gtx&sl=th&tl=en&dt=t&q=${{encodeURIComponent(text)}}&callback=${{callbackName}}`;
-            script.onerror = function() {{
-                document.getElementById('speechTrans').innerText = "Translation unavailable";
-                delete window[callbackName];
-                if (script.parentNode) document.body.removeChild(script);
-            }};
-            
-            document.body.appendChild(script);
         }}
 
         function startRecognition() {{
