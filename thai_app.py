@@ -184,31 +184,44 @@ html_code = f"""
             recognition = new SpeechRecognition();
             recognition.lang = 'th-TH';
             
-            recognition.onresult = async (event) => {{
+            recognition.onresult = (event) => {{
                 const text = event.results[0][0].transcript;
                 document.getElementById('speechOutput').innerText = text;
                 document.getElementById('sttBtn').innerText = "TRANSLATE";
                 document.getElementById('sttBtn').style.backgroundColor = "#FF6600";
                 
-                // Fetch translation via Lingva CORS-enabled proxy
-                document.getElementById('speechTrans').innerText = "Translating...";
-                try {{
-                    const url = `https://lingva.ml/api/v1/th/en/${{encodeURIComponent(text)}}`;
-                    const res = await fetch(url);
-                    const data = await res.json();
-                    
-                    if (data && data.translation) {{
-                        document.getElementById('speechTrans').innerText = data.translation;
-                    }} else {{
-                        document.getElementById('speechTrans').innerText = "Translation unavailable";
-                    }}
-                }} catch(e) {{
-                    document.getElementById('speechTrans').innerText = "Translation error";
-                }}
+                // Fallback translation endpoint via Google translate script JSONP
+                translateText(text);
             }};
 
             recognition.onerror = () => resetSttBtn();
             recognition.onend = () => resetSttBtn();
+        }}
+
+        function translateText(text) {{
+            document.getElementById('speechTrans').innerText = "Translating...";
+            
+            const script = document.createElement('script');
+            const callbackName = 'googleTranslateCB_' + Math.floor(Math.random() * 1000000);
+            
+            window[callbackName] = function(data) {{
+                if (data && data[0] && data[0][0] && data[0][0][0]) {{
+                    document.getElementById('speechTrans').innerText = data[0][0][0];
+                }} else {{
+                    document.getElementById('speechTrans').innerText = "Translation unavailable";
+                }}
+                delete window[callbackName];
+                document.body.removeChild(script);
+            }};
+            
+            script.src = `https://translate.googleapis.com/translate_a/single?client=gtx&sl=th&tl=en&dt=t&q=${{encodeURIComponent(text)}}&callback=${{callbackName}}`;
+            script.onerror = function() {{
+                document.getElementById('speechTrans').innerText = "Translation unavailable";
+                delete window[callbackName];
+                if (script.parentNode) document.body.removeChild(script);
+            }};
+            
+            document.body.appendChild(script);
         }}
 
         function startRecognition() {{
