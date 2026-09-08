@@ -132,14 +132,6 @@ html_code = f"""
         let currentIndex = 0;
         let isRevealed = false;
 
-        // Local Dictionary Fallback
-        const dict = {{
-            "แล้ว": "then", "เจอ": "meet", "กัน": "each other", "ใหม่": "again",
-            "แล้วเจอกันใหม่": "See you again", "อยู่ที่ไหน": "where is it",
-            "คุณ": "you", "ของ": "of", "มีด": "knife", "ขอ": "request",
-            "สี": "color", "เข้ม": "dark", "กว่า": "more", "นี้": "this", "ครับ": "polite particle"
-        }};
-
         function updateCard() {{
             const item = db[currentIndex];
             document.getElementById('thaiDisplay').innerText = item.thai;
@@ -184,30 +176,27 @@ html_code = f"""
             playCurrentAudio();
         }}
 
-        // Offline / In-Memory Translation Engine
-        function translateLocal(text) {{
+        // Hybrid Translation Engine (Database + CORS API)
+        async function getTranslation(text) {{
             const cleanText = text.trim();
             
-            // 1. Check exact match in active dataset
+            // 1. Check exact match in your database first
             const match = db.find(item => item.thai === cleanText);
             if (match) return match.english;
 
-            // 2. Check exact match in local dictionary
-            if (dict[cleanText]) return dict[cleanText];
-
-            // 3. Fallback word parsing
-            let words = [];
-            for (let key in dict) {{
-                if (cleanText.includes(key)) {{
-                    words.push(dict[key]);
+            // 2. Fetch from CORS-friendly MyMemory API endpoint
+            try {{
+                const url = `https://api.mymemory.translated.net/get?q=${{encodeURIComponent(cleanText)}}&langpair=th|en`;
+                const res = await fetch(url);
+                const data = await res.json();
+                if (data && data.responseData && data.responseData.translatedText) {{
+                    return data.responseData.translatedText;
                 }}
+            }} catch(e) {{
+                console.error(e);
             }}
 
-            if (words.length > 0) {{
-                return words.join(" ");
-            }}
-
-            return cleanText;
+            return "Translation unavailable";
         }}
 
         // Speech Recognition Setup
@@ -218,14 +207,14 @@ html_code = f"""
             recognition = new SpeechRecognition();
             recognition.lang = 'th-TH';
             
-            recognition.onresult = (event) => {{
+            recognition.onresult = async (event) => {{
                 const text = event.results[0][0].transcript;
                 document.getElementById('speechOutput').innerText = text;
                 document.getElementById('sttBtn').innerText = "TRANSLATE";
                 document.getElementById('sttBtn').style.backgroundColor = "#FF6600";
                 
-                // Perform Instant Zero-Network Local Translation
-                const translation = translateLocal(text);
+                document.getElementById('speechTrans').innerText = "Translating...";
+                const translation = await getTranslation(text);
                 document.getElementById('speechTrans').innerText = translation;
             }};
 
