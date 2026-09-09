@@ -25,23 +25,38 @@ def load_phrases():
     try:
         df = pd.read_csv(url)
         if "Thai" in df.columns and "English" in df.columns:
-            phrases = df[['Thai', 'English']].dropna().to_dict('records')
-            cleaned = [{"thai": str(p['Thai']).strip(), "english": str(p['English']).strip()} for p in phrases if str(p['Thai']).strip()]
+            # Check if Category column exists, otherwise assign default 'GENERAL'
+            if "Category" not in df.columns:
+                df["Category"] = "GENERAL"
+            else:
+                df["Category"] = df["Category"].fillna("GENERAL").astype(str).str.strip().str.upper()
+
+            phrases = df[['Thai', 'English', 'Category']].dropna(subset=['Thai', 'English']).to_dict('records')
+            cleaned = [{
+                "thai": str(p['Thai']).strip(), 
+                "english": str(p['English']).strip(),
+                "category": str(p['Category']).strip() if str(p['Category']).strip() else "GENERAL"
+            } for p in phrases if str(p['Thai']).strip()]
+            
             if cleaned:
                 return cleaned, last_updated
     except Exception:
         pass
 
     return [
-        {"thai": "เลี้ยวขวาครับ", "english": "Turn right please."},
-        {"thai": "ตรงไปแล้วเลี้ยวซ้าย", "english": "Go straight then turn left."},
-        {"thai": "ขอโทษครับ", "english": "Excuse me."}
+        {"thai": "เลี้ยวขวาครับ", "english": "Turn right please.", "category": "NAVIGATION"},
+        {"thai": "ตรงไปแล้วเลี้ยวซ้าย", "english": "Go straight then turn left.", "category": "NAVIGATION"},
+        {"thai": "ขอโทษครับ", "english": "Excuse me.", "category": "GENERAL"}
     ], last_updated
 
 PHRASES_DB, LAST_UPDATED = load_phrases()
-json_data = json.dumps(PHRASES_DB)
 
-# --- COMPLETE SINGLE-COMPONENT UI ---
+# Extract unique categories dynamically
+UNIQUE_CATEGORIES = sorted(list(set(p['category'] for p in PHRASES_DB)))
+json_data = json.dumps(PHRASES_DB)
+json_cats = json.dumps(UNIQUE_CATEGORIES)
+
+# --- COMPLETE SINGLE-COMPONENT UI WITH OPTION 1 MODAL ---
 html_code = f"""
 <!DOCTYPE html>
 <html>
@@ -52,8 +67,26 @@ html_code = f"""
         body {{ margin: 0; padding: 10px; background-color: #ffffff; text-align: center; }}
         
         .flag {{ width: 55px; height: 36px; border-radius: 3px; box-shadow: 0 2px 4px rgba(0,0,0,0.2); }}
-        .title {{ font-size: 18px; margin: 8px 0; color: #000; font-weight: bold; }}
-        .thai-text {{ font-size: 32px; font-weight: bold; color: #000; margin: 10px 0; min-height: 48px; }}
+        .title {{ font-size: 18px; margin: 6px 0 4px 0; color: #000; font-weight: bold; }}
+        
+        /* Compact Filter Pill Button */
+        .filter-btn-pill {{
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            background-color: #F1F5F9;
+            border: 1px solid #CBD5E1;
+            border-radius: 16px;
+            padding: 4px 12px;
+            font-size: 12px;
+            font-weight: 700;
+            color: #334155;
+            cursor: pointer;
+            margin-bottom: 4px;
+        }}
+        .filter-btn-pill:hover {{ background-color: #E2E8F0; }}
+        
+        .thai-text {{ font-size: 32px; font-weight: bold; color: #000; margin: 8px 0; min-height: 48px; }}
         .sub-text {{ font-size: 14px; color: #777; margin-bottom: 15px; min-height: 24px; }}
         .eng-text {{ font-size: 20px; font-weight: bold; color: #0066CC; margin-bottom: 15px; min-height: 24px; }}
         
@@ -95,12 +128,79 @@ html_code = f"""
         }}
         
         .meta-info {{ font-size: 12px; color: #555; margin-top: 12px; line-height: 1.4; }}
+
+        /* --- MODAL OVERLAY STYLES --- */
+        .modal-overlay {{
+            display: none;
+            position: fixed;
+            top: 0; left: 0; width: 100%; height: 100%;
+            background-color: rgba(0,0,0,0.5);
+            z-index: 1000;
+            justify-content: center;
+            align-items: center;
+        }}
+        .modal-content {{
+            background-color: #ffffff;
+            width: 90%;
+            max-width: 360px;
+            border-radius: 12px;
+            padding: 16px;
+            text-align: left;
+            box-shadow: 0 10px 25px rgba(0,0,0,0.2);
+            max-height: 80vh;
+            display: flex;
+            flex-direction: column;
+        }}
+        .modal-header {{
+            font-size: 16px;
+            font-weight: bold;
+            color: #1E293B;
+            margin-bottom: 12px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }}
+        .cat-list {{
+            overflow-y: auto;
+            flex-grow: 1;
+            margin-bottom: 14px;
+            padding-right: 4px;
+        }}
+        .cat-item {{
+            display: flex;
+            align-items: center;
+            padding: 8px 0;
+            border-bottom: 1px solid #F1F5F9;
+            font-size: 14px;
+            color: #334155;
+            cursor: pointer;
+        }}
+        .cat-item input {{
+            margin-right: 10px;
+            width: 18px;
+            height: 18px;
+            accent-color: #0066CC;
+        }}
+        .modal-actions {{
+            display: flex;
+            gap: 8px;
+        }}
+        .modal-actions button {{
+            flex: 1;
+            height: 38px;
+            font-size: 13px;
+        }}
     </style>
 </head>
 <body>
 
     <img src="https://upload.wikimedia.org/wikipedia/commons/a/a9/Flag_of_Thailand.svg" class="flag" alt="Thai Flag">
     <div class="title">Thai Listening and Reading</div>
+    
+    <!-- Option 1 Filter Pill Button -->
+    <button class="filter-btn-pill" onclick="openModal()">
+        ⚙️ Filter: <span id="pillCatLabel">ALL</span>
+    </button>
     
     <div id="thaiDisplay" class="thai-text"></div>
     <div id="englishDisplay" class="sub-text">Click "REVEAL" to view English translation</div>
@@ -123,17 +223,106 @@ html_code = f"""
     <button class="btn btn-outline" onclick="speakRecognizedText()">HEAR SPOKEN THAI TEXT</button>
 
     <div class="meta-info">
-        <div><b>Available Records:</b> {len(PHRASES_DB)}</div>
+        <div><b>Available Records:</b> <span id="recordCount">{len(PHRASES_DB)}</span></div>
         <div><b>Spreadsheet Last Updated:</b> {LAST_UPDATED}</div>
     </div>
 
+    <!-- Modal Filter Popup -->
+    <div id="filterModal" class="modal-overlay">
+        <div class="modal-content">
+            <div class="modal-header">
+                <span>Select Categories</span>
+                <span style="cursor:pointer; font-size: 18px;" onclick="closeModal()">✕</span>
+            </div>
+            <div class="cat-list" id="categoryContainer"></div>
+            <div class="modal-actions">
+                <button class="btn btn-dark" onclick="selectAllCategories(true)">All</button>
+                <button class="btn btn-dark" onclick="selectAllCategories(false)">Clear</button>
+                <button class="btn btn-blue" onclick="applyFilters()">Apply</button>
+            </div>
+        </div>
+    </div>
+
     <script>
-        const db = {json_data};
+        const fullDb = {json_data};
+        const allCategories = {json_cats};
+        
+        let activeDb = [...fullDb];
+        let selectedCategories = new Set(allCategories);
         let currentIndex = 0;
         let isRevealed = false;
 
+        function renderCategoryModal() {{
+            const container = document.getElementById('categoryContainer');
+            container.innerHTML = '';
+            
+            allCategories.forEach(cat => {{
+                const item = document.createElement('label');
+                item.className = 'cat-item';
+                const isChecked = selectedCategories.has(cat) ? 'checked' : '';
+                item.innerHTML = `<input type="checkbox" value="${{cat}}" ${{isChecked}} onchange="toggleCategory('${{cat}}')"> ${{cat}}`;
+                container.appendChild(item);
+            }});
+        }}
+
+        function toggleCategory(cat) {{
+            if (selectedCategories.has(cat)) {{
+                selectedCategories.delete(cat);
+            }} else {{
+                selectedCategories.add(cat);
+            }}
+        }}
+
+        function selectAllCategories(status) {{
+            if (status) {{
+                selectedCategories = new Set(allCategories);
+            }} else {{
+                selectedCategories.clear();
+            }}
+            renderCategoryModal();
+        }}
+
+        function openModal() {{
+            renderCategoryModal();
+            document.getElementById('filterModal').style.display = 'flex';
+        }}
+
+        function closeModal() {{
+            document.getElementById('filterModal').style.display = 'none';
+        }}
+
+        function applyFilters() {{
+            if (selectedCategories.size === 0) {{
+                alert("Please select at least one category.");
+                return;
+            }}
+            
+            activeDb = fullDb.filter(item => selectedCategories.has(item.category));
+            
+            // Update Pill Label
+            if (selectedCategories.size === allCategories.length) {{
+                document.getElementById('pillCatLabel').innerText = "ALL";
+            }} else {{
+                document.getElementById('pillCatLabel').innerText = `${{selectedCategories.size}} Selected`;
+            }}
+            
+            // Update Record Count Meta
+            document.getElementById('recordCount').innerText = `${{activeDb.length}} (Filtered)`;
+            
+            currentIndex = 0;
+            isRevealed = false;
+            closeModal();
+            updateCard();
+        }}
+
         function updateCard() {{
-            const item = db[currentIndex];
+            if (activeDb.length === 0) {{
+                document.getElementById('thaiDisplay').innerText = "No Records";
+                document.getElementById('englishDisplay').innerText = "Select categories in filter";
+                return;
+            }}
+            
+            const item = activeDb[currentIndex];
             document.getElementById('thaiDisplay').innerText = item.thai;
             if (isRevealed) {{
                 document.getElementById('englishDisplay').innerText = item.english;
@@ -145,58 +334,40 @@ html_code = f"""
         }}
 
         function toggleReveal() {{
+            if (activeDb.length === 0) return;
             isRevealed = !isRevealed;
             updateCard();
         }}
 
         function playCurrentAudio() {{
-            const utterance = new SpeechSynthesisUtterance(db[currentIndex].thai);
+            if (activeDb.length === 0) return;
+            const utterance = new SpeechSynthesisUtterance(activeDb[currentIndex].thai);
             utterance.lang = 'th-TH';
             window.speechSynthesis.speak(utterance);
         }}
 
         function nextPhrase() {{
-            currentIndex = (currentIndex + 1) % db.length;
+            if (activeDb.length === 0) return;
+            currentIndex = (currentIndex + 1) % activeDb.length;
             isRevealed = false;
             updateCard();
             playCurrentAudio();
         }}
 
         function prevPhrase() {{
-            currentIndex = (currentIndex - 1 + db.length) % db.length;
+            if (activeDb.length === 0) return;
+            currentIndex = (currentIndex - 1 + activeDb.length) % activeDb.length;
             isRevealed = false;
             updateCard();
             playCurrentAudio();
         }}
 
         function randomPhrase() {{
-            currentIndex = Math.floor(Math.random() * db.length);
+            if (activeDb.length === 0) return;
+            currentIndex = Math.floor(Math.random() * activeDb.length);
             isRevealed = false;
             updateCard();
             playCurrentAudio();
-        }}
-
-        // Hybrid Translation Engine (Database + CORS API)
-        async function getTranslation(text) {{
-            const cleanText = text.trim();
-            
-            // 1. Check exact match in your database first
-            const match = db.find(item => item.thai === cleanText);
-            if (match) return match.english;
-
-            // 2. Fetch from CORS-friendly MyMemory API endpoint
-            try {{
-                const url = `https://api.mymemory.translated.net/get?q=${{encodeURIComponent(cleanText)}}&langpair=th|en`;
-                const res = await fetch(url);
-                const data = await res.json();
-                if (data && data.responseData && data.responseData.translatedText) {{
-                    return data.responseData.translatedText;
-                }}
-            }} catch(e) {{
-                console.error(e);
-            }}
-
-            return "Translation unavailable";
         }}
 
         // Speech Recognition Setup
@@ -214,8 +385,14 @@ html_code = f"""
                 document.getElementById('sttBtn').style.backgroundColor = "#FF6600";
                 
                 document.getElementById('speechTrans').innerText = "Translating...";
-                const translation = await getTranslation(text);
-                document.getElementById('speechTrans').innerText = translation;
+                
+                // Match directly against active database or fallback to full database
+                const match = fullDb.find(item => item.thai === text.trim());
+                if (match) {{
+                    document.getElementById('speechTrans').innerText = match.english;
+                }} else {{
+                    document.getElementById('speechTrans').innerText = "Translation unavailable";
+                }}
             }};
 
             recognition.onerror = () => resetSttBtn();
@@ -257,4 +434,4 @@ html_code = f"""
 </html>
 """
 
-st.components.v1.html(html_code, height=650, scrolling=True)
+st.components.v1.html(html_code, height=670, scrolling=True)
