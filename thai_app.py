@@ -1,6 +1,7 @@
 import streamlit as st
-import pandas as pd
-import requests
+import csv
+import urllib.request
+import io
 import time
 import json
 
@@ -15,7 +16,7 @@ st.markdown("""
     </style>
 """, unsafe_allow_html=True)
 
-# --- LOAD DATASET ---
+# --- LOAD DATASET WITHOUT PANDAS ---
 @st.cache_data(ttl=600)
 def load_phrases():
     sheet_id = "1_vMSPtMo3-JD2qARp4zwrcvNrhEuSKHQVEOT1IMwgFw"
@@ -23,23 +24,25 @@ def load_phrases():
     last_updated = time.strftime("%Y-%m-%d %H:%M UTC", time.gmtime())
     
     try:
-        df = pd.read_csv(url)
-        if "Thai" in df.columns and "English" in df.columns:
-            # Check if Category column exists, otherwise assign default 'GENERAL'
-            if "Category" not in df.columns:
-                df["Category"] = "GENERAL"
-            else:
-                df["Category"] = df["Category"].fillna("GENERAL").astype(str).str.strip().str.upper()
-
-            phrases = df[['Thai', 'English', 'Category']].dropna(subset=['Thai', 'English']).to_dict('records')
-            cleaned = [{
-                "thai": str(p['Thai']).strip(), 
-                "english": str(p['English']).strip(),
-                "category": str(p['Category']).strip() if str(p['Category']).strip() else "GENERAL"
-            } for p in phrases if str(p['Thai']).strip()]
+        req = urllib.request.urlopen(url)
+        csv_text = req.read().decode('utf-8')
+        reader = csv.DictReader(io.StringIO(csv_text))
+        
+        cleaned = []
+        for row in reader:
+            thai = str(row.get("Thai", "")).strip()
+            english = str(row.get("English", "")).strip()
+            category = str(row.get("Category", "GENERAL")).strip().upper()
             
-            if cleaned:
-                return cleaned, last_updated
+            if thai and english:
+                cleaned.append({
+                    "thai": thai,
+                    "english": english,
+                    "category": category if category else "GENERAL"
+                })
+        
+        if cleaned:
+            return cleaned, last_updated
     except Exception:
         pass
 
