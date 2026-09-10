@@ -59,7 +59,7 @@ UNIQUE_CATEGORIES = sorted(list(set(p['category'] for p in PHRASES_DB)))
 json_data = json.dumps(PHRASES_DB)
 json_cats = json.dumps(UNIQUE_CATEGORIES)
 
-# --- COMPLETE SINGLE-COMPONENT UI WITH OPTION 1 MODAL ---
+# --- COMPLETE SINGLE-COMPONENT UI ---
 html_code = f"""
 <!DOCTYPE html>
 <html>
@@ -72,7 +72,6 @@ html_code = f"""
         .flag {{ width: 55px; height: 36px; border-radius: 3px; box-shadow: 0 2px 4px rgba(0,0,0,0.2); }}
         .title {{ font-size: 18px; margin: 6px 0 4px 0; color: #000; font-weight: bold; }}
         
-        /* Compact Filter Pill Button */
         .filter-btn-pill {{
             display: inline-flex;
             align-items: center;
@@ -132,7 +131,6 @@ html_code = f"""
         
         .meta-info {{ font-size: 12px; color: #555; margin-top: 12px; line-height: 1.4; }}
 
-        /* --- MODAL OVERLAY STYLES --- */
         .modal-overlay {{
             display: none;
             position: fixed;
@@ -200,7 +198,6 @@ html_code = f"""
     <img src="https://upload.wikimedia.org/wikipedia/commons/a/a9/Flag_of_Thailand.svg" class="flag" alt="Thai Flag">
     <div class="title">Thai Listening and Reading</div>
     
-    <!-- Option 1 Filter Pill Button -->
     <button class="filter-btn-pill" onclick="openModal()">
         ⚙️ Filter: <span id="pillCatLabel">ALL</span>
     </button>
@@ -230,7 +227,6 @@ html_code = f"""
         <div><b>Spreadsheet Last Updated:</b> {LAST_UPDATED}</div>
     </div>
 
-    <!-- Modal Filter Popup -->
     <div id="filterModal" class="modal-overlay">
         <div class="modal-content">
             <div class="modal-header">
@@ -302,14 +298,12 @@ html_code = f"""
             
             activeDb = fullDb.filter(item => selectedCategories.has(item.category));
             
-            // Update Pill Label
             if (selectedCategories.size === allCategories.length) {{
                 document.getElementById('pillCatLabel').innerText = "ALL";
             }} else {{
                 document.getElementById('pillCatLabel').innerText = `${{selectedCategories.size}} Selected`;
             }}
             
-            // Update Record Count Meta
             document.getElementById('recordCount').innerText = `${{activeDb.length}} (Filtered)`;
             
             currentIndex = 0;
@@ -373,7 +367,6 @@ html_code = f"""
             playCurrentAudio();
         }}
 
-        // Speech Recognition Setup
         const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
         let recognition;
         
@@ -389,7 +382,6 @@ html_code = f"""
                 
                 document.getElementById('speechTrans').innerText = "Translating...";
                 
-                // Match directly against active database or fallback to full database
                 const match = fullDb.find(item => item.thai === text.trim());
                 if (match) {{
                     document.getElementById('speechTrans').innerText = match.english;
@@ -430,7 +422,6 @@ html_code = f"""
             }}
         }}
 
-        // Initial Load
         updateCard();
     </script>
 </body>
