@@ -367,6 +367,26 @@ html_code = f"""
             playCurrentAudio();
         }}
 
+        // --- OPTION 1: TRANSLATION FUNCTION WITH LIVE WEB API FALLBACK ---
+        async function translateThaiText(text) {{
+            // 1. Try exact match from local dataset
+            const match = fullDb.find(item => item.thai.trim() === text.trim());
+            if (match) return match.english;
+
+            // 2. Fallback to free real-time translation API
+            try {{
+                const url = `https://api.mymemory.translated.net/get?q=${{encodeURIComponent(text)}}&langpair=th|en`;
+                const res = await fetch(url);
+                const data = await res.json();
+                if (data.responseData && data.responseData.translatedText) {{
+                    return data.responseData.translatedText;
+                }}
+            }} catch (e) {{
+                console.error("Translation API error:", e);
+            }}
+            return "Translation unavailable";
+        }}
+
         const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
         let recognition;
         
@@ -377,17 +397,13 @@ html_code = f"""
             recognition.onresult = async (event) => {{
                 const text = event.results[0][0].transcript;
                 document.getElementById('speechOutput').innerText = text;
-                document.getElementById('sttBtn').innerText = "TRANSLATE";
-                document.getElementById('sttBtn').style.backgroundColor = "#FF6600";
-                
                 document.getElementById('speechTrans').innerText = "Translating...";
                 
-                const match = fullDb.find(item => item.thai === text.trim());
-                if (match) {{
-                    document.getElementById('speechTrans').innerText = match.english;
-                }} else {{
-                    document.getElementById('speechTrans').innerText = "Translation unavailable";
-                }}
+                // Perform dynamic lookup/translation
+                const translation = await translateThaiText(text);
+                document.getElementById('speechTrans').innerText = translation;
+                
+                resetSttBtn();
             }};
 
             recognition.onerror = () => resetSttBtn();
