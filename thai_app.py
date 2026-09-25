@@ -10,7 +10,7 @@ st.set_page_config(layout="centered", page_title="Thai Practice")
 
 WEBHOOK_URL = "https://script.google.com/macros/s/AKfycbzInN-jnJSFBs7XkodFxP1Y_BR5QnjNFmFU2L080hmhLe3LiGBJobu6oPJ2mwBQOD0s0Q/exec"
 
-# Process server-side save request
+# Handle save requests triggered directly via Native Streamlit Query Parameters
 query_params = st.query_params
 if "save_thai" in query_params and "save_eng" in query_params:
     thai_val = query_params["save_thai"]
@@ -25,10 +25,11 @@ if "save_thai" in query_params and "save_eng" in query_params:
         })
         req = urllib.request.Request(f"{WEBHOOK_URL}?{params}", headers={'User-Agent': 'Mozilla/5.0'})
         with urllib.request.urlopen(req) as response:
-            st.success(f"Saved: {thai_val} — {eng_val}")
+            st.success(f"✓ Saved to Spreadsheet: {thai_val} — {eng_val}")
     except Exception as e:
         st.error(f"Error saving entry: {e}")
 
+# Hide Streamlit Chrome UI
 st.markdown("""
     <style>
     #MainMenu, header, footer, div[data-testid="stHeader"] {display: none !important;}
@@ -37,6 +38,7 @@ st.markdown("""
     </style>
 """, unsafe_allow_html=True)
 
+# --- LOAD DATASET WITHOUT PANDAS ---
 @st.cache_data(ttl=600)
 def load_phrases():
     sheet_id = "1_vMSPtMo3-JD2qARp4zwrcvNrhEuSKHQVEOT1IMwgFw"
@@ -441,7 +443,7 @@ html_code = f"""
                 return;
             }}
 
-            window.top.location.href = `?save_thai=${{encodeURIComponent(thaiText)}}&save_eng=${{encodeURIComponent(englishText)}}`;
+            window.open(`?save_thai=${{encodeURIComponent(thaiText)}}&save_eng=${{encodeURIComponent(englishText)}}`, '_top');
         }}
 
         updateCard();
