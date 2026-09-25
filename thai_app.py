@@ -57,7 +57,6 @@ html_code = f"""
 <html>
 <head>
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <!-- Streamlit Component Communication Library -->
     <script src="https://unpkg.com/streamlit-component-lib@^1.0.0/dist/streamlit_component_lib.js"></script>
     <style>
         * {{ box-sizing: border-box; font-family: system-ui, -apple-system, sans-serif; }}
@@ -137,10 +136,11 @@ html_code = f"""
         let currentIndex = 0;
         let isRevealed = false;
 
-        // Initialize Streamlit component sizing
+        // Required Streamlit Component lifecycle initialization
         window.addEventListener("load", function() {{
             if (window.Streamlit) {{
-                Streamlit.setFrameHeight(550);
+                Streamlit.setComponentReady();
+                Streamlit.setFrameHeight(580);
             }}
         }});
 
@@ -264,10 +264,8 @@ html_code = f"""
                 return;
             }}
 
-            // Use the official Streamlit Component library bridge
             if (window.Streamlit) {{
                 Streamlit.setComponentValue({{ thai: thai, english: english, category: "USER ADDED" }});
-                alert("✓ Sending translation to Google Sheet...");
             }} else {{
                 alert("Error: Streamlit communication bridge not loaded.");
             }}
