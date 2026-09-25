@@ -56,6 +56,25 @@ UNIQUE_CATEGORIES = sorted(list(set(p['category'] for p in PHRASES_DB)))
 json_data = json.dumps(PHRASES_DB)
 json_cats = json.dumps(UNIQUE_CATEGORIES)
 
+# Check if Python received a saved phrase from the frontend redirect
+query_params = st.query_params
+incoming_thai = query_params.get("thai", "")
+incoming_eng = query_params.get("english", "")
+
+if incoming_thai and incoming_eng:
+    try:
+        save_params = urllib.parse.urlencode({
+            "thai": incoming_thai,
+            "english": incoming_eng,
+            "category": "USER ADDED"
+        })
+        urllib.request.urlopen(f"{WEBHOOK_URL}?{save_params}")
+        st.success(f"✓ Saved to Sheet: {incoming_thai} ({incoming_eng})")
+        # Clear query params so it doesn't re-trigger on refresh
+        st.query_params.clear()
+    except Exception as e:
+        st.error(f"Sheet write error: {e}")
+
 html_code = f"""
 <!DOCTYPE html>
 <html>
@@ -196,8 +215,6 @@ html_code = f"""
 
     <button id="sttBtn" class="btn btn-orange" onclick="startRecognition()">TRANSLATE</button>
     <button class="btn btn-outline" onclick="speakRecognizedText()">HEAR SPOKEN THAI TEXT</button>
-    
-    <!-- Restored Save Button inside the UI -->
     <button id="saveBtn" class="btn btn-save" onclick="saveToSpreadsheet()">➕ SAVE TO SPREADSHEET</button>
 
     <div class="meta-info">
@@ -220,10 +237,7 @@ html_code = f"""
         </div>
     </div>
 
-    <iframe name="hidden_iframe" id="hidden_iframe" style="display:none;"></iframe>
-
     <script>
-        const WEBHOOK_URL = "{WEBHOOK_URL}";
         const fullDb = {json_data};
         const allCategories = {json_cats};
         
@@ -424,38 +438,9 @@ html_code = f"""
                 return;
             }}
 
-            const saveBtn = document.getElementById('saveBtn');
-            saveBtn.innerText = "SAVING...";
-            saveBtn.style.backgroundColor = "#4B5563";
-
-            const form = document.createElement('form');
-            form.method = 'GET';
-            form.action = WEBHOOK_URL;
-            form.target = 'hidden_iframe';
-
-            const data = {{
-                thai: thaiText,
-                english: englishText,
-                category: "USER ADDED"
-            }};
-
-            for (let key in data) {{
-                const input = document.createElement('input');
-                input.type = 'hidden';
-                input.name = key;
-                input.value = data[key];
-                form.appendChild(input);
-            }}
-
-            document.body.appendChild(form);
-            form.submit();
-            document.body.removeChild(form);
-
-            setTimeout(() => {{
-                alert("✓ Saved successfully to Google Sheet!");
-                saveBtn.innerText = "➕ SAVE TO SPREADSHEET";
-                saveBtn.style.backgroundColor = "#8B5CF6";
-            }}, 700);
+            // Redirect parent window with parameters so Python handles the server-side save securely
+            const targetUrl = window.parent.location.pathname + `?thai=${{encodeURIComponent(thaiText)}}&english=${{encodeURIComponent(englishText)}}`;
+            window.parent.location.href = targetUrl;
         }}
 
         updateCard();
