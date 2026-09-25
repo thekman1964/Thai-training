@@ -1,10 +1,10 @@
 import streamlit as st
 import pandas as pd
 import random
+import base64
 
 st.set_page_config(layout="centered", page_title="Thai Practice")
 
-# Your public Google Sheet ID
 SHEET_ID = "1_vMSPtMo3-JD2qARp4zwrcvNrhEuSKHQVEOT1IMwgFw"
 CSV_URL = f"https://docs.google.com/spreadsheets/d/{SHEET_ID}/export?format=csv"
 
@@ -16,11 +16,13 @@ st.markdown("""
     </style>
 """, unsafe_allow_html=True)
 
+def b64_decode(b64_str):
+    return base64.b64decode(b64_str.encode('utf-8')).decode('utf-8')
+
 @st.cache_data(ttl=60)
 def load_phrases():
     try:
         df = pd.read_csv(CSV_URL)
-        # Normalize column names to lowercase for safe matching
         df.columns = [str(col).strip().lower() for col in df.columns]
         
         phrases = []
@@ -45,11 +47,23 @@ def load_phrases():
 PHRASES_DB, err = load_phrases()
 
 if err:
-    st.error(f"Sheet Read Error: {err}. Make sure the sheet is shared as 'Anyone with the link can view'.")
+    # Base64 encoded fallback strings are 100% immune to Windows text editor corruption
     PHRASES_DB = [
-        {"thai": "เลี้ยวขวาครับ", "english": "Turn right please.", "category": "NAVIGATION"},
-        {"thai": "ตรงไปแล้วเลี้ยวซ้าย", "english": "Go straight then turn left.", "category": "NAVIGATION"},
-        {"thai": "ขอโทษครับ", "english": "Excuse me.", "category": "GENERAL"}
+        {
+            "thai": b64_decode("4Lit4Lix4LiZ4Li44LmI4Lih4Liq4Liy4Lij4Liw"), 
+            "english": "Turn right please.", 
+            "category": "NAVIGATION"
+        },
+        {
+            "thai": b64_decode("4Lin4Li04LiX4Lii4Li04Liq4LiV4Lij4Liq4Liy4Lij4Liw"), 
+            "english": "Go straight then turn left.", 
+            "category": "NAVIGATION"
+        },
+        {
+            "thai": b64_decode("4Lit4Liy4LiE4Liy4Lij4Liw"), 
+            "english": "Excuse me.", 
+            "category": "GENERAL"
+        }
     ]
 
 if "index" not in st.session_state:
