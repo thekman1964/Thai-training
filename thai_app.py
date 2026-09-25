@@ -88,16 +88,20 @@ html_code = f"""
         .eng-text {{ font-size: 20px; font-weight: bold; color: #0066CC; margin-bottom: 15px; min-height: 24px; }}
         
         .btn {{
+            display: block;
             width: 100%;
             height: 46px;
+            line-height: 46px;
             border: none;
             border-radius: 6px;
             font-size: 15px;
             font-weight: 800;
             color: #ffffff !important;
+            text-decoration: none;
             cursor: pointer;
             margin-bottom: 8px;
             box-shadow: 0 2px 4px rgba(0,0,0,0.15);
+            text-align: center;
         }}
         
         .btn-blue {{ background-color: #0066CC; }}
@@ -107,7 +111,7 @@ html_code = f"""
         .btn-save {{ background-color: #8B5CF6; }}
         
         .nav-grid {{ display: flex; gap: 6px; margin-bottom: 12px; }}
-        .nav-grid .btn {{ flex: 1; margin-bottom: 0; }}
+        .nav-grid .btn {{ flex: 1; margin-bottom: 0; line-height: 46px; }}
         
         hr {{ border: 0; border-top: 1px solid #e2e8f0; margin: 15px 0; }}
 
@@ -119,6 +123,7 @@ html_code = f"""
             color: #FF6600 !important;
             border: 2px solid #FF6600 !important;
             box-shadow: 0 2px 4px rgba(0,0,0,0.08);
+            line-height: 42px;
         }}
         
         .meta-info {{ font-size: 12px; color: #555; margin-top: 12px; line-height: 1.4; }}
@@ -165,7 +170,7 @@ html_code = f"""
         }}
         .cat-item input {{ margin-right: 10px; width: 18px; height: 18px; accent-color: #0066CC; }}
         .modal-actions {{ display: flex; gap: 8px; }}
-        .modal-actions button {{ flex: 1; height: 38px; font-size: 13px; }}
+        .modal-actions button {{ flex: 1; height: 38px; font-size: 13px; line-height: normal; }}
     </style>
 </head>
 <body>
@@ -196,7 +201,9 @@ html_code = f"""
 
     <button id="sttBtn" class="btn btn-orange" onclick="startRecognition()">TRANSLATE</button>
     <button class="btn btn-outline" onclick="speakRecognizedText()">HEAR SPOKEN THAI TEXT</button>
-    <button id="saveBtn" class="btn btn-save" onclick="saveToSpreadsheet()">➕ SAVE TO SPREADSHEET</button>
+    
+    <!-- Direct HTML Link acting as a bulletproof Save button -->
+    <a id="saveLink" href="{WEBHOOK_URL}" target="_blank" class="btn btn-save">➕ SAVE TO SPREADSHEET</a>
 
     <div class="meta-info">
         <div><b>Available Records:</b> <span id="recordCount">{len(PHRASES_DB)}</span></div>
@@ -376,6 +383,10 @@ html_code = f"""
                 const translation = await translateThaiText(text);
                 document.getElementById('speechTrans').innerText = translation;
                 
+                // Dynamically update the direct link with the translated parameters
+                const saveLink = document.getElementById('saveLink');
+                saveLink.href = `${{WEBHOOK_URL}}?thai=${{encodeURIComponent(text)}}&english=${{encodeURIComponent(translation)}}&category=USER+ADDED`;
+                
                 resetSttBtn();
             }};
 
@@ -409,20 +420,6 @@ html_code = f"""
                 utterance.lang = 'th-TH';
                 window.speechSynthesis.speak(utterance);
             }}
-        }}
-
-        function saveToSpreadsheet() {{
-            const thaiText = document.getElementById('speechOutput').innerText;
-            const englishText = document.getElementById('speechTrans').innerText;
-
-            if (!thaiText || thaiText === "Spoken Thai text..." || englishText === "Translation unavailable" || englishText === "English translation...") {{
-                alert("Please record and translate a valid phrase first.");
-                return;
-            }}
-
-            // Open direct Google Apps Script URL in a new tab to guarantee execution and save
-            const saveUrl = `${{WEBHOOK_URL}}?thai=${{encodeURIComponent(thaiText)}}&english=${{encodeURIComponent(englishText)}}&category=USER+ADDED`;
-            window.open(saveUrl, '_blank');
         }}
 
         updateCard();
