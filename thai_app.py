@@ -453,15 +453,11 @@ html_code = f"""
             saveBtn.disabled = true;
 
             try {{
-                await fetch(webhookUrl, {{
-                    method: 'POST',
-                    mode: 'no-cors',
-                    headers: {{ 'Content-Type': 'application/json' }},
-                    body: JSON.stringify({{
-                        thai: thaiText,
-                        english: englishText,
-                        category: "USER ADDED"
-                    }})
+                const saveUrl = `${{webhookUrl}}?thai=${{encodeURIComponent(thaiText)}}&english=${{encodeURIComponent(englishText)}}&category=USER%20ADDED`;
+                
+                await fetch(saveUrl, {{
+                    method: 'GET',
+                    mode: 'no-cors'
                 }});
 
                 saveBtn.innerText = "✓ SAVED TO SPREADSHEET";
