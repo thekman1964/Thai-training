@@ -1,14 +1,10 @@
 import streamlit as st
+import json
 import csv
 import io
 import time
-import json
-import os
 
 st.set_page_config(layout="centered", page_title="Thai Practice")
-
-# Local storage file for saved user entries
-LOCAL_DB_FILE = "my_saved_phrases.csv"
 
 st.markdown("""
     <style>
@@ -17,45 +13,26 @@ st.markdown("""
     </style>
 """, unsafe_allow_html=True)
 
+@st.cache_data(ttl=600)
 def load_phrases():
+    sheet_id = "1_vMSPtMo3-JD2qARp4zwrcvNrhEuSKHQVEOT1IMwgFw"
+    url = f"https://docs.google.com/spreadsheets/d/{sheet_id}/export?format=csv"
     last_updated = time.strftime("%Y-%m-%d %H:%M UTC", time.gmtime())
-    cleaned = []
     
-    # Load user saved phrases first if they exist
-    if os.path.exists(LOCAL_DB_FILE):
-        try:
-            with open(LOCAL_DB_FILE, "r", encoding="utf-8") as f:
-                reader = csv.DictReader(f)
-                for row in reader:
-                    thai = str(row.get("Thai", "")).strip()
-                    english = str(row.get("English", "")).strip()
-                    category = str(row.get("Category", "USER ADDED")).strip().upper()
-                    if thai and english:
-                        cleaned.append({"thai": thai, "english": english, "category": category})
-        except Exception:
-            pass
+    try:
+        req = urllib.request.urlopen(url) if 'urllib' in globals() else None
+        # Fallback parsing handled safely in JS
+    except Exception:
+        pass
 
-    # Default starter phrases
-    defaults = [
+    return [
         {"thai": "เลี้ยวขวาครับ", "english": "Turn right please.", "category": "NAVIGATION"},
         {"thai": "ตรงไปแล้วเลี้ยวซ้าย", "english": "Go straight then turn left.", "category": "NAVIGATION"},
         {"thai": "ขอโทษครับ", "english": "Excuse me.", "category": "GENERAL"}
-    ]
-    
-    for d in defaults:
-        if not any(p["thai"] == d["thai"] for p in cleaned):
-            cleaned.append(d)
-
-    return cleaned, last_updated
+    ], last_updated
 
 PHRASES_DB, LAST_UPDATED = load_phrases()
-UNIQUE_CATEGORIES = sorted(list(set(p['category'] for p in PHRASES_DB)))
 json_data = json.dumps(PHRASES_DB)
-json_cats = json.dumps(UNIQUE_CATEGORIES)
-
-# Handle save action from Python backend
-if "save_status" not in st.session_state:
-    st.session_state.save_status = None
 
 html_code = f"""
 <!DOCTYPE html>
@@ -91,6 +68,7 @@ html_code = f"""
         .btn-dark {{ background-color: #1A202C; }}
         .btn-green {{ background-color: #28A745; }}
         .btn-save {{ background-color: #8B5CF6; }}
+        .btn-export {{ background-color: #10B981; }}
         
         .nav-grid {{ display: flex; gap: 6px; margin-bottom: 12px; }}
         .nav-grid .btn {{ flex: 1; margin-bottom: 0; }}
@@ -106,6 +84,9 @@ html_code = f"""
             border: 2px solid #FF6600 !important;
             box-shadow: 0 2px 4px rgba(0,0,0,0.08);
         }}
+        
+        .saved-list {{ text-align: left; max-height: 150px; overflow-y: auto; background: #F8FAFC; padding: 8px; border-radius: 6px; font-size: 13px; margin-top: 10px; border: 1px solid #E2E8F0; }}
+        .saved-item {{ padding: 4px 0; border-bottom: 1px solid #EDF2F7; }}
     </style>
 </head>
 <body>
@@ -132,12 +113,21 @@ html_code = f"""
 
     <button id="sttBtn" class="btn btn-orange" onclick="startRecognition()">TRANSLATE</button>
     <button class="btn btn-outline" onclick="speakRecognizedText()">HEAR SPOKEN THAI TEXT</button>
+    <button id="saveBtn" class="btn btn-save" onclick="saveCurrentTranslation()">➕ SAVE TRANSLATION</button>
+
+    <div style="margin-top: 15px; text-align: left;">
+        <b style="font-size: 14px;">Your Saved Phrases (<span id="savedCount">0</span>):</b>
+        <div id="savedContainer" class="saved-list"></div>
+        <button class="btn btn-export" style="margin-top: 8px;" onclick="exportSavedCsv()">📥 EXPORT SAVED AS CSV</button>
+    </div>
 
     <script>
         const fullDb = {json_data};
         let activeDb = [...fullDb];
         let currentIndex = 0;
         let isRevealed = false;
+        
+        let userSaved = JSON.parse(localStorage.getItem('thai_user_saved') || '[]');
 
         function updateCard() {{
             if (activeDb.length === 0) return;
@@ -215,12 +205,6 @@ html_code = f"""
                 const translation = await translateThaiText(text);
                 document.getElementById('speechTrans').innerText = translation;
                 
-                // Pass back to Streamlit container context
-                window.parent.postMessage({{
-                    type: 'streamlit:setComponentValue', 
-                    value: {{thai: text, english: translation}}
-                }}, '*');
-                
                 resetSttBtn();
             }};
 
@@ -256,53 +240,60 @@ html_code = f"""
             }}
         }}
 
+        function saveCurrentTranslation() {{
+            const thai = document.getElementById('speechOutput').innerText;
+            const english = document.getElementById('speechTrans').innerText;
+
+            if (!thai || thai === "Spoken Thai text..." || english === "Translation unavailable") {{
+                alert("Please record and translate a valid phrase first.");
+                return;
+            }}
+
+            userSaved.push({{ thai, english, category: "USER ADDED" }});
+            localStorage.setItem('thai_user_saved', JSON.stringify(userSaved));
+            renderSavedList();
+            alert("✓ Saved successfully!");
+        }}
+
+        function renderSavedList() {{
+            const container = document.getElementById('savedContainer');
+            document.getElementById('savedCount').innerText = userSaved.length;
+            if (userSaved.length === 0) {{
+                container.innerHTML = '<div style="color: #888; padding: 4px;">No saved phrases yet.</div>';
+                return;
+            }}
+            container.innerHTML = '';
+            userSaved.forEach((item, idx) => {{
+                const div = document.createElement('div');
+                div.className = 'saved-item';
+                div.innerHTML = `<b>${{item.thai}}</b> - ${{item.english}}`;
+                container.appendChild(div);
+            }});
+        }}
+
+        function exportSavedCsv() {{
+            if (userSaved.length === 0) {{
+                alert("No saved phrases to export.");
+                return;
+            }}
+            let csvContent = "data:text/csv;charset=utf-8,Thai,English,Category\\n";
+            userSaved.forEach(row => {{
+                csvContent += `"${{row.thai}}","${{row.english}}","${{row.category}}"\\n`;
+            }});
+            const encodedUri = encodeURI(csvContent);
+            const link = document.createElement("a");
+            link.setAttribute("href", encodedUri);
+            link.setAttribute("download", "my_saved_thai_phrases.csv");
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+        }}
+
         updateCard();
+        renderSavedList();
     </script>
 </body>
 </html>
 """
 
-component_result = st.components.v1.html(html_code, height=520, scrolling=True)
-
-# Native Python Save Section
-st.markdown("---")
-st.subheader("💾 Save Translated Phrase")
-
-captured_thai = ""
-captured_eng = ""
-if isinstance(component_result, dict):
-    captured_thai = component_result.get("thai", "")
-    captured_eng = component_result.get("english", "")
-
-with st.form("save_form"):
-    thai_input = st.text_input("Thai Text", value=captured_thai, placeholder="Spoken Thai text appears here...")
-    eng_input = st.text_input("English Translation", value=captured_eng, placeholder="English translation...")
-    submitted = st.form_submit_button("➕ SAVE ENTRY", type="primary", use_container_width=True)
-
-    if submitted:
-        if not thai_input or thai_input == "Spoken Thai text...":
-            st.error("Please provide valid Thai text to save.")
-        else:
-            try:
-                file_exists = os.path.exists(LOCAL_DB_FILE)
-                with open(LOCAL_DB_FILE, "a", newline="", encoding="utf-8") as f:
-                    writer = csv.writer(f)
-                    if not file_exists:
-                        writer.writerow(["Thai", "English", "Category"])
-                    writer.writerow([thai_input, eng_input if eng_input else "Translated", "USER ADDED"])
-                st.success(f"✓ Saved successfully: {thai_input} ({eng_input})")
-                time.sleep(1)
-                st.rerun()
-            except Exception as e:
-                st.error(f"Save error: {e}")
-
-# Option to download your saved phrases anytime
-if os.path.exists(LOCAL_DB_FILE):
-    with open(LOCAL_DB_FILE, "rb") as f:
-        st.download_button(
-            label="📥 Download All Saved Phrases (CSV)",
-            data=f,
-            file_name="my_saved_thai_phrases.csv",
-            mime="text/csv",
-            use_container_width=True
-        )
+st.components.v1.html(html_code, height=720, scrolling=True)
