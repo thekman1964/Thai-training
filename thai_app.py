@@ -2,6 +2,7 @@ import streamlit as st
 import csv
 import io
 import time
+import random
 import urllib.request
 import gspread
 from oauth2client.service_account import ServiceAccountCredentials
@@ -54,7 +55,7 @@ def load_phrases():
 
 PHRASES_DB, LAST_UPDATED = load_phrases()
 
-# Session state initialization
+# Session state initialization for flashcard navigation
 if "index" not in st.session_state:
     st.session_state.index = 0
 if "revealed" not in st.session_state:
@@ -69,16 +70,16 @@ with col_title:
 
 current_card = PHRASES_DB[st.session_state.index]
 
-# Flashcard Display
+# Flashcard Display Box
 st.markdown("---")
-st.markdown(f"<h1 style='text-align: center; font-size: 38px; margin-bottom: 5px;'>{current_card['thai']}</h1>", unsafe_allow_html=True)
+st.markdown(f"<h1 style='text-align: center; font-size: 36px;'>{current_card['thai']}</h1>", unsafe_allow_html=True)
 
 if st.session_state.revealed:
-    st.markdown(f"<p style='text-align: center; font-size: 22px; color: #0066CC; font-weight: bold;'>{current_card['english']}</p>", unsafe_allow_html=True)
+    st.markdown(f"<p style='text-align: center; font-size: 20px; color: #0066CC; font-weight: bold;'>{current_card['english']}</p>", unsafe_allow_html=True)
 else:
     st.markdown("<p style='text-align: center; font-size: 14px; color: #777;'>Click 'Reveal' to view English translation</p>", unsafe_allow_html=True)
 
-# Flashcard Action Buttons
+# Flashcard Navigation Controls
 if st.button("REVEAL", type="primary"):
     st.session_state.revealed = not st.session_state.revealed
     st.rerun()
@@ -90,7 +91,6 @@ with col_back:
         st.session_state.revealed = False
         st.rerun()
 with col_rand:
-    import random
     if st.button("RANDOM"):
         st.session_state.index = random.randint(0, len(PHRASES_DB) - 1)
         st.session_state.revealed = False
@@ -101,14 +101,14 @@ with col_next:
         st.session_state.revealed = False
         st.rerun()
 
-# Native Add Phrase Section (Guaranteed Server-Side Execution)
+# Native Add Phrase Section (Direct Server-Side Google Sheet Write)
 st.markdown("---")
-st.markdown("### ➕ Add Custom Phrase to Google Sheet")
+st.markdown("### ➕ Add New Phrase to Google Sheet")
 
-with st.form("add_phrase_form", clear_on_submit=True):
+with st.form("add_form", clear_on_submit=True):
     new_thai = st.text_input("Thai Text")
     new_english = st.text_input("English Translation")
-    new_category = st.selectbox("Category", ["GENERAL", "NAVIGATION", "FOOD", "EMERGENCY", "USER ADDED"])
+    new_category = st.selectbox("Category", ["NAVIGATION", "GENERAL", "USER ADDED", "FOOD", "EMERGENCY"])
     
     submitted = st.form_submit_button("Save to Spreadsheet")
     if submitted:
@@ -121,9 +121,9 @@ with st.form("add_phrase_form", clear_on_submit=True):
                 sheet = client.open_by_key(SHEET_ID).get_worksheet(0)
                 
                 sheet.append_row([new_thai.strip(), new_english.strip(), new_category.strip()])
-                st.cache_data.clear() # Clear cache so new row is immediately available
-                st.success(f"Successfully added: {new_thai} -> {new_english}")
+                st.success(f"Successfully appended: {new_thai} -> {new_english}")
+                st.cache_data.clear() # Clear cache so the new row loads immediately
             except Exception as e:
-                st.error(f"Google Sheet write error: {e}")
+                st.error(f"Failed to write to sheet: {e}")
         else:
-            st.warning("Please provide both Thai text and English translation.")
+            st.warning("Please fill in both Thai and English fields.")
