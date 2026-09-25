@@ -7,6 +7,9 @@ import json
 
 st.set_page_config(layout="centered", page_title="Thai Practice")
 
+# --- PASTE YOUR GOOGLE APPS SCRIPT WEB APP URL HERE ---
+WEBHOOK_URL = "YOUR_GOOGLE_APPS_SCRIPT_URL_HERE"
+
 # Hide Streamlit Chrome UI
 st.markdown("""
     <style>
@@ -54,7 +57,6 @@ def load_phrases():
 
 PHRASES_DB, LAST_UPDATED = load_phrases()
 
-# Extract unique categories dynamically
 UNIQUE_CATEGORIES = sorted(list(set(p['category'] for p in PHRASES_DB)))
 json_data = json.dumps(PHRASES_DB)
 json_cats = json.dumps(UNIQUE_CATEGORIES)
@@ -109,6 +111,7 @@ html_code = f"""
         .btn-orange {{ background-color: #FF6600; }}
         .btn-dark {{ background-color: #1A202C; }}
         .btn-green {{ background-color: #28A745; }}
+        .btn-save {{ background-color: #8B5CF6; }}
         
         .nav-grid {{
             display: flex;
@@ -221,6 +224,7 @@ html_code = f"""
 
     <button id="sttBtn" class="btn btn-orange" onclick="startRecognition()">TRANSLATE</button>
     <button class="btn btn-outline" onclick="speakRecognizedText()">HEAR SPOKEN THAI TEXT</button>
+    <button id="saveBtn" class="btn btn-save" onclick="saveToSpreadsheet()">➕ SAVE TO SPREADSHEET</button>
 
     <div class="meta-info">
         <div><b>Available Records:</b> <span id="recordCount">{len(PHRASES_DB)}</span></div>
@@ -245,6 +249,7 @@ html_code = f"""
     <script>
         const fullDb = {json_data};
         const allCategories = {json_cats};
+        const webhookUrl = "{WEBHOOK_URL}";
         
         let activeDb = [...fullDb];
         let selectedCategories = new Set(allCategories);
@@ -367,13 +372,10 @@ html_code = f"""
             playCurrentAudio();
         }}
 
-        // --- OPTION 1: TRANSLATION FUNCTION WITH LIVE WEB API FALLBACK ---
         async function translateThaiText(text) {{
-            // 1. Try exact match from local dataset
             const match = fullDb.find(item => item.thai.trim() === text.trim());
             if (match) return match.english;
 
-            // 2. Fallback to free real-time translation API
             try {{
                 const url = `https://api.mymemory.translated.net/get?q=${{encodeURIComponent(text)}}&langpair=th|en`;
                 const res = await fetch(url);
@@ -399,7 +401,6 @@ html_code = f"""
                 document.getElementById('speechOutput').innerText = text;
                 document.getElementById('speechTrans').innerText = "Translating...";
                 
-                // Perform dynamic lookup/translation
                 const translation = await translateThaiText(text);
                 document.getElementById('speechTrans').innerText = translation;
                 
@@ -438,10 +439,56 @@ html_code = f"""
             }}
         }}
 
+        async function saveToSpreadsheet() {{
+            const thaiText = document.getElementById('speechOutput').innerText;
+            const englishText = document.getElementById('speechTrans').innerText;
+            const saveBtn = document.getElementById('saveBtn');
+
+            if (!thaiText || thaiText === "Spoken Thai text..." || englishText === "Translation unavailable" || englishText === "English translation...") {{
+                alert("Please record and translate a valid phrase first.");
+                return;
+            }}
+
+            if (!webhookUrl || webhookUrl === "YOUR_GOOGLE_APPS_SCRIPT_URL_HERE") {{
+                alert("Please replace YOUR_GOOGLE_APPS_SCRIPT_URL_HERE in line 11 of thai_app.py with your Web App URL.");
+                return;
+            }}
+
+            saveBtn.innerText = "SAVING...";
+            saveBtn.disabled = true;
+
+            try {{
+                await fetch(webhookUrl, {{
+                    method: 'POST',
+                    mode: 'no-cors',
+                    headers: {{ 'Content-Type': 'application/json' }},
+                    body: JSON.stringify({{
+                        thai: thaiText,
+                        english: englishText,
+                        category: "USER ADDED"
+                    }})
+                }});
+
+                saveBtn.innerText = "✓ SAVED TO SPREADSHEET";
+                saveBtn.style.backgroundColor = "#10B981";
+
+                setTimeout(() => {{
+                    saveBtn.innerText = "➕ SAVE TO SPREADSHEET";
+                    saveBtn.style.backgroundColor = "#8B5CF6";
+                    saveBtn.disabled = false;
+                }}, 2500);
+
+            }} catch (e) {{
+                alert("Failed to save entry: " + e.message);
+                saveBtn.innerText = "➕ SAVE TO SPREADSHEET";
+                saveBtn.disabled = false;
+            }}
+        }}
+
         updateCard();
     </script>
 </body>
 </html>
 """
 
-st.components.v1.html(html_code, height=670, scrolling=True)
+st.components.v1.html(html_code, height=730, scrolling=True)
