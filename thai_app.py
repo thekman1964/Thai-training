@@ -7,8 +7,8 @@ import json
 
 st.set_page_config(layout="centered", page_title="Thai Practice")
 
-# --- PASTE YOUR GOOGLE APPS SCRIPT WEB APP URL HERE ---
-WEBHOOK_URL = "YOUR_GOOGLE_APPS_SCRIPT_URL_HERE"
+# --- CONFIGURED GOOGLE APPS SCRIPT WEB APP URL ---
+WEBHOOK_URL = "https://script.google.com/macros/s/AKfycbzInN-jnJSFBs7XkodFxP1Y_BR5QnjNFmFU2L080hmhLe3LiGBJobu6oPJ2mwBQOD0s0Q/exec"
 
 # Hide Streamlit Chrome UI
 st.markdown("""
@@ -446,11 +446,6 @@ html_code = f"""
 
             if (!thaiText || thaiText === "Spoken Thai text..." || englishText === "Translation unavailable" || englishText === "English translation...") {{
                 alert("Please record and translate a valid phrase first.");
-                return;
-            }}
-
-            if (!webhookUrl || webhookUrl === "YOUR_GOOGLE_APPS_SCRIPT_URL_HERE") {{
-                alert("Please replace YOUR_GOOGLE_APPS_SCRIPT_URL_HERE in line 11 of thai_app.py with your Web App URL.");
                 return;
             }}
 
