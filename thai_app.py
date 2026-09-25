@@ -220,7 +220,15 @@ html_code = f"""
 
     <button id="sttBtn" class="btn btn-orange" onclick="startRecognition()">TRANSLATE</button>
     <button class="btn btn-outline" onclick="speakRecognizedText()">HEAR SPOKEN THAI TEXT</button>
-    <button id="saveBtn" class="btn btn-save" onclick="saveToSpreadsheet()">➕ SAVE TO SPREADSHEET</button>
+
+    <!-- DIRECT ASYNCHRONOUS POST FORM TO BYPASS IFRAME NAVIGATION BLOCKS -->
+    <iframe name="save_target" id="save_target" style="display:none;"></iframe>
+    <form id="directSaveForm" action="{WEBHOOK_URL}" method="POST" target="save_target" style="margin:0;">
+        <input type="hidden" name="thai" id="hiddenThai">
+        <input type="hidden" name="english" id="hiddenEng">
+        <input type="hidden" name="category" value="USER ADDED">
+        <button type="button" id="saveBtn" class="btn btn-save" onclick="execSave()">➕ SAVE TO SPREADSHEET</button>
+    </form>
 
     <div class="meta-info">
         <div><b>Available Records:</b> <span id="recordCount">{len(PHRASES_DB)}</span></div>
@@ -434,16 +442,33 @@ html_code = f"""
             }}
         }}
 
-        function saveToSpreadsheet() {{
+        function execSave() {{
             const thaiText = document.getElementById('speechOutput').innerText;
             const englishText = document.getElementById('speechTrans').innerText;
+            const btn = document.getElementById('saveBtn');
 
             if (!thaiText || thaiText === "Spoken Thai text..." || englishText === "Translation unavailable" || englishText === "English translation...") {{
                 alert("Please record and translate a valid phrase first.");
                 return;
             }}
 
-            window.parent.location.href = `?save_thai=${{encodeURIComponent(thaiText)}}&save_eng=${{encodeURIComponent(englishText)}}`;
+            document.getElementById('hiddenThai').value = thaiText;
+            document.getElementById('hiddenEng').value = englishText;
+
+            btn.innerText = "SAVING...";
+            btn.disabled = true;
+
+            document.getElementById('directSaveForm').submit();
+
+            setTimeout(() => {{
+                btn.innerText = "✓ SAVED TO SPREADSHEET";
+                btn.style.backgroundColor = "#28A745";
+                setTimeout(() => {{
+                    btn.innerText = "➕ SAVE TO SPREADSHEET";
+                    btn.style.backgroundColor = "#8B5CF6";
+                    btn.disabled = false;
+                }}, 2500);
+            }}, 1200);
         }}
 
         updateCard();
