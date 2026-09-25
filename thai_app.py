@@ -1,9 +1,6 @@
 import streamlit as st
-import csv
-import io
 import time
 import random
-import urllib.request
 import gspread
 from oauth2client.service_account import ServiceAccountCredentials
 
@@ -20,17 +17,17 @@ st.markdown("""
 """, unsafe_allow_html=True)
 
 @st.cache_data(ttl=600)
-def load_phrases():
-    url = f"https://docs.google.com/spreadsheets/d/{SHEET_ID}/export?format=csv"
-    last_updated = time.strftime("%Y-%m-%d %H:%M UTC", time.gmtime())
-    
+def load_phrases_from_sheet():
     try:
-        req = urllib.request.urlopen(url)
-        csv_text = req.read().decode('utf-8')
-        reader = csv.DictReader(io.StringIO(csv_text))
+        scope = ['https://spreadsheets.google.com/feeds', 'https://www.googleapis.com/auth/drive']
+        creds_dict = dict(st.secrets["gcp_service_account"])
+        creds = ServiceAccountCredentials.from_json_keyfile_dict(creds_dict, scope)
+        client = gspread.authorize(creds)
+        sheet = client.open_by_key(SHEET_ID).get_worksheet(0)
         
+        records = sheet.get_all_records()
         cleaned = []
-        for row in reader:
+        for row in records:
             thai = str(row.get("Thai", "")).strip()
             english = str(row.get("English", "")).strip()
             category = str(row.get("Category", "GENERAL")).strip().upper()
@@ -42,17 +39,17 @@ def load_phrases():
                     "category": category if category else "GENERAL"
                 })
         if cleaned:
-            return cleaned, last_updated
-    except Exception:
-        pass
+            return cleaned
+    except Exception as e:
+        st.error(f"Error loading from Google Sheet: {e}")
 
     return [
         {"thai": "เลี้ยวขวาครับ", "english": "Turn right please.", "category": "NAVIGATION"},
         {"thai": "ตรงไปแล้วเลี้ยวซ้าย", "english": "Go straight then turn left.", "category": "NAVIGATION"},
         {"thai": "ขอโทษครับ", "english": "Excuse me.", "category": "GENERAL"}
-    ], last_updated
+    ]
 
-PHRASES_DB, LAST_UPDATED = load_phrases()
+PHRASES_DB = load_phrases_from_sheet()
 
 if "index" not in st.session_state:
     st.session_state.index = 0
@@ -62,14 +59,14 @@ if "revealed" not in st.session_state:
 # App Header
 st.markdown("<div style='text-align: center;'><h3>🇹🇭 Thai Listening & Reading</h3></div>", unsafe_allow_html=True)
 
-current_card = PHRASES_DB[st.session_state.index]
+current_card = PHRASES_DB[st.session_state.index % len(PHRASES_DB)]
 
 # Flashcard Display Box
 st.markdown("---")
-st.markdown(f"<h1 style='text-align: center; font-size: 34px; margin-bottom: 4px;'>{current_card['thai']}</h1>", unsafe_allow_html=True)
+st.markdown(f"<h1 style='text-align: center; font-size: 38px; margin-bottom: 4px;'>{current_card['thai']}</h1>", unsafe_allow_html=True)
 
 if st.session_state.revealed:
-    st.markdown(f"<p style='text-align: center; font-size: 20px; color: #0066CC; font-weight: bold;'>{current_card['english']}</p>", unsafe_allow_html=True)
+    st.markdown(f"<p style='text-align: center; font-size: 22px; color: #0066CC; font-weight: bold;'>{current_card['english']}</p>", unsafe_allow_html=True)
 else:
     st.markdown("<p style='text-align: center; font-size: 13px; color: #777;'>Click 'Reveal' to view English translation</p>", unsafe_allow_html=True)
 
