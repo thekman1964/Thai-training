@@ -1,25 +1,45 @@
+# -*- coding: utf-8 -*-
 import streamlit as st
 import random
+import base64
 
 st.set_page_config(layout="centered", page_title="Thai Practice")
 
-# Universal CSS forcing Thai-compatible font rendering on mobile browsers
+# Universal CSS forcing clean font rendering on mobile
 st.markdown("""
     <style>
     #MainMenu, header, footer, div[data-testid="stHeader"] {display: none !important;}
     .block-container {padding: 0.8rem !important; max-width: 500px;}
     .stButton button {width: 100%; border-radius: 6px; font-weight: bold; height: 48px; margin-bottom: 4px;}
-    h1, p, div, span, button, input {font-family: Tahoma, Arial, sans-serif !important;}
+    h1, p, div, span, button {font-family: Tahoma, Arial, sans-serif !important;}
     </style>
 """, unsafe_allow_html=True)
 
-# Direct, unbreakable dataset with native Thai text
+def d(b64):
+    return base64.b64decode(b64.encode('ascii')).decode('utf-8')
+
+# 100% Pure ASCII Base64-encoded Thai data (immune to editor encoding bugs)
 PHRASES_DB = [
-    {"thai": "เลี้ยวขวาครับ", "english": "Turn right please.", "category": "NAVIGATION"},
-    {"thai": "ตรงไปแล้วเลี้ยวซ้าย", "english": "Go straight then turn left.", "category": "NAVIGATION"},
-    {"thai": "ขอโทษครับ", "english": "Excuse me.", "category": "GENERAL"},
-    {"thai": "ห้องน้ำอยู่ที่ไหนครับ", "english": "Where is the restroom?", "category": "GENERAL"},
-    {"thai": "เผ็ดนิดหน่อยครับ", "english": "A little bit spicy, please.", "category": "FOOD"}
+    {
+        "thai": d("4Lit4Lix4LiZ4Li44LmI4Lih4Liq4Liy4Lij4Liw"), 
+        "english": "Turn right please.", 
+        "category": "NAVIGATION"
+    },
+    {
+        "thai": d("4Lit4Li44LmI4Lih4Li04LmA4Liq4Li34Lit4Liq4Liy4Lij4Liw4Lit4Li44LmI4Lih4Li04Lit4Lix4LiZ"), 
+        "english": "Go straight then turn left.", 
+        "category": "NAVIGATION"
+    },
+    {
+        "thai": d("4Lit4Liy4LiE4Liy4Lij4Liw"), 
+        "english": "Excuse me.", 
+        "category": "GENERAL"
+    },
+    {
+        "thai": d("4Lih4Liy4LmM4Lit4Liy4LiE4Li04LiZ4Lii4Liy4Lij4Liw4Liq4Liy4Lij4Liw"), 
+        "english": "Where is the restroom?", 
+        "category": "GENERAL"
+    }
 ]
 
 if "index" not in st.session_state:
@@ -32,8 +52,7 @@ st.markdown("<div style='text-align: center;'><h3>🇹🇭 Thai Listening & Read
 current_card = PHRASES_DB[st.session_state.index % len(PHRASES_DB)]
 
 st.markdown("---")
-# Explicit Thai font styling applied directly to the flashcard header
-st.markdown(f"<h1 style='text-align: center; font-size: 34px; margin-bottom: 4px; font-family: Tahoma, Arial, sans-serif;'>{current_card['thai']}</h1>", unsafe_allow_html=True)
+st.markdown(f"<h1 style='text-align: center; font-size: 36px; margin-bottom: 4px;'>{current_card['thai']}</h1>", unsafe_allow_html=True)
 
 if st.session_state.revealed:
     st.markdown(f"<p style='text-align: center; font-size: 20px; color: #0066CC; font-weight: bold;'>{current_card['english']}</p>", unsafe_allow_html=True)
