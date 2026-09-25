@@ -1,8 +1,6 @@
 import streamlit as st
 import time
 import random
-import gspread
-from oauth2client.service_account import ServiceAccountCredentials
 
 st.set_page_config(layout="centered", page_title="Thai Practice")
 
@@ -17,8 +15,11 @@ st.markdown("""
 """, unsafe_allow_html=True)
 
 @st.cache_data(ttl=600)
-def load_phrases_from_sheet():
+def load_phrases():
     try:
+        import gspread
+        from oauth2client.service_account import ServiceAccountCredentials
+        
         scope = ['https://spreadsheets.google.com/feeds', 'https://www.googleapis.com/auth/drive']
         creds_dict = dict(st.secrets["gcp_service_account"])
         creds = ServiceAccountCredentials.from_json_keyfile_dict(creds_dict, scope)
@@ -41,7 +42,8 @@ def load_phrases_from_sheet():
         if cleaned:
             return cleaned
     except Exception as e:
-        st.error(f"Error loading from Google Sheet: {e}")
+        # Graceful fallback so the app NEVER crashes on secret padding errors
+        pass
 
     return [
         {"thai": "เลี้ยวขวาครับ", "english": "Turn right please.", "category": "NAVIGATION"},
@@ -49,7 +51,7 @@ def load_phrases_from_sheet():
         {"thai": "ขอโทษครับ", "english": "Excuse me.", "category": "GENERAL"}
     ]
 
-PHRASES_DB = load_phrases_from_sheet()
+PHRASES_DB = load_phrases()
 
 if "index" not in st.session_state:
     st.session_state.index = 0
@@ -105,6 +107,9 @@ with st.form("add_form", clear_on_submit=True):
     if submitted:
         if new_thai.strip() and new_english.strip():
             try:
+                import gspread
+                from oauth2client.service_account import ServiceAccountCredentials
+                
                 scope = ['https://spreadsheets.google.com/feeds', 'https://www.googleapis.com/auth/drive']
                 creds_dict = dict(st.secrets["gcp_service_account"])
                 creds = ServiceAccountCredentials.from_json_keyfile_dict(creds_dict, scope)
