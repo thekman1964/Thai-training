@@ -1,6 +1,7 @@
 import streamlit as st
 import csv
 import urllib.request
+import urllib.parse
 import io
 import time
 import json
@@ -8,6 +9,25 @@ import json
 st.set_page_config(layout="centered", page_title="Thai Practice")
 
 WEBHOOK_URL = "https://script.google.com/macros/s/AKfycbzInN-jnJSFBs7XkodFxP1Y_BR5QnjNFmFU2L080hmhLe3LiGBJobu6oPJ2mwBQOD0s0Q/exec"
+
+# Process server-side save request
+query_params = st.query_params
+if "save_thai" in query_params and "save_eng" in query_params:
+    thai_val = query_params["save_thai"]
+    eng_val = query_params["save_eng"]
+    st.query_params.clear()
+    
+    try:
+        params = urllib.parse.urlencode({
+            "thai": thai_val,
+            "english": eng_val,
+            "category": "USER ADDED"
+        })
+        req = urllib.request.Request(f"{WEBHOOK_URL}?{params}", headers={'User-Agent': 'Mozilla/5.0'})
+        with urllib.request.urlopen(req) as response:
+            st.success(f"Saved: {thai_val} — {eng_val}")
+    except Exception as e:
+        st.error(f"Error saving entry: {e}")
 
 st.markdown("""
     <style>
@@ -84,7 +104,6 @@ html_code = f"""
             cursor: pointer;
             margin-bottom: 4px;
         }}
-        .filter-btn-pill:hover {{ background-color: #E2E8F0; }}
         
         .thai-text {{ font-size: 32px; font-weight: bold; color: #000; margin: 8px 0; min-height: 48px; }}
         .sub-text {{ font-size: 14px; color: #777; margin-bottom: 15px; min-height: 24px; }}
@@ -109,11 +128,7 @@ html_code = f"""
         .btn-green {{ background-color: #28A745; }}
         .btn-save {{ background-color: #8B5CF6; }}
         
-        .nav-grid {{
-            display: flex;
-            gap: 6px;
-            margin-bottom: 12px;
-        }}
+        .nav-grid {{ display: flex; gap: 6px; margin-bottom: 12px; }}
         .nav-grid .btn {{ flex: 1; margin-bottom: 0; }}
         
         hr {{ border: 0; border-top: 1px solid #e2e8f0; margin: 15px 0; }}
@@ -160,12 +175,7 @@ html_code = f"""
             justify-content: space-between;
             align-items: center;
         }}
-        .cat-list {{
-            overflow-y: auto;
-            flex-grow: 1;
-            margin-bottom: 14px;
-            padding-right: 4px;
-        }}
+        .cat-list {{ overflow-y: auto; flex-grow: 1; margin-bottom: 14px; padding-right: 4px; }}
         .cat-item {{
             display: flex;
             align-items: center;
@@ -175,21 +185,9 @@ html_code = f"""
             color: #334155;
             cursor: pointer;
         }}
-        .cat-item input {{
-            margin-right: 10px;
-            width: 18px;
-            height: 18px;
-            accent-color: #0066CC;
-        }}
-        .modal-actions {{
-            display: flex;
-            gap: 8px;
-        }}
-        .modal-actions button {{
-            flex: 1;
-            height: 38px;
-            font-size: 13px;
-        }}
+        .cat-item input {{ margin-right: 10px; width: 18px; height: 18px; accent-color: #0066CC; }}
+        .modal-actions {{ display: flex; gap: 8px; }}
+        .modal-actions button {{ flex: 1; height: 38px; font-size: 13px; }}
     </style>
 </head>
 <body>
@@ -221,14 +219,6 @@ html_code = f"""
     <button id="sttBtn" class="btn btn-orange" onclick="startRecognition()">TRANSLATE</button>
     <button class="btn btn-outline" onclick="speakRecognizedText()">HEAR SPOKEN THAI TEXT</button>
     <button id="saveBtn" class="btn btn-save" onclick="saveToSpreadsheet()">➕ SAVE TO SPREADSHEET</button>
-
-    <!-- HIDDEN FORM AND IFRAME TO BYPASS CORS AND MOBILE REDIRECT ISSUES -->
-    <iframe name="hidden_target" id="hidden_target" style="display:none;"></iframe>
-    <form id="saveForm" action="{WEBHOOK_URL}" method="POST" target="hidden_target" style="display:none;">
-        <input type="hidden" name="thai" id="formThai">
-        <input type="hidden" name="english" id="formEnglish">
-        <input type="hidden" name="category" value="USER ADDED">
-    </form>
 
     <div class="meta-info">
         <div><b>Available Records:</b> <span id="recordCount">{len(PHRASES_DB)}</span></div>
@@ -445,30 +435,13 @@ html_code = f"""
         function saveToSpreadsheet() {{
             const thaiText = document.getElementById('speechOutput').innerText;
             const englishText = document.getElementById('speechTrans').innerText;
-            const saveBtn = document.getElementById('saveBtn');
 
             if (!thaiText || thaiText === "Spoken Thai text..." || englishText === "Translation unavailable" || englishText === "English translation...") {{
                 alert("Please record and translate a valid phrase first.");
                 return;
             }}
 
-            saveBtn.innerText = "SAVING...";
-            saveBtn.disabled = true;
-
-            document.getElementById('formThai').value = thaiText;
-            document.getElementById('formEnglish').value = englishText;
-            document.getElementById('saveForm').submit();
-
-            setTimeout(() => {{
-                saveBtn.innerText = "✓ SAVED TO SPREADSHEET";
-                saveBtn.style.backgroundColor = "#10B981";
-
-                setTimeout(() => {{
-                    saveBtn.innerText = "➕ SAVE TO SPREADSHEET";
-                    saveBtn.style.backgroundColor = "#8B5CF6";
-                    saveBtn.disabled = false;
-                }}, 2500);
-            }}, 1000);
+            window.top.location.href = `?save_thai=${{encodeURIComponent(thaiText)}}&save_eng=${{encodeURIComponent(englishText)}}`;
         }}
 
         updateCard();
