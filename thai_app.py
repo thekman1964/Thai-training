@@ -219,6 +219,7 @@ html_code = f"""
     </div>
 
     <script>
+        const WEBHOOK_URL = "{WEBHOOK_URL}";
         const fullDb = {json_data};
         const allCategories = {json_cats};
         
@@ -403,7 +404,6 @@ html_code = f"""
 
         function speakRecognizedText() {{
             const txt = document.getElementById('speechOutput').innerText;
-            p = txt;
             if (txt && txt !== "Spoken Thai text...") {{
                 const utterance = new SpeechSynthesisUtterance(txt);
                 utterance.lang = 'th-TH';
@@ -411,7 +411,7 @@ html_code = f"""
             }}
         }}
 
-        function saveToSpreadsheet() {{
+        async function saveToSpreadsheet() {{
             const thaiText = document.getElementById('speechOutput').innerText;
             const englishText = document.getElementById('speechTrans').innerText;
 
@@ -420,7 +420,29 @@ html_code = f"""
                 return;
             }}
 
-            alert("Spreadsheet saving is paused while we reset.");
+            const saveBtn = document.getElementById('saveBtn');
+            saveBtn.innerText = "SAVING...";
+            saveBtn.style.backgroundColor = "#4B5563";
+
+            try {{
+                const params = new URLSearchParams({{
+                    thai: thaiText,
+                    english: englishText,
+                    category: "USER ADDED"
+                }});
+                
+                const response = await fetch(`${{WEBHOOK_URL}}?${{params.toString()}}`, {{
+                    method: 'GET',
+                    mode: 'no-cors'
+                }});
+
+                alert("✓ Saved successfully to Google Sheet!");
+            }} catch (e) {{
+                alert("Save failed: " + e);
+            }} finally {{
+                saveBtn.innerText = "➕ SAVE TO SPREADSHEET";
+                saveBtn.style.backgroundColor = "#8B5CF6";
+            }}
         }}
 
         updateCard();
