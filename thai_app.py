@@ -5,7 +5,6 @@ import requests
 
 st.set_page_config(layout="centered", page_title="Thai Practice")
 
-# Your deployed Google Apps Script Web App URL
 WEB_APP_URL = "https://script.google.com/macros/s/AKfycbznTCxcQ2BYhYp59_gtqgb82DX8Qo4NKBLLhN3ftIxwQEvzs25kVFpv1hjq5jgmWLgHhQ/exec"
 
 st.markdown("""
@@ -21,6 +20,11 @@ def load_phrases():
     try:
         response = requests.get(WEB_APP_URL, timeout=10)
         if response.status_code == 200:
+            # Check if Google returned an HTML login page instead of JSON
+            content_type = response.headers.get("content-type", "")
+            if "application/json" not in content_type:
+                return None, f"Apps Script returned HTML instead of JSON. Did you set 'Who has access' to 'Anyone' and create a NEW deployment?"
+            
             records = response.json()
             cleaned = []
             for row in records:
@@ -35,17 +39,24 @@ def load_phrases():
                         "category": category if category else "GENERAL"
                     })
             if cleaned:
-                return cleaned
-    except Exception:
-        pass
+                return cleaned, None
+        else:
+            return None, f"HTTP Error Status: {response.status_code}"
+    except Exception as e:
+        return None, str(e)
 
-    return [
-        {"thai": "เลี้ยวขวาครับ", "english": "Turn right please.", "category": "NAVIGATION"},
-        {"thai": "ตรงไปแล้วเลี้ยวซ้าย", "english": "Go straight then turn left.", "category": "NAVIGATION"},
-        {"thai": "ขอโทษครับ", "english": "Excuse me.", "category": "GENERAL"}
+    return None, "Unknown loading error."
+
+PHRASES_DB, err = load_phrases()
+
+if err:
+    st.warning(f"⚠️ Notice: {err}. Using safe fallback cards.")
+    # Unicode-escaped so Windows editors cannot corrupt the Thai characters
+    PHRASES_DB = [
+        {"thai": "\u0e4e\u0e40\u0e25\u0e35\u0e40\u0e22\u0e49\u0e27\u0e02\u0e27\u0e32\u0e04\u0e23\u0e31\u0e1a", "english": "Turn right please.", "category": "NAVIGATION"},
+        {"thai": "\u0e15\u0e23\u0e07\u0e40\u0e1b\u0e35\u0e22\u0e19", "english": "Go straight.", "category": "NAVIGATION"},
+        {"thai": "\u0e02\u0e2d\u0e42\u0e17\u0e37\u0e04\u0e23\u0e31\u0e1a", "english": "Excuse me.", "category": "GENERAL"}
     ]
-
-PHRASES_DB = load_phrases()
 
 if "index" not in st.session_state:
     st.session_state.index = 0
