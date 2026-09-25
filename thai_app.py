@@ -218,6 +218,9 @@ html_code = f"""
         </div>
     </div>
 
+    <!-- Hidden iframe to handle form submission responses silently -->
+    <iframe name="hidden_iframe" id="hidden_iframe" style="display:none;"></iframe>
+
     <script>
         const WEBHOOK_URL = "{WEBHOOK_URL}";
         const fullDb = {json_data};
@@ -411,7 +414,7 @@ html_code = f"""
             }}
         }}
 
-        async function saveToSpreadsheet() {{
+        function saveToSpreadsheet() {{
             const thaiText = document.getElementById('speechOutput').innerText;
             const englishText = document.getElementById('speechTrans').innerText;
 
@@ -424,25 +427,35 @@ html_code = f"""
             saveBtn.innerText = "SAVING...";
             saveBtn.style.backgroundColor = "#4B5563";
 
-            try {{
-                const params = new URLSearchParams({{
-                    thai: thaiText,
-                    english: englishText,
-                    category: "USER ADDED"
-                }});
-                
-                const response = await fetch(`${{WEBHOOK_URL}}?${{params.toString()}}`, {{
-                    method: 'GET',
-                    mode: 'no-cors'
-                }});
+            // Create a hidden form to submit via GET to the webhook (bypasses CORS completely)
+            const form = document.createElement('form');
+            form.method = 'GET';
+            form.action = WEBHOOK_URL;
+            form.target = 'hidden_iframe';
 
-                alert("✓ Saved successfully to Google Sheet!");
-            }} catch (e) {{
-                alert("Save failed: " + e);
-            }} finally {{
+            const data = {{
+                thai: thaiText,
+                english: englishText,
+                category: "USER ADDED"
+            }};
+
+            for (let key in data) {{
+                const input = document.createElement('input');
+                input.type = 'hidden';
+                input.name = key;
+                input.value = data[key];
+                form.appendChild(input);
+            }}
+
+            document.body.appendChild(form);
+            form.submit();
+            document.body.removeChild(form);
+
+            setTimeout(() => {{
+                alert("✓ Saved to Google Sheet!");
                 saveBtn.innerText = "➕ SAVE TO SPREADSHEET";
                 saveBtn.style.backgroundColor = "#8B5CF6";
-            }}
+            }, 800);
         }}
 
         updateCard();
