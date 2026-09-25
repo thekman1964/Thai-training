@@ -218,8 +218,6 @@ html_code = f"""
         </div>
     </div>
 
-    <iframe name="hidden_iframe" id="hidden_iframe" style="display:none;"></iframe>
-
     <script>
         const WEBHOOK_URL = "{WEBHOOK_URL}";
         const fullDb = {json_data};
@@ -426,34 +424,19 @@ html_code = f"""
             saveBtn.innerText = "SAVING...";
             saveBtn.style.backgroundColor = "#4B5563";
 
-            const form = document.createElement('form');
-            form.method = 'GET';
-            form.action = WEBHOOK_URL;
-            form.target = 'hidden_iframe';
-
-            const data = {{
+            const data = new URLSearchParams({{
                 thai: thaiText,
                 english: englishText,
                 category: "USER ADDED"
-            }};
+            }});
 
-            for (let key in data) {{
-                const input = document.createElement('input');
-                input.type = 'hidden';
-                input.name = key;
-                input.value = data[key];
-                form.appendChild(input);
-            }}
-
-            document.body.appendChild(form);
-            form.submit();
-            document.body.removeChild(form);
+            navigator.sendBeacon(WEBHOOK_URL, data);
 
             setTimeout(() => {{
-                alert("✓ Saved to Google Sheet!");
+                alert("✓ Saved successfully to Google Sheet!");
                 saveBtn.innerText = "➕ SAVE TO SPREADSHEET";
                 saveBtn.style.backgroundColor = "#8B5CF6";
-            }}, 800);
+            }}, 600);
         }}
 
         updateCard();
