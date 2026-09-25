@@ -4,7 +4,6 @@ import urllib.request
 import io
 import time
 import json
-import urllib.parse
 
 st.set_page_config(layout="centered", page_title="Thai Practice")
 
@@ -55,12 +54,6 @@ UNIQUE_CATEGORIES = sorted(list(set(p['category'] for p in PHRASES_DB)))
 json_data = json.dumps(PHRASES_DB)
 json_cats = json.dumps(UNIQUE_CATEGORIES)
 
-# Session state to hold recorded/translated text for saving
-if "recorded_thai" not in st.session_state:
-    st.session_state.recorded_thai = ""
-if "recorded_eng" not in st.session_state:
-    st.session_state.recorded_eng = ""
-
 html_code = f"""
 <!DOCTYPE html>
 <html>
@@ -72,21 +65,6 @@ html_code = f"""
         
         .flag {{ width: 55px; height: 36px; border-radius: 3px; box-shadow: 0 2px 4px rgba(0,0,0,0.2); }}
         .title {{ font-size: 18px; margin: 6px 0 4px 0; color: #000; font-weight: bold; }}
-        
-        .filter-btn-pill {{
-            display: inline-flex;
-            align-items: center;
-            gap: 6px;
-            background-color: #F1F5F9;
-            border: 1px solid #CBD5E1;
-            border-radius: 16px;
-            padding: 4px 12px;
-            font-size: 12px;
-            font-weight: 700;
-            color: #334155;
-            cursor: pointer;
-            margin-bottom: 4px;
-        }}
         
         .thai-text {{ font-size: 32px; font-weight: bold; color: #000; margin: 8px 0; min-height: 48px; }}
         .sub-text {{ font-size: 14px; color: #777; margin-bottom: 15px; min-height: 24px; }}
@@ -124,8 +102,6 @@ html_code = f"""
             border: 2px solid #FF6600 !important;
             box-shadow: 0 2px 4px rgba(0,0,0,0.08);
         }}
-        
-        .meta-info {{ font-size: 12px; color: #555; margin-top: 12px; line-height: 1.4; }}
     </style>
 </head>
 <body>
@@ -235,8 +211,11 @@ html_code = f"""
                 const translation = await translateThaiText(text);
                 document.getElementById('speechTrans').innerText = translation;
                 
-                // Securely send data back to Streamlit native context
-                window.parent.postMessage({{type: 'streamlit:setComponentValue', value: {{thai: text, english: translation}}}}, '*');
+                // Send values back to Streamlit container parameters via postMessage
+                window.parent.postMessage({{
+                    type: 'streamlit:setComponentValue', 
+                    value: {{thai: text, english: translation}}
+                }}, '*');
                 
                 resetSttBtn();
             }};
@@ -279,41 +258,49 @@ html_code = f"""
 </html>
 """
 
-# Render mobile UI component
-component_result = st.components.v1.html(html_code, height=550, scrolling=True)
+# Render component
+component_result = st.components.v1.html(html_code, height=520, scrolling=True)
 
-# Native Python Save Section (Completely bypasses Apps Script / Webhooks)
+# Native Python Save Section below card
 st.markdown("---")
 st.subheader("💾 Save Translated Phrase to Google Sheet")
 
-# Pull values either from user typing or automatic speech capture
-default_thai = component_result.get("thai", "") if isinstance(component_result, dict) else ""
-default_eng = component_result.get("english", "") if isinstance(component_result, dict) else ""
+# Extract component interaction values safely
+captured_thai = ""
+captured_eng = ""
+if isinstance(component_result, dict):
+    captured_thai = component_result.get("thai", "")
+    captured_eng = component_result.get("english", "")
 
-input_thai = st.text_input("Thai Text", value=default_thai, placeholder="Speak or type Thai text...")
-input_eng = st.text_input("English Translation", value=default_eng, placeholder="Translation...")
+with st.form("save_form"):
+    thai_input = st.text_input("Thai Text", value=captured_thai, placeholder="Spoken Thai text appears here...")
+    eng_input = st.text_input("English Translation", value=captured_eng, placeholder="English translation...")
+    submitted = st.form_submit_button("➕ ADD TO GOOGLE SHEET NOW", type="primary", use_container_width=True)
 
-if st.button("CONFIRM AND SAVE TO SHEET", type="primary", use_container_width=True):
-    if not input_thai:
-        st.error("Please provide valid Thai text.")
-    else:
-        try:
-            # Direct server-side append using gspread if credentials exist, 
-            # or a clean fallback notification
-            import gspread
-            from oauth2client.service_account import ServiceAccountCredentials
-            
-            scope = ['https://spreadsheets.google.com/feeds','https://www.googleapis.com/auth/drive']
-            # If service account file is present
-            creds_dict = st.secrets.get("gcp_service_account", None)
-            
-            if creds_dict:
-                creds = ServiceAccountCredentials.from_json_keyfile_dict(creds_dict, scope)
-                client = gspread.authorize(creds)
-                sheet = client.open_by_key(SHEET_ID).get_worksheet(0)
-                sheet.append_row([input_thai, input_eng, "USER ADDED"])
-                st.success("✓ Successfully saved directly to Google Sheet!")
-            else:
-                st.info("To enable direct database writes without Apps Script, add your GCP service account JSON dictionary to Streamlit Secrets under `gcp_service_account`.")
-        except Exception as e:
-            st.error(f"Save error: {e}")
+    if submitted:
+        if not thai_input or thai_input == "Spoken Thai text...":
+            st.error("Please provide valid Thai text to save.")
+        else:
+            try:
+                # Direct server-side append using gspread library
+                import gspread
+                from oauth2client.service_account import ServiceAccountCredentials
+
+                scope = ['https://spreadsheets.google.com/feeds', 'https://www.googleapis.com/auth/drive']
+                
+                # Check if user configured Streamlit Secrets
+                if "gcp_service_account" in st.secrets:
+                    creds_dict = dict(st.secrets["gcp_service_account"])
+                    creds = ServiceAccountCredentials.from_json_keyfile_dict(creds_dict, scope)
+                    client = gspread.authorize(creds)
+                    sheet = client.open_by_key(SHEET_ID).get_worksheet(0)
+                    sheet.append_row([thai_input, eng_input if eng_input else "Translated", "USER ADDED"])
+                    st.success(f"✓ Successfully saved '{thai_input}' to Google Sheet!")
+                else:
+                    # Fallback local save so data is never lost if secrets aren't set up yet
+                    with open("saved_phrases_backup.csv", "a", newline="", encoding="utf-8") as f:
+                        writer = csv.writer(f)
+                        writer.writerow([thai_input, eng_input, "USER ADDED"])
+                    st.warning("⚠️ Saved to local backup file (`saved_phrases_backup.csv`). To write directly to your Google Sheet API, add your Google Service Account JSON to your Streamlit secrets under `gcp_service_account`.")
+            except Exception as e:
+                st.error(f"Error saving entry: {e}")
