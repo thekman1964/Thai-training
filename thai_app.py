@@ -1,6 +1,7 @@
 import streamlit as st
 import time
 import random
+import json
 
 st.set_page_config(layout="centered", page_title="Thai Practice")
 
@@ -21,7 +22,12 @@ def load_phrases():
         from oauth2client.service_account import ServiceAccountCredentials
         
         scope = ['https://spreadsheets.google.com/feeds', 'https://www.googleapis.com/auth/drive']
+        
+        # Convert secrets to a standard dict and fix private key newline padding
         creds_dict = dict(st.secrets["gcp_service_account"])
+        if "private_key" in creds_dict:
+            creds_dict["private_key"] = creds_dict["private_key"].replace("\\n", "\n")
+            
         creds = ServiceAccountCredentials.from_json_keyfile_dict(creds_dict, scope)
         client = gspread.authorize(creds)
         sheet = client.open_by_key(SHEET_ID).get_worksheet(0)
@@ -42,8 +48,7 @@ def load_phrases():
         if cleaned:
             return cleaned
     except Exception as e:
-        # Graceful fallback so the app NEVER crashes on secret padding errors
-        pass
+        st.sidebar.error(f"Sheet Load Error: {e}")
 
     return [
         {"thai": "เลี้ยวขวาครับ", "english": "Turn right please.", "category": "NAVIGATION"},
@@ -58,12 +63,10 @@ if "index" not in st.session_state:
 if "revealed" not in st.session_state:
     st.session_state.revealed = False
 
-# App Header
 st.markdown("<div style='text-align: center;'><h3>🇹🇭 Thai Listening & Reading</h3></div>", unsafe_allow_html=True)
 
 current_card = PHRASES_DB[st.session_state.index % len(PHRASES_DB)]
 
-# Flashcard Display Box
 st.markdown("---")
 st.markdown(f"<h1 style='text-align: center; font-size: 38px; margin-bottom: 4px;'>{current_card['thai']}</h1>", unsafe_allow_html=True)
 
@@ -72,7 +75,6 @@ if st.session_state.revealed:
 else:
     st.markdown("<p style='text-align: center; font-size: 13px; color: #777;'>Click 'Reveal' to view English translation</p>", unsafe_allow_html=True)
 
-# Navigation Controls
 if st.button("REVEAL", type="primary"):
     st.session_state.revealed = not st.session_state.revealed
     st.rerun()
@@ -94,7 +96,6 @@ with col3:
         st.session_state.revealed = False
         st.rerun()
 
-# Native Add Phrase Section
 st.markdown("---")
 st.markdown("### ➕ Add New Phrase to Google Sheet")
 
@@ -112,6 +113,9 @@ with st.form("add_form", clear_on_submit=True):
                 
                 scope = ['https://spreadsheets.google.com/feeds', 'https://www.googleapis.com/auth/drive']
                 creds_dict = dict(st.secrets["gcp_service_account"])
+                if "private_key" in creds_dict:
+                    creds_dict["private_key"] = creds_dict["private_key"].replace("\\n", "\n")
+                    
                 creds = ServiceAccountCredentials.from_json_keyfile_dict(creds_dict, scope)
                 client = gspread.authorize(creds)
                 sheet = client.open_by_key(SHEET_ID).get_worksheet(0)
