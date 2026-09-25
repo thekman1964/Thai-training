@@ -6,7 +6,6 @@ import random
 st.set_page_config(layout="centered", page_title="Thai Practice")
 
 SHEET_ID = "1_vMSPtMo3-JD2qARp4zwrcvNrhEuSKHQVEOT1IMwgFw"
-# Corrected Google Visualization API CSV export endpoint (prevents 400 Bad Request)
 CSV_URL = f"https://docs.google.com/spreadsheets/d/{SHEET_ID}/gviz/tq?tqx=out:csv"
 
 st.markdown("""
@@ -14,11 +13,11 @@ st.markdown("""
     #MainMenu, header, footer, div[data-testid="stHeader"] {display: none !important;}
     .block-container {padding: 0.8rem !important; max-width: 500px;}
     .stButton button {width: 100%; border-radius: 6px; font-weight: bold; height: 48px; margin-bottom: 4px;}
-    h1, p, div, span, button {font-family: Tahoma, Arial, sans-serif !important;}
+    h1, p, div, span, button {font-family: 'Tahoma', Arial, sans-serif !important;}
     </style>
 """, unsafe_allow_html=True)
 
-@st.cache_data(ttl=30)
+@st.cache_data(ttl=10)
 def load_phrases():
     try:
         df = pd.read_csv(CSV_URL, encoding='utf-8')
@@ -37,18 +36,24 @@ def load_phrases():
                     "category": category if category else "GENERAL"
                 })
         if phrases:
-            return phrases
-    except Exception:
-        pass
+            return phrases, f"Success: Loaded {len(phrases)} rows from Google Sheet."
+    except Exception as e:
+        return None, f"Read Error: {e}"
     
-    # Unicode-escaped fallback list (immune to Windows text editor encoding corruption)
-    return [
-        {"thai": "\u0e4e\u0e40\u0e25\u0e35\u0e40\u0e22\u0e49\u0e27\u0e02\u0e27\u0e32\u0e04\u0e23\u0e31\u0e1a", "english": "Turn right please.", "category": "NAVIGATION"},
-        {"thai": "\u0e15\u0e23\u0e07\u0e40\u0e1b\u0e35\u0e22\u0e19", "english": "Go straight.", "category": "NAVIGATION"},
-        {"thai": "\u0e02\u0e2d\u0e42\u0e17\u0e37\u0e04\u0e23\u0e31\u0e1a", "english": "Excuse me.", "category": "GENERAL"}
-    ]
+    return None, f"Connected, but 0 valid rows found. Check your column headers (must be 'Thai' and 'English')."
 
-PHRASES_DB = load_phrases()
+PHRASES_DB, status_msg = load_phrases()
+
+if not PHRASES_DB:
+    st.warning(f"⚠️ {status_msg}")
+    # Verified, correct Thai fallback phrases
+    PHRASES_DB = [
+        {"thai": "เลี้ยวขวาครับ", "english": "Turn right please.", "category": "NAVIGATION"},
+        {"thai": "ตรงไปแล้วเลี้ยวซ้าย", "english": "Go straight then turn left.", "category": "NAVIGATION"},
+        {"thai": "ขอโทษครับ", "english": "Excuse me.", "category": "GENERAL"}
+    ]
+else:
+    st.success(f"✅ {status_msg}")
 
 if "index" not in st.session_state:
     st.session_state.index = 0
