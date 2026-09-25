@@ -10,6 +10,33 @@ st.set_page_config(layout="centered", page_title="Thai Practice")
 
 WEBHOOK_URL = "https://script.google.com/macros/s/AKfycbzInN-jnJSFBs7XkodFxP1Y_BR5QnjNFmFU2L080hmhLe3LiGBJobu6oPJ2mwBQOD0s0Q/exec"
 
+# ==========================================
+# STEP 1: NATIVE TEST BUTTON (TOP OF PAGE)
+# ==========================================
+st.subheader("🧪 Step 1 Connection Test")
+if st.button("SEND TEST ROW TO GOOGLE SHEET"):
+    try:
+        params = urllib.parse.urlencode({
+            "thai": "ทดสอบ",
+            "english": "Test Row",
+            "category": "TEST"
+        })
+        full_url = f"{WEBHOOK_URL}?{params}"
+        req = urllib.request.Request(full_url, headers={'User-Agent': 'Mozilla/5.0'})
+        with urllib.request.urlopen(req) as response:
+            res_text = response.read().decode('utf-8')
+            if "SUCCESS" in res_text:
+                st.success("✓ Connection Verified! Test row added to Google Sheet.")
+            else:
+                st.error(f"Sheet returned response: {res_text}")
+    except Exception as e:
+        st.error(f"Server Connection Failed: {e}")
+
+st.markdown("---")
+
+# ==========================================
+# REST OF YOUR FLASHCARD APP CODE
+# ==========================================
 st.markdown("""
     <style>
     #MainMenu, header, footer, div[data-testid="stHeader"] {display: none !important;}
@@ -196,15 +223,6 @@ html_code = f"""
 
     <button id="sttBtn" class="btn btn-orange" onclick="startRecognition()">TRANSLATE</button>
     <button class="btn btn-outline" onclick="speakRecognizedText()">HEAR SPOKEN THAI TEXT</button>
-    
-    <!-- Silent target frame for mobile form submissions -->
-    <iframe name="hidden_save_target" id="hidden_save_target" style="display:none;"></iframe>
-    <form id="hiddenForm" action="{WEBHOOK_URL}" method="POST" target="hidden_save_target" style="display:none;">
-        <input type="hidden" name="thai" id="formThai">
-        <input type="hidden" name="english" id="formEng">
-        <input type="hidden" name="category" value="USER ADDED">
-    </form>
-
     <button id="saveBtn" class="btn btn-save" onclick="saveToSpreadsheet()">➕ SAVE TO SPREADSHEET</button>
 
     <div class="meta-info">
@@ -422,30 +440,13 @@ html_code = f"""
         function saveToSpreadsheet() {{
             const thaiText = document.getElementById('speechOutput').innerText;
             const englishText = document.getElementById('speechTrans').innerText;
-            const btn = document.getElementById('saveBtn');
 
             if (!thaiText || thaiText === "Spoken Thai text..." || englishText === "Translation unavailable" || englishText === "English translation...") {{
                 alert("Please record and translate a valid phrase first.");
                 return;
             }}
 
-            document.getElementById('formThai').value = thaiText;
-            document.getElementById('formEng').value = englishText;
-
-            btn.innerText = "SAVING...";
-            btn.disabled = true;
-
-            document.getElementById('hiddenForm').submit();
-
-            setTimeout(() => {{
-                btn.innerText = "✓ SAVED TO SPREADSHEET";
-                btn.style.backgroundColor = "#28A745";
-                setTimeout(() => {{
-                    btn.innerText = "➕ SAVE TO SPREADSHEET";
-                    btn.style.backgroundColor = "#8B5CF6";
-                    btn.disabled = false;
-                }}, 2000);
-            }}, 800);
+            window.top.location.href = `?save_thai=${{encodeURIComponent(thaiText)}}&save_eng=${{encodeURIComponent(englishText)}}`;
         }}
 
         updateCard();
