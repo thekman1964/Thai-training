@@ -1,13 +1,14 @@
 import streamlit as st
 import csv
-import urllib.request
 import io
 import time
 import json
+import os
 
 st.set_page_config(layout="centered", page_title="Thai Practice")
 
-SHEET_ID = "1_vMSPtMo3-JD2qARp4zwrcvNrhEuSKHQVEOT1IMwgFw"
+# Local storage file for saved user entries
+LOCAL_DB_FILE = "my_saved_phrases.csv"
 
 st.markdown("""
     <style>
@@ -16,43 +17,45 @@ st.markdown("""
     </style>
 """, unsafe_allow_html=True)
 
-@st.cache_data(ttl=600)
 def load_phrases():
-    url = f"https://docs.google.com/spreadsheets/d/{SHEET_ID}/export?format=csv"
     last_updated = time.strftime("%Y-%m-%d %H:%M UTC", time.gmtime())
+    cleaned = []
     
-    try:
-        req = urllib.request.urlopen(url)
-        csv_text = req.read().decode('utf-8')
-        reader = csv.DictReader(io.StringIO(csv_text))
-        
-        cleaned = []
-        for row in reader:
-            thai = str(row.get("Thai", "")).strip()
-            english = str(row.get("English", "")).strip()
-            category = str(row.get("Category", "GENERAL")).strip().upper()
-            
-            if thai and english:
-                cleaned.append({
-                    "thai": thai,
-                    "english": english,
-                    "category": category if category else "GENERAL"
-                })
-        if cleaned:
-            return cleaned, last_updated
-    except Exception:
-        pass
+    # Load user saved phrases first if they exist
+    if os.path.exists(LOCAL_DB_FILE):
+        try:
+            with open(LOCAL_DB_FILE, "r", encoding="utf-8") as f:
+                reader = csv.DictReader(f)
+                for row in reader:
+                    thai = str(row.get("Thai", "")).strip()
+                    english = str(row.get("English", "")).strip()
+                    category = str(row.get("Category", "USER ADDED")).strip().upper()
+                    if thai and english:
+                        cleaned.append({"thai": thai, "english": english, "category": category})
+        except Exception:
+            pass
 
-    return [
+    # Default starter phrases
+    defaults = [
         {"thai": "เลี้ยวขวาครับ", "english": "Turn right please.", "category": "NAVIGATION"},
         {"thai": "ตรงไปแล้วเลี้ยวซ้าย", "english": "Go straight then turn left.", "category": "NAVIGATION"},
         {"thai": "ขอโทษครับ", "english": "Excuse me.", "category": "GENERAL"}
-    ], last_updated
+    ]
+    
+    for d in defaults:
+        if not any(p["thai"] == d["thai"] for p in cleaned):
+            cleaned.append(d)
+
+    return cleaned, last_updated
 
 PHRASES_DB, LAST_UPDATED = load_phrases()
 UNIQUE_CATEGORIES = sorted(list(set(p['category'] for p in PHRASES_DB)))
 json_data = json.dumps(PHRASES_DB)
 json_cats = json.dumps(UNIQUE_CATEGORIES)
+
+# Handle save action from Python backend
+if "save_status" not in st.session_state:
+    st.session_state.save_status = None
 
 html_code = f"""
 <!DOCTYPE html>
@@ -87,6 +90,7 @@ html_code = f"""
         .btn-orange {{ background-color: #FF6600; }}
         .btn-dark {{ background-color: #1A202C; }}
         .btn-green {{ background-color: #28A745; }}
+        .btn-save {{ background-color: #8B5CF6; }}
         
         .nav-grid {{ display: flex; gap: 6px; margin-bottom: 12px; }}
         .nav-grid .btn {{ flex: 1; margin-bottom: 0; }}
@@ -211,7 +215,7 @@ html_code = f"""
                 const translation = await translateThaiText(text);
                 document.getElementById('speechTrans').innerText = translation;
                 
-                // Send values back to Streamlit container parameters via postMessage
+                // Pass back to Streamlit container context
                 window.parent.postMessage({{
                     type: 'streamlit:setComponentValue', 
                     value: {{thai: text, english: translation}}
@@ -258,14 +262,12 @@ html_code = f"""
 </html>
 """
 
-# Render component
 component_result = st.components.v1.html(html_code, height=520, scrolling=True)
 
-# Native Python Save Section below card
+# Native Python Save Section
 st.markdown("---")
-st.subheader("💾 Save Translated Phrase to Google Sheet")
+st.subheader("💾 Save Translated Phrase")
 
-# Extract component interaction values safely
 captured_thai = ""
 captured_eng = ""
 if isinstance(component_result, dict):
@@ -275,32 +277,32 @@ if isinstance(component_result, dict):
 with st.form("save_form"):
     thai_input = st.text_input("Thai Text", value=captured_thai, placeholder="Spoken Thai text appears here...")
     eng_input = st.text_input("English Translation", value=captured_eng, placeholder="English translation...")
-    submitted = st.form_submit_button("➕ ADD TO GOOGLE SHEET NOW", type="primary", use_container_width=True)
+    submitted = st.form_submit_button("➕ SAVE ENTRY", type="primary", use_container_width=True)
 
     if submitted:
         if not thai_input or thai_input == "Spoken Thai text...":
             st.error("Please provide valid Thai text to save.")
         else:
             try:
-                # Direct server-side append using gspread library
-                import gspread
-                from oauth2client.service_account import ServiceAccountCredentials
-
-                scope = ['https://spreadsheets.google.com/feeds', 'https://www.googleapis.com/auth/drive']
-                
-                # Check if user configured Streamlit Secrets
-                if "gcp_service_account" in st.secrets:
-                    creds_dict = dict(st.secrets["gcp_service_account"])
-                    creds = ServiceAccountCredentials.from_json_keyfile_dict(creds_dict, scope)
-                    client = gspread.authorize(creds)
-                    sheet = client.open_by_key(SHEET_ID).get_worksheet(0)
-                    sheet.append_row([thai_input, eng_input if eng_input else "Translated", "USER ADDED"])
-                    st.success(f"✓ Successfully saved '{thai_input}' to Google Sheet!")
-                else:
-                    # Fallback local save so data is never lost if secrets aren't set up yet
-                    with open("saved_phrases_backup.csv", "a", newline="", encoding="utf-8") as f:
-                        writer = csv.writer(f)
-                        writer.writerow([thai_input, eng_input, "USER ADDED"])
-                    st.warning("⚠️ Saved to local backup file (`saved_phrases_backup.csv`). To write directly to your Google Sheet API, add your Google Service Account JSON to your Streamlit secrets under `gcp_service_account`.")
+                file_exists = os.path.exists(LOCAL_DB_FILE)
+                with open(LOCAL_DB_FILE, "a", newline="", encoding="utf-8") as f:
+                    writer = csv.writer(f)
+                    if not file_exists:
+                        writer.writerow(["Thai", "English", "Category"])
+                    writer.writerow([thai_input, eng_input if eng_input else "Translated", "USER ADDED"])
+                st.success(f"✓ Saved successfully: {thai_input} ({eng_input})")
+                time.sleep(1)
+                st.rerun()
             except Exception as e:
-                st.error(f"Error saving entry: {e}")
+                st.error(f"Save error: {e}")
+
+# Option to download your saved phrases anytime
+if os.path.exists(LOCAL_DB_FILE):
+    with open(LOCAL_DB_FILE, "rb") as f:
+        st.download_button(
+            label="📥 Download All Saved Phrases (CSV)",
+            data=f,
+            file_name="my_saved_thai_phrases.csv",
+            mime="text/csv",
+            use_container_width=True
+        )
