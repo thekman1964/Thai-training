@@ -10,33 +10,6 @@ st.set_page_config(layout="centered", page_title="Thai Practice")
 
 WEBHOOK_URL = "https://script.google.com/macros/s/AKfycbzInN-jnJSFBs7XkodFxP1Y_BR5QnjNFmFU2L080hmhLe3LiGBJobu6oPJ2mwBQOD0s0Q/exec"
 
-# ==========================================
-# STEP 1: NATIVE TEST BUTTON (TOP OF PAGE)
-# ==========================================
-st.subheader("🧪 Step 1 Connection Test")
-if st.button("SEND TEST ROW TO GOOGLE SHEET"):
-    try:
-        params = urllib.parse.urlencode({
-            "thai": "ทดสอบ",
-            "english": "Test Row",
-            "category": "TEST"
-        })
-        full_url = f"{WEBHOOK_URL}?{params}"
-        req = urllib.request.Request(full_url, headers={'User-Agent': 'Mozilla/5.0'})
-        with urllib.request.urlopen(req) as response:
-            res_text = response.read().decode('utf-8')
-            if "SUCCESS" in res_text:
-                st.success("✓ Connection Verified! Test row added to Google Sheet.")
-            else:
-                st.error(f"Sheet returned response: {res_text}")
-    except Exception as e:
-        st.error(f"Server Connection Failed: {e}")
-
-st.markdown("---")
-
-# ==========================================
-# REST OF YOUR FLASHCARD APP CODE
-# ==========================================
 st.markdown("""
     <style>
     #MainMenu, header, footer, div[data-testid="stHeader"] {display: none !important;}
@@ -430,6 +403,7 @@ html_code = f"""
 
         function speakRecognizedText() {{
             const txt = document.getElementById('speechOutput').innerText;
+            p = txt;
             if (txt && txt !== "Spoken Thai text...") {{
                 const utterance = new SpeechSynthesisUtterance(txt);
                 utterance.lang = 'th-TH';
@@ -446,7 +420,7 @@ html_code = f"""
                 return;
             }}
 
-            window.top.location.href = `?save_thai=${{encodeURIComponent(thaiText)}}&save_eng=${{encodeURIComponent(englishText)}}`;
+            alert("Spreadsheet saving is paused while we reset.");
         }}
 
         updateCard();
