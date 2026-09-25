@@ -57,6 +57,8 @@ html_code = f"""
 <html>
 <head>
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <!-- Streamlit Component Communication Library -->
+    <script src="https://unpkg.com/streamlit-component-lib@^1.0.0/dist/streamlit_component_lib.js"></script>
     <style>
         * {{ box-sizing: border-box; font-family: system-ui, -apple-system, sans-serif; }}
         body {{ margin: 0; padding: 10px; background-color: #ffffff; color: #000000; text-align: center; }}
@@ -134,6 +136,13 @@ html_code = f"""
         let activeDb = [...fullDb];
         let currentIndex = 0;
         let isRevealed = false;
+
+        // Initialize Streamlit component sizing
+        window.addEventListener("load", function() {{
+            if (window.Streamlit) {{
+                Streamlit.setFrameHeight(550);
+            }}
+        }});
 
         function updateCard() {{
             if (activeDb.length === 0) return;
@@ -255,12 +264,13 @@ html_code = f"""
                 return;
             }}
 
-            window.parent.postMessage({{
-                type: 'streamlit:setComponentValue',
-                value: {{ thai: thai, english: english, category: "USER ADDED" }}
-            }}, '*');
-
-            alert("✓ Sending translation to Google Sheet...");
+            // Use the official Streamlit Component library bridge
+            if (window.Streamlit) {{
+                Streamlit.setComponentValue({{ thai: thai, english: english, category: "USER ADDED" }});
+                alert("✓ Sending translation to Google Sheet...");
+            }} else {{
+                alert("Error: Streamlit communication bridge not loaded.");
+            }}
         }}
 
         updateCard();
@@ -269,9 +279,9 @@ html_code = f"""
 </html>
 """
 
-component_result = st.components.v1.html(html_code, height=520, scrolling=True)
+component_result = st.components.v1.html(html_code, height=580, scrolling=True)
 
-# Handle writing to Google Sheets server-side using gspread
+# Handle writing to Google Sheets server-side using gspread when component value is passed back
 if isinstance(component_result, dict) and component_result.get("thai"):
     thai_val = component_result.get("thai")
     eng_val = component_result.get("english")
