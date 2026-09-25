@@ -7,10 +7,8 @@ import json
 
 st.set_page_config(layout="centered", page_title="Thai Practice")
 
-# --- CONFIGURED GOOGLE APPS SCRIPT WEB APP URL ---
 WEBHOOK_URL = "https://script.google.com/macros/s/AKfycbzInN-jnJSFBs7XkodFxP1Y_BR5QnjNFmFU2L080hmhLe3LiGBJobu6oPJ2mwBQOD0s0Q/exec"
 
-# Hide Streamlit Chrome UI
 st.markdown("""
     <style>
     #MainMenu, header, footer, div[data-testid="stHeader"] {display: none !important;}
@@ -19,7 +17,6 @@ st.markdown("""
     </style>
 """, unsafe_allow_html=True)
 
-# --- LOAD DATASET WITHOUT PANDAS ---
 @st.cache_data(ttl=600)
 def load_phrases():
     sheet_id = "1_vMSPtMo3-JD2qARp4zwrcvNrhEuSKHQVEOT1IMwgFw"
@@ -61,7 +58,6 @@ UNIQUE_CATEGORIES = sorted(list(set(p['category'] for p in PHRASES_DB)))
 json_data = json.dumps(PHRASES_DB)
 json_cats = json.dumps(UNIQUE_CATEGORIES)
 
-# --- COMPLETE SINGLE-COMPONENT UI ---
 html_code = f"""
 <!DOCTYPE html>
 <html>
@@ -453,11 +449,17 @@ html_code = f"""
             saveBtn.disabled = true;
 
             try {{
-                const saveUrl = `${{webhookUrl}}?thai=${{encodeURIComponent(thaiText)}}&english=${{encodeURIComponent(englishText)}}&category=USER%20ADDED`;
-                
-                await fetch(saveUrl, {{
-                    method: 'GET',
-                    mode: 'no-cors'
+                const payload = JSON.stringify({{
+                    thai: thaiText,
+                    english: englishText,
+                    category: "USER ADDED"
+                }});
+
+                await fetch(webhookUrl, {{
+                    method: 'POST',
+                    mode: 'no-cors',
+                    headers: {{ 'Content-Type': 'text/plain' }},
+                    body: payload
                 }});
 
                 saveBtn.innerText = "✓ SAVED TO SPREADSHEET";
