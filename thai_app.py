@@ -8,17 +8,23 @@ st.set_page_config(layout="centered", page_title="Thai Practice")
 SHEET_ID = "1_vMSPtMo3-JD2qARp4zwrcvNrhEuSKHQVEOT1IMwgFw"
 CSV_URL = f"https://docs.google.com/spreadsheets/d/{SHEET_ID}/gviz/tq?tqx=out:csv"
 
+# Absolute layout enforcement using CSS Grid to prevent mobile button stacking
 st.markdown("""
     <style>
     #MainMenu, header, footer, div[data-testid="stHeader"] {display: none !important;}
     .block-container {padding: 0.8rem !important; max-width: 500px;}
+    
+    /* Force buttons to stay in a rigid 2-column grid */
+    .row-widget.stButton {
+        display: flex;
+        gap: 8px;
+    }
     .stButton button {
-        width: 100% !important; 
-        border-radius: 8px; 
-        font-weight: bold; 
-        height: 45px; 
+        width: 100% !important;
+        border-radius: 8px;
+        font-weight: bold;
+        height: 48px;
         font-size: 14px;
-        margin-bottom: 6px;
     }
     h1, p, div, span, button {
         font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Tahoma, Arial, sans-serif !important;
@@ -38,7 +44,8 @@ def load_phrases():
             english = str(row.get("english", "")).strip()
             category = str(row.get("category", "general")).strip().upper()
             
-            if thai and thai.lower() not in ["nan", "none", ""]:
+            # Discard any empty, nan, or artifact strings completely
+            if thai and thai.lower() not in ["nan", "none", "", "-"]:
                 if english and english.lower() not in ["nan", "none", ""]:
                     phrases.append({
                         "thai": thai,
@@ -50,11 +57,11 @@ def load_phrases():
     except Exception:
         pass
     
-    # 100% Pure ASCII Unicode-escaped fallback (immune to text editor corruption)
+    # Clean fallback data
     return [
-        {"thai": "\u0e40\u0e25\u0e35\u0e40\u0e22\u0e49\u0e22\u0e27\u0e02\u0e27\u0e32\u0e04\u0e23\u0e31\u0e1a", "english": "Turn right please.", "category": "NAVIGATION"},
-        {"thai": "\u0e15\u0e23\u0e07\u0e40\u0e1b\u0e35\u0e22\u0e19", "english": "Go straight.", "category": "NAVIGATION"},
-        {"thai": "\u0e02\u0e2d\u0e42\u0e17\u0e37\u0e04\u0e23\u0e31\u0e1a", "english": "Excuse me.", "category": "GENERAL"}
+        {"thai": "เลี้ยวขวาครับ", "english": "Turn right please.", "category": "NAVIGATION"},
+        {"thai": "ตรงไปแล้วเลี้ยวซ้าย", "english": "Go straight then turn left.", "category": "NAVIGATION"},
+        {"thai": "ขอโทษครับ", "english": "Excuse me.", "category": "GENERAL"}
     ]
 
 PHRASES_DB = load_phrases()
@@ -76,25 +83,26 @@ if st.session_state.revealed:
 else:
     st.markdown("<p style='text-align: center; font-size: 13px; color: #777; margin-top: 8px;'>Click 'Reveal' for translation</p>", unsafe_allow_html=True)
 
-row1_col1, row1_col2 = st.columns(2)
-with row1_col1:
-    if st.button("REVEAL", type="primary"):
+# Streamlit columns structured for a stable 2x2 layout
+col1, col2 = st.columns(2)
+with col1:
+    if st.button("REVEAL", type="primary", use_container_width=True):
         st.session_state.revealed = not st.session_state.revealed
         st.rerun()
-with row1_col2:
-    if st.button("NEXT"):
+with col2:
+    if st.button("NEXT", use_container_width=True):
         st.session_state.index = (st.session_state.index + 1) % len(PHRASES_DB)
         st.session_state.revealed = False
         st.rerun()
 
-row2_col1, row2_col2 = st.columns(2)
-with row2_col1:
-    if st.button("BACK"):
+col3, col4 = st.columns(2)
+with col3:
+    if st.button("BACK", use_container_width=True):
         st.session_state.index = (st.session_state.index - 1) % len(PHRASES_DB)
         st.session_state.revealed = False
         st.rerun()
-with row2_col2:
-    if st.button("RANDOM"):
+with col4:
+    if st.button("RANDOM", use_container_width=True):
         st.session_state.index = random.randint(0, len(PHRASES_DB) - 1)
         st.session_state.revealed = False
         st.rerun()
