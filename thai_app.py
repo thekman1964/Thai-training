@@ -56,25 +56,6 @@ UNIQUE_CATEGORIES = sorted(list(set(p['category'] for p in PHRASES_DB)))
 json_data = json.dumps(PHRASES_DB)
 json_cats = json.dumps(UNIQUE_CATEGORIES)
 
-# Check if Python received a saved phrase from the frontend redirect
-query_params = st.query_params
-incoming_thai = query_params.get("thai", "")
-incoming_eng = query_params.get("english", "")
-
-if incoming_thai and incoming_eng:
-    try:
-        save_params = urllib.parse.urlencode({
-            "thai": incoming_thai,
-            "english": incoming_eng,
-            "category": "USER ADDED"
-        })
-        urllib.request.urlopen(f"{WEBHOOK_URL}?{save_params}")
-        st.success(f"✓ Saved to Sheet: {incoming_thai} ({incoming_eng})")
-        # Clear query params so it doesn't re-trigger on refresh
-        st.query_params.clear()
-    except Exception as e:
-        st.error(f"Sheet write error: {e}")
-
 html_code = f"""
 <!DOCTYPE html>
 <html>
@@ -238,6 +219,7 @@ html_code = f"""
     </div>
 
     <script>
+        const WEBHOOK_URL = "{WEBHOOK_URL}";
         const fullDb = {json_data};
         const allCategories = {json_cats};
         
@@ -438,9 +420,9 @@ html_code = f"""
                 return;
             }}
 
-            // Redirect parent window with parameters so Python handles the server-side save securely
-            const targetUrl = window.parent.location.pathname + `?thai=${{encodeURIComponent(thaiText)}}&english=${{encodeURIComponent(englishText)}}`;
-            window.parent.location.href = targetUrl;
+            // Open direct Google Apps Script URL in a new tab to guarantee execution and save
+            const saveUrl = `${{WEBHOOK_URL}}?thai=${{encodeURIComponent(thaiText)}}&english=${{encodeURIComponent(englishText)}}&category=USER+ADDED`;
+            window.open(saveUrl, '_blank');
         }}
 
         updateCard();
