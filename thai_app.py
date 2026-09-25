@@ -1,11 +1,12 @@
 import streamlit as st
 import time
 import random
-import gspread
+import requests
 
 st.set_page_config(layout="centered", page_title="Thai Practice")
 
-SHEET_ID = "1_vMSPtMo3-JD2qARp4zwrcvNrhEuSKHQVEOT1IMwgFw"
+# Your deployed Google Apps Script Web App URL
+WEB_APP_URL = "https://script.google.com/macros/s/AKfycbznTCxcQ2BYhYp59_gtqgb82DX8Qo4NKBLLhN3ftIxwQEvzs25kVFpv1hjq5jgmWLgHhQ/exec"
 
 st.markdown("""
     <style>
@@ -18,42 +19,33 @@ st.markdown("""
 @st.cache_data(ttl=600)
 def load_phrases():
     try:
-        creds_dict = dict(st.secrets["gcp_service_account"])
-        if "private_key" in creds_dict:
-            creds_dict["private_key"] = creds_dict["private_key"].replace("\\n", "\n")
-        
-        client = gspread.service_account_from_dict(creds_dict)
-        sheet = client.open_by_key(SHEET_ID).get_worksheet(0)
-        
-        records = sheet.get_all_records()
-        cleaned = []
-        for row in records:
-            thai = str(row.get("Thai", "")).strip()
-            english = str(row.get("English", "")).strip()
-            category = str(row.get("Category", "GENERAL")).strip().upper()
-            
-            if thai and english:
-                cleaned.append({
-                    "thai": thai,
-                    "english": english,
-                    "category": category if category else "GENERAL"
-                })
-        if cleaned:
-            return cleaned, None
-    except Exception as e:
-        return None, str(e)
+        response = requests.get(WEB_APP_URL, timeout=10)
+        if response.status_code == 200:
+            records = response.json()
+            cleaned = []
+            for row in records:
+                thai = str(row.get("Thai", "")).strip()
+                english = str(row.get("English", "")).strip()
+                category = str(row.get("Category", "GENERAL")).strip().upper()
+                
+                if thai and english:
+                    cleaned.append({
+                        "thai": thai,
+                        "english": english,
+                        "category": category if category else "GENERAL"
+                    })
+            if cleaned:
+                return cleaned
+    except Exception:
+        pass
 
-    return None, "No records found in spreadsheet."
-
-PHRASES_DB, error_msg = load_phrases()
-
-if error_msg:
-    st.error(f"⚠️ Google Sheets Error: {error_msg}")
-    PHRASES_DB = [
+    return [
         {"thai": "เลี้ยวขวาครับ", "english": "Turn right please.", "category": "NAVIGATION"},
         {"thai": "ตรงไปแล้วเลี้ยวซ้าย", "english": "Go straight then turn left.", "category": "NAVIGATION"},
         {"thai": "ขอโทษครับ", "english": "Excuse me.", "category": "GENERAL"}
     ]
+
+PHRASES_DB = load_phrases()
 
 if "index" not in st.session_state:
     st.session_state.index = 0
@@ -105,17 +97,18 @@ with st.form("add_form", clear_on_submit=True):
     if submitted:
         if new_thai.strip() and new_english.strip():
             try:
-                creds_dict = dict(st.secrets["gcp_service_account"])
-                if "private_key" in creds_dict:
-                    creds_dict["private_key"] = creds_dict["private_key"].replace("\\n", "\n")
-                
-                client = gspread.service_account_from_dict(creds_dict)
-                sheet = client.open_by_key(SHEET_ID).get_worksheet(0)
-                
-                sheet.append_row([new_thai.strip(), new_english.strip(), new_category.strip()])
-                st.success(f"Successfully appended: {new_thai} -> {new_english}")
-                st.cache_data.clear()
+                payload = {
+                    "thai": new_thai.strip(),
+                    "english": new_english.strip(),
+                    "category": new_category.strip()
+                }
+                res = requests.post(WEB_APP_URL, json=payload, timeout=10)
+                if res.status_code == 200:
+                    st.success(f"Successfully appended: {new_thai} -> {new_english}")
+                    st.cache_data.clear()
+                else:
+                    st.error("Failed to write to sheet via Web App.")
             except Exception as e:
-                st.error(f"Failed to write to sheet: {e}")
+                st.error(f"Network error: {e}")
         else:
             st.warning("Please fill in both Thai and English fields.")
