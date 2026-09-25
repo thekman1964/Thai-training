@@ -222,6 +222,14 @@ html_code = f"""
     <button class="btn btn-outline" onclick="speakRecognizedText()">HEAR SPOKEN THAI TEXT</button>
     <button id="saveBtn" class="btn btn-save" onclick="saveToSpreadsheet()">➕ SAVE TO SPREADSHEET</button>
 
+    <!-- HIDDEN FORM AND IFRAME TO BYPASS CORS AND MOBILE REDIRECT ISSUES -->
+    <iframe name="hidden_target" id="hidden_target" style="display:none;"></iframe>
+    <form id="saveForm" action="{WEBHOOK_URL}" method="POST" target="hidden_target" style="display:none;">
+        <input type="hidden" name="thai" id="formThai">
+        <input type="hidden" name="english" id="formEnglish">
+        <input type="hidden" name="category" value="USER ADDED">
+    </form>
+
     <div class="meta-info">
         <div><b>Available Records:</b> <span id="recordCount">{len(PHRASES_DB)}</span></div>
         <div><b>Spreadsheet Last Updated:</b> {LAST_UPDATED}</div>
@@ -245,7 +253,6 @@ html_code = f"""
     <script>
         const fullDb = {json_data};
         const allCategories = {json_cats};
-        const webhookUrl = "{WEBHOOK_URL}";
         
         let activeDb = [...fullDb];
         let selectedCategories = new Set(allCategories);
@@ -435,7 +442,7 @@ html_code = f"""
             }}
         }}
 
-        async function saveToSpreadsheet() {{
+        function saveToSpreadsheet() {{
             const thaiText = document.getElementById('speechOutput').innerText;
             const englishText = document.getElementById('speechTrans').innerText;
             const saveBtn = document.getElementById('saveBtn');
@@ -448,20 +455,11 @@ html_code = f"""
             saveBtn.innerText = "SAVING...";
             saveBtn.disabled = true;
 
-            try {{
-                const payload = JSON.stringify({{
-                    thai: thaiText,
-                    english: englishText,
-                    category: "USER ADDED"
-                }});
+            document.getElementById('formThai').value = thaiText;
+            document.getElementById('formEnglish').value = englishText;
+            document.getElementById('saveForm').submit();
 
-                await fetch(webhookUrl, {{
-                    method: 'POST',
-                    mode: 'no-cors',
-                    headers: {{ 'Content-Type': 'text/plain' }},
-                    body: payload
-                }});
-
+            setTimeout(() => {{
                 saveBtn.innerText = "✓ SAVED TO SPREADSHEET";
                 saveBtn.style.backgroundColor = "#10B981";
 
@@ -470,12 +468,7 @@ html_code = f"""
                     saveBtn.style.backgroundColor = "#8B5CF6";
                     saveBtn.disabled = false;
                 }}, 2500);
-
-            }} catch (e) {{
-                alert("Failed to save entry: " + e.message);
-                saveBtn.innerText = "➕ SAVE TO SPREADSHEET";
-                saveBtn.disabled = false;
-            }}
+            }}, 1000);
         }}
 
         updateCard();
