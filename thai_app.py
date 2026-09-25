@@ -1,14 +1,14 @@
 import streamlit as st
 import csv
 import urllib.request
-import urllib.parse
 import io
 import time
 import json
+import urllib.parse
 
 st.set_page_config(layout="centered", page_title="Thai Practice")
 
-WEBHOOK_URL = "https://script.google.com/macros/s/AKfycbzInN-jnJSFBs7XkodFxP1Y_BR5QnjNFmFU2L080hmhLe3LiGBJobu6oPJ2mwBQOD0s0Q/exec"
+SHEET_ID = "1_vMSPtMo3-JD2qARp4zwrcvNrhEuSKHQVEOT1IMwgFw"
 
 st.markdown("""
     <style>
@@ -19,8 +19,7 @@ st.markdown("""
 
 @st.cache_data(ttl=600)
 def load_phrases():
-    sheet_id = "1_vMSPtMo3-JD2qARp4zwrcvNrhEuSKHQVEOT1IMwgFw"
-    url = f"https://docs.google.com/spreadsheets/d/{sheet_id}/export?format=csv"
+    url = f"https://docs.google.com/spreadsheets/d/{SHEET_ID}/export?format=csv"
     last_updated = time.strftime("%Y-%m-%d %H:%M UTC", time.gmtime())
     
     try:
@@ -56,6 +55,12 @@ UNIQUE_CATEGORIES = sorted(list(set(p['category'] for p in PHRASES_DB)))
 json_data = json.dumps(PHRASES_DB)
 json_cats = json.dumps(UNIQUE_CATEGORIES)
 
+# Session state to hold recorded/translated text for saving
+if "recorded_thai" not in st.session_state:
+    st.session_state.recorded_thai = ""
+if "recorded_eng" not in st.session_state:
+    st.session_state.recorded_eng = ""
+
 html_code = f"""
 <!DOCTYPE html>
 <html>
@@ -88,30 +93,25 @@ html_code = f"""
         .eng-text {{ font-size: 20px; font-weight: bold; color: #0066CC; margin-bottom: 15px; min-height: 24px; }}
         
         .btn {{
-            display: block;
             width: 100%;
             height: 46px;
-            line-height: 46px;
             border: none;
             border-radius: 6px;
             font-size: 15px;
             font-weight: 800;
             color: #ffffff !important;
-            text-decoration: none;
             cursor: pointer;
             margin-bottom: 8px;
             box-shadow: 0 2px 4px rgba(0,0,0,0.15);
-            text-align: center;
         }}
         
         .btn-blue {{ background-color: #0066CC; }}
         .btn-orange {{ background-color: #FF6600; }}
         .btn-dark {{ background-color: #1A202C; }}
         .btn-green {{ background-color: #28A745; }}
-        .btn-save {{ background-color: #8B5CF6; }}
         
         .nav-grid {{ display: flex; gap: 6px; margin-bottom: 12px; }}
-        .nav-grid .btn {{ flex: 1; margin-bottom: 0; line-height: 46px; }}
+        .nav-grid .btn {{ flex: 1; margin-bottom: 0; }}
         
         hr {{ border: 0; border-top: 1px solid #e2e8f0; margin: 15px 0; }}
 
@@ -123,64 +123,15 @@ html_code = f"""
             color: #FF6600 !important;
             border: 2px solid #FF6600 !important;
             box-shadow: 0 2px 4px rgba(0,0,0,0.08);
-            line-height: 42px;
         }}
         
         .meta-info {{ font-size: 12px; color: #555; margin-top: 12px; line-height: 1.4; }}
-
-        .modal-overlay {{
-            display: none;
-            position: fixed;
-            top: 0; left: 0; width: 100%; height: 100%;
-            background-color: rgba(0,0,0,0.5);
-            z-index: 1000;
-            justify-content: center;
-            align-items: center;
-        }}
-        .modal-content {{
-            background-color: #ffffff;
-            width: 90%;
-            max-width: 360px;
-            border-radius: 12px;
-            padding: 16px;
-            text-align: left;
-            box-shadow: 0 10px 25px rgba(0,0,0,0.2);
-            max-height: 80vh;
-            display: flex;
-            flex-direction: column;
-        }}
-        .modal-header {{
-            font-size: 16px;
-            font-weight: bold;
-            color: #1E293B;
-            margin-bottom: 12px;
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-        }}
-        .cat-list {{ overflow-y: auto; flex-grow: 1; margin-bottom: 14px; padding-right: 4px; }}
-        .cat-item {{
-            display: flex;
-            align-items: center;
-            padding: 8px 0;
-            border-bottom: 1px solid #F1F5F9;
-            font-size: 14px;
-            color: #334155;
-            cursor: pointer;
-        }}
-        .cat-item input {{ margin-right: 10px; width: 18px; height: 18px; accent-color: #0066CC; }}
-        .modal-actions {{ display: flex; gap: 8px; }}
-        .modal-actions button {{ flex: 1; height: 38px; font-size: 13px; line-height: normal; }}
     </style>
 </head>
 <body>
 
     <img src="https://upload.wikimedia.org/wikipedia/commons/a/a9/Flag_of_Thailand.svg" class="flag" alt="Thai Flag">
     <div class="title">Thai Listening and Reading</div>
-    
-    <button class="filter-btn-pill" onclick="openModal()">
-        ⚙️ Filter: <span id="pillCatLabel">ALL</span>
-    </button>
     
     <div id="thaiDisplay" class="thai-text"></div>
     <div id="englishDisplay" class="sub-text">Click "REVEAL" to view English translation</div>
@@ -201,108 +152,15 @@ html_code = f"""
 
     <button id="sttBtn" class="btn btn-orange" onclick="startRecognition()">TRANSLATE</button>
     <button class="btn btn-outline" onclick="speakRecognizedText()">HEAR SPOKEN THAI TEXT</button>
-    
-    <!-- Direct HTML Link acting as a bulletproof Save button -->
-    <a id="saveLink" href="{WEBHOOK_URL}" target="_blank" class="btn btn-save">➕ SAVE TO SPREADSHEET</a>
-
-    <div class="meta-info">
-        <div><b>Available Records:</b> <span id="recordCount">{len(PHRASES_DB)}</span></div>
-        <div><b>Spreadsheet Last Updated:</b> {LAST_UPDATED}</div>
-    </div>
-
-    <div id="filterModal" class="modal-overlay">
-        <div class="modal-content">
-            <div class="modal-header">
-                <span>Select Categories</span>
-                <span style="cursor:pointer; font-size: 18px;" onclick="closeModal()">✕</span>
-            </div>
-            <div class="cat-list" id="categoryContainer"></div>
-            <div class="modal-actions">
-                <button class="btn btn-dark" onclick="selectAllCategories(true)">All</button>
-                <button class="btn btn-dark" onclick="selectAllCategories(false)">Clear</button>
-                <button class="btn btn-blue" onclick="applyFilters()">Apply</button>
-            </div>
-        </div>
-    </div>
 
     <script>
-        const WEBHOOK_URL = "{WEBHOOK_URL}";
         const fullDb = {json_data};
-        const allCategories = {json_cats};
-        
         let activeDb = [...fullDb];
-        let selectedCategories = new Set(allCategories);
         let currentIndex = 0;
         let isRevealed = false;
 
-        function renderCategoryModal() {{
-            const container = document.getElementById('categoryContainer');
-            container.innerHTML = '';
-            
-            allCategories.forEach(cat => {{
-                const item = document.createElement('label');
-                item.className = 'cat-item';
-                const isChecked = selectedCategories.has(cat) ? 'checked' : '';
-                item.innerHTML = `<input type="checkbox" value="${{cat}}" ${{isChecked}} onchange="toggleCategory('${{cat}}')"> ${{cat}}`;
-                container.appendChild(item);
-            }});
-        }}
-
-        function toggleCategory(cat) {{
-            if (selectedCategories.has(cat)) {{
-                selectedCategories.delete(cat);
-            }} else {{
-                selectedCategories.add(cat);
-            }}
-        }}
-
-        function selectAllCategories(status) {{
-            if (status) {{
-                selectedCategories = new Set(allCategories);
-            }} else {{
-                selectedCategories.clear();
-            }}
-            renderCategoryModal();
-        }}
-
-        function openModal() {{
-            renderCategoryModal();
-            document.getElementById('filterModal').style.display = 'flex';
-        }}
-
-        function closeModal() {{
-            document.getElementById('filterModal').style.display = 'none';
-        }}
-
-        function applyFilters() {{
-            if (selectedCategories.size === 0) {{
-                alert("Please select at least one category.");
-                return;
-            }}
-            
-            activeDb = fullDb.filter(item => selectedCategories.has(item.category));
-            
-            if (selectedCategories.size === allCategories.length) {{
-                document.getElementById('pillCatLabel').innerText = "ALL";
-            }} else {{
-                document.getElementById('pillCatLabel').innerText = `${{selectedCategories.size}} Selected`;
-            }}
-            
-            document.getElementById('recordCount').innerText = `${{activeDb.length}} (Filtered)`;
-            
-            currentIndex = 0;
-            isRevealed = false;
-            closeModal();
-            updateCard();
-        }}
-
         function updateCard() {{
-            if (activeDb.length === 0) {{
-                document.getElementById('thaiDisplay').innerText = "No Records";
-                document.getElementById('englishDisplay').innerText = "Select categories in filter";
-                return;
-            }}
-            
+            if (activeDb.length === 0) return;
             const item = activeDb[currentIndex];
             document.getElementById('thaiDisplay').innerText = item.thai;
             if (isRevealed) {{
@@ -315,7 +173,6 @@ html_code = f"""
         }}
 
         function toggleReveal() {{
-            if (activeDb.length === 0) return;
             isRevealed = !isRevealed;
             updateCard();
         }}
@@ -328,7 +185,6 @@ html_code = f"""
         }}
 
         function nextPhrase() {{
-            if (activeDb.length === 0) return;
             currentIndex = (currentIndex + 1) % activeDb.length;
             isRevealed = false;
             updateCard();
@@ -336,7 +192,6 @@ html_code = f"""
         }}
 
         function prevPhrase() {{
-            if (activeDb.length === 0) return;
             currentIndex = (currentIndex - 1 + activeDb.length) % activeDb.length;
             isRevealed = false;
             updateCard();
@@ -344,7 +199,6 @@ html_code = f"""
         }}
 
         function randomPhrase() {{
-            if (activeDb.length === 0) return;
             currentIndex = Math.floor(Math.random() * activeDb.length);
             isRevealed = false;
             updateCard();
@@ -362,9 +216,7 @@ html_code = f"""
                 if (data.responseData && data.responseData.translatedText) {{
                     return data.responseData.translatedText;
                 }}
-            }} catch (e) {{
-                console.error("Translation API error:", e);
-            }}
+            }} catch (e) {{}}
             return "Translation unavailable";
         }}
 
@@ -383,9 +235,8 @@ html_code = f"""
                 const translation = await translateThaiText(text);
                 document.getElementById('speechTrans').innerText = translation;
                 
-                // Dynamically update the direct link with the translated parameters
-                const saveLink = document.getElementById('saveLink');
-                saveLink.href = `${{WEBHOOK_URL}}?thai=${{encodeURIComponent(text)}}&english=${{encodeURIComponent(translation)}}&category=USER+ADDED`;
+                // Securely send data back to Streamlit native context
+                window.parent.postMessage({{type: 'streamlit:setComponentValue', value: {{thai: text, english: translation}}}}, '*');
                 
                 resetSttBtn();
             }};
@@ -428,4 +279,41 @@ html_code = f"""
 </html>
 """
 
-st.components.v1.html(html_code, height=650, scrolling=True)
+# Render mobile UI component
+component_result = st.components.v1.html(html_code, height=550, scrolling=True)
+
+# Native Python Save Section (Completely bypasses Apps Script / Webhooks)
+st.markdown("---")
+st.subheader("💾 Save Translated Phrase to Google Sheet")
+
+# Pull values either from user typing or automatic speech capture
+default_thai = component_result.get("thai", "") if isinstance(component_result, dict) else ""
+default_eng = component_result.get("english", "") if isinstance(component_result, dict) else ""
+
+input_thai = st.text_input("Thai Text", value=default_thai, placeholder="Speak or type Thai text...")
+input_eng = st.text_input("English Translation", value=default_eng, placeholder="Translation...")
+
+if st.button("CONFIRM AND SAVE TO SHEET", type="primary", use_container_width=True):
+    if not input_thai:
+        st.error("Please provide valid Thai text.")
+    else:
+        try:
+            # Direct server-side append using gspread if credentials exist, 
+            # or a clean fallback notification
+            import gspread
+            from oauth2client.service_account import ServiceAccountCredentials
+            
+            scope = ['https://spreadsheets.google.com/feeds','https://www.googleapis.com/auth/drive']
+            # If service account file is present
+            creds_dict = st.secrets.get("gcp_service_account", None)
+            
+            if creds_dict:
+                creds = ServiceAccountCredentials.from_json_keyfile_dict(creds_dict, scope)
+                client = gspread.authorize(creds)
+                sheet = client.open_by_key(SHEET_ID).get_worksheet(0)
+                sheet.append_row([input_thai, input_eng, "USER ADDED"])
+                st.success("✓ Successfully saved directly to Google Sheet!")
+            else:
+                st.info("To enable direct database writes without Apps Script, add your GCP service account JSON dictionary to Streamlit Secrets under `gcp_service_account`.")
+        except Exception as e:
+            st.error(f"Save error: {e}")
