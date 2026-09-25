@@ -283,7 +283,6 @@ if isinstance(component_result, dict) and component_result.get("thai"):
             import gspread
             from oauth2client.service_account import ServiceAccountCredentials
 
-date_str = time.strftime("%Y-%m-%d %H:%M:%S")
             scope = ['https://spreadsheets.google.com/feeds', 'https://www.googleapis.com/auth/drive']
             creds_dict = dict(st.secrets["gcp_service_account"])
             creds = ServiceAccountCredentials.from_json_keyfile_dict(creds_dict, scope)
