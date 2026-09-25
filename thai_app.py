@@ -57,7 +57,6 @@ html_code = f"""
 <html>
 <head>
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <script src="https://unpkg.com/streamlit-component-lib@^1.0.0/dist/streamlit_component_lib.js"></script>
     <style>
         * {{ box-sizing: border-box; font-family: system-ui, -apple-system, sans-serif; }}
         body {{ margin: 0; padding: 10px; background-color: #ffffff; color: #000000; text-align: center; }}
@@ -135,14 +134,6 @@ html_code = f"""
         let activeDb = [...fullDb];
         let currentIndex = 0;
         let isRevealed = false;
-
-        // Required Streamlit Component lifecycle initialization
-        window.addEventListener("load", function() {{
-            if (window.Streamlit) {{
-                Streamlit.setComponentReady();
-                Streamlit.setFrameHeight(580);
-            }}
-        }});
 
         function updateCard() {{
             if (activeDb.length === 0) return;
@@ -264,11 +255,12 @@ html_code = f"""
                 return;
             }}
 
-            if (window.Streamlit) {{
-                Streamlit.setComponentValue({{ thai: thai, english: english, category: "USER ADDED" }});
-            }} else {{
-                alert("Error: Streamlit communication bridge not loaded.");
-            }}
+            window.parent.postMessage({{
+                type: 'streamlit:setComponentValue',
+                value: {{ thai: thai, english: english, category: "USER ADDED" }}
+            }}, '*');
+
+            alert("✓ Sending translation straight to your Google Sheet...");
         }}
 
         updateCard();
@@ -277,9 +269,9 @@ html_code = f"""
 </html>
 """
 
-component_result = st.components.v1.html(html_code, height=580, scrolling=True)
+component_result = st.components.v1.html(html_code, height=500, scrolling=True)
 
-# Handle writing to Google Sheets server-side using gspread when component value is passed back
+# Handle writing to Google Sheets server-side using gspread
 if isinstance(component_result, dict) and component_result.get("thai"):
     thai_val = component_result.get("thai")
     eng_val = component_result.get("english")
@@ -291,6 +283,7 @@ if isinstance(component_result, dict) and component_result.get("thai"):
             import gspread
             from oauth2client.service_account import ServiceAccountCredentials
 
+date_str = time.strftime("%Y-%m-%d %H:%M:%S")
             scope = ['https://spreadsheets.google.com/feeds', 'https://www.googleapis.com/auth/drive']
             creds_dict = dict(st.secrets["gcp_service_account"])
             creds = ServiceAccountCredentials.from_json_keyfile_dict(creds_dict, scope)
