@@ -5,13 +5,11 @@ import urllib.parse
 import io
 import time
 import json
-from streamlit_mic_recorder import speech_to_text
 
 st.set_page_config(layout="centered", page_title="Thai Practice")
 
 WEBHOOK_URL = "https://script.google.com/macros/s/AKfycbzInN-jnJSFBs7XkodFxP1Y_BR5QnjNFmFU2L080hmhLe3LiGBJobu6oPJ2mwBQOD0s0Q/exec"
 
-# Clean layout and contrast fixes for both Light & Dark modes
 st.markdown("""
     <style>
     #MainMenu, header, footer, div[data-testid="stHeader"] {display: none !important;}
@@ -20,41 +18,7 @@ st.markdown("""
     </style>
 """, unsafe_allow_html=True)
 
-@st.cache_data(ttl=600)
-def load_phrases():
-    sheet_id = "1_vMSPtMo3-JD2qARp4zwrcvNrhEuSKHQVEOT1IMwgFw"
-    url = f"https://docs.google.com/spreadsheets/d/{sheet_id}/export?format=csv"
-    last_updated = time.strftime("%Y-%m-%d %H:%M UTC", time.gmtime())
-    
-    try:
-        req = urllib.request.urlopen(url)
-        csv_text = req.read().decode('utf-8')
-        reader = csv.DictReader(io.StringIO(csv_text))
-        
-        cleaned = []
-        for row in reader:
-            thai = str(row.get("Thai", "")).strip()
-            english = str(row.get("English", "")).strip()
-            category = str(row.get("Category", "GENERAL")).strip().upper()
-            
-            if thai and english:
-                cleaned.append({
-                    "thai": thai,
-                    "english": english,
-                    "category": category if category else "GENERAL"
-                })
-        if cleaned:
-            return cleaned, last_updated
-    except Exception:
-        pass
-
-    return [
-        {"thai": "เลี้ยวขวาครับ", "english": "Turn right please.", "category": "NAVIGATION"},
-        {"thai": "ตรงไปแล้วเลี้ยวซ้าย", "english": "Go straight then turn left.", "category": "NAVIGATION"},
-        {"thai": "ขอโทษครับ", "english": "Excuse me.", "category": "GENERAL"}
-    ], last_updated
-
-PHRASES_DB, LAST_UPDATED = load_phrases()
+st.title("🇹🇭 Thai Language Practice")
 
 def translate_thai(text):
     try:
@@ -62,43 +26,47 @@ def translate_thai(text):
         req = urllib.request.Request(url, headers={'User-Agent': 'Mozilla/5.0'})
         with urllib.request.urlopen(req) as res:
             data = json.loads(res.read().decode('utf-8'))
-            return data.get("responseData", {}).get("translatedText", "Translation unavailable")
+            return data.get("responseData", {}).get("translatedText", "")
     except Exception:
-        return "Translation error"
+        return ""
 
-st.title("🇹🇭 Thai Language Practice")
+# Audio Upload Option
+audio_file = st.file_uploader("Record or Upload Audio", type=["wav", "mp3", "m4a", "ogg"])
 
-# Microphone Input Component
-st.subheader("🎤 Voice Translator")
-text_spoken = speech_to_text(language='th-TH', start_prompt="TAP TO RECORD THAI", stop_prompt="STOP RECORDING", key='speech_input')
-
-if text_spoken:
-    st.session_state["recorded_thai"] = text_spoken
-    st.session_state["translated_eng"] = translate_thai(text_spoken)
-
-# Data Display & Direct Server-Side Form
 with st.form("sheet_sync_form"):
-    recorded_thai = st.text_input("Spoken Thai Text", value=st.session_state.get("recorded_thai", ""))
-    translated_eng = st.text_input("English Translation", value=st.session_state.get("translated_eng", ""))
-    submitted = st.form_submit_button("➕ SAVE DIRECTLY TO SPREADSHEET")
+    thai_input = st.text_input("Thai Text", value=st.session_state.get("thai_val", ""))
+    
+    # Auto-translate trigger
+    if st.form_submit_button("1. Auto-Translate Thai"):
+        if thai_input:
+            translated = translate_thai(thai_input)
+            st.session_state["thai_val"] = thai_input
+            st.session_state["eng_val"] = translated
+            st.rerun()
 
-    if submitted:
-        if recorded_thai and translated_eng:
+    english_input = st.text_input("English Translation", value=st.session_state.get("eng_val", ""))
+    
+    # Save button executed strictly server-side
+    save_submitted = st.form_submit_button("2. ➕ SAVE TO SPREADSHEET")
+
+    if save_submitted:
+        if thai_input and english_input:
             try:
                 params = urllib.parse.urlencode({
-                    "thai": recorded_thai,
-                    "english": translated_eng,
+                    "thai": thai_input,
+                    "english": english_input,
                     "category": "USER ADDED"
                 })
                 full_url = f"{WEBHOOK_URL}?{params}"
                 req = urllib.request.Request(full_url, headers={'User-Agent': 'Mozilla/5.0'})
+                
                 with urllib.request.urlopen(req) as response:
                     res_text = response.read().decode('utf-8')
                     if "SUCCESS" in res_text:
-                        st.success(f"✓ Added row to Sheet: {recorded_thai} — {translated_eng}")
+                        st.success(f"✓ Saved: {thai_input} — {english_input}")
                     else:
-                        st.error(f"Sheet returned: {res_text}")
+                        st.error(f"Google Sheet response: {res_text}")
             except Exception as e:
-                st.error(f"Server submission failed: {e}")
+                st.error(f"Server save error: {e}")
         else:
-            st.warning("Please record or enter text into both fields first.")
+            st.warning("Please fill in both fields before saving.")
