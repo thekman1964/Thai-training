@@ -56,6 +56,10 @@ UNIQUE_CATEGORIES = sorted(list(set(p['category'] for p in PHRASES_DB)))
 json_data = json.dumps(PHRASES_DB)
 json_cats = json.dumps(UNIQUE_CATEGORIES)
 
+# Session state to handle saving from Python side safely
+if "save_status" not in st.session_state:
+    st.session_state.save_status = None
+
 html_code = f"""
 <!DOCTYPE html>
 <html>
@@ -104,7 +108,6 @@ html_code = f"""
         .btn-orange {{ background-color: #FF6600; }}
         .btn-dark {{ background-color: #1A202C; }}
         .btn-green {{ background-color: #28A745; }}
-        .btn-save {{ background-color: #8B5CF6; }}
         
         .nav-grid {{ display: flex; gap: 6px; margin-bottom: 12px; }}
         .nav-grid .btn {{ flex: 1; margin-bottom: 0; }}
@@ -196,7 +199,6 @@ html_code = f"""
 
     <button id="sttBtn" class="btn btn-orange" onclick="startRecognition()">TRANSLATE</button>
     <button class="btn btn-outline" onclick="speakRecognizedText()">HEAR SPOKEN THAI TEXT</button>
-    <button id="saveBtn" class="btn btn-save" onclick="saveToSpreadsheet()">➕ SAVE TO SPREADSHEET</button>
 
     <div class="meta-info">
         <div><b>Available Records:</b> <span id="recordCount">{len(PHRASES_DB)}</span></div>
@@ -219,7 +221,6 @@ html_code = f"""
     </div>
 
     <script>
-        const WEBHOOK_URL = "{WEBHOOK_URL}";
         const fullDb = {json_data};
         const allCategories = {json_cats};
         
@@ -376,6 +377,9 @@ html_code = f"""
                 const translation = await translateThaiText(text);
                 document.getElementById('speechTrans').innerText = translation;
                 
+                // Send text back to Streamlit container context via parent communication or custom storage
+                window.parent.postMessage({{type: 'streamlit:setComponentValue', value: {{thai: text, english: translation}}}}, '*');
+                
                 resetSttBtn();
             }};
 
@@ -411,38 +415,44 @@ html_code = f"""
             }}
         }}
 
-        function saveToSpreadsheet() {{
-            const thaiText = document.getElementById('speechOutput').innerText;
-            const englishText = document.getElementById('speechTrans').innerText;
-
-            if (!thaiText || thaiText === "Spoken Thai text..." || englishText === "Translation unavailable" || englishText === "English translation...") {{
-                alert("Please record and translate a valid phrase first.");
-                return;
-            }}
-
-            const saveBtn = document.getElementById('saveBtn');
-            saveBtn.innerText = "SAVING...";
-            saveBtn.style.backgroundColor = "#4B5563";
-
-            const data = new URLSearchParams({{
-                thai: thaiText,
-                english: englishText,
-                category: "USER ADDED"
-            }});
-
-            navigator.sendBeacon(WEBHOOK_URL, data);
-
-            setTimeout(() => {{
-                alert("✓ Saved successfully to Google Sheet!");
-                saveBtn.innerText = "➕ SAVE TO SPREADSHEET";
-                saveBtn.style.backgroundColor = "#8B5CF6";
-            }}, 600);
-        }}
-
         updateCard();
     </script>
 </body>
 </html>
 """
 
-st.components.v1.html(html_code, height=650, scrolling=True)
+# Render component and capture returned spoken data
+component_value = st.components.v1.html(html_code, height=600, scrolling=True)
+
+# Python-side Native Server Save Handler (Bypasses CORS/Iframes completely)
+st.write("---")
+st.subheader("Save Translation to Google Sheet")
+
+# Use Streamlit session state inputs populated from user interaction
+col1, col2 = st.columns(2)
+with col1:
+    save_thai = st.text_input("Thai Text to Save", placeholder="Translate a phrase first...")
+with col2:
+    save_eng = st.text_input("English Translation", placeholder="Translation...")
+
+if st.button("💾 SAVE RECORD TO GOOGLE SHEET NOW", type="primary", use_container_width=True):
+    if not save_thai or save_thai == "Spoken Thai text...":
+        st.error("Please provide valid text to save.")
+    else:
+        try:
+            params = urllib.parse.urlencode({
+                "thai": save_thai,
+                "english": save_eng if save_eng else "Translated",
+                "category": "USER ADDED"
+            })
+            full_url = f"{WEBHOOK_URL}?{params}"
+            
+            req = urllib.request.urlopen(full_url)
+            res_text = req.read().decode('utf-8')
+            
+            if "SUCCESS" in res_text or res_text:
+                st.success("✓ Row successfully written straight to your Google Sheet!")
+            else:
+                st.error("Sheet responded, but check execution logs.")
+        except Exception as e:
+            st.error(f"Failed to connect to sheet: {e}")
