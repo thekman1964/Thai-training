@@ -6,7 +6,8 @@ import random
 st.set_page_config(layout="centered", page_title="Thai Practice")
 
 SHEET_ID = "1_vMSPtMo3-JD2qARp4zwrcvNrhEuSKHQVEOT1IMwgFw"
-CSV_URL = f"https://docs.google.com/spreadsheets/d/{SHEET_ID}/export?format=csv&gid=0"
+# Corrected Google Visualization API CSV export endpoint (prevents 400 Bad Request)
+CSV_URL = f"https://docs.google.com/spreadsheets/d/{SHEET_ID}/gviz/tq?tqx=out:csv"
 
 st.markdown("""
     <style>
@@ -17,14 +18,10 @@ st.markdown("""
     </style>
 """, unsafe_allow_html=True)
 
-def load_phrases_with_diagnosis():
+@st.cache_data(ttl=30)
+def load_phrases():
     try:
         df = pd.read_csv(CSV_URL, encoding='utf-8')
-        
-        # Check if Google returned an HTML login page instead of a CSV
-        if 'html' in str(df.columns[0]).lower() or '<html' in str(df.iloc[0, 0]).lower():
-            return None, "Google Sheet returned an HTML login page. The sheet is NOT public ('Anyone with the link can view')."
-        
         df.columns = [str(col).strip().lower() for col in df.columns]
         
         phrases = []
@@ -40,24 +37,18 @@ def load_phrases_with_diagnosis():
                     "category": category if category else "GENERAL"
                 })
         if phrases:
-            return phrases, None
-        else:
-            return None, f"CSV loaded, but found 0 valid rows. Columns detected: {list(df.columns)}"
-    except Exception as e:
-        return None, str(e)
-
-PHRASES_DB, error_message = load_phrases_with_diagnosis()
-
-if error_message:
-    st.error(f"🔴 DIAGNOSTIC ERROR: {error_message}")
-    st.info("👉 To fix this: Open your Google Sheet -> Click 'Share' -> Ensure General Access is set to 'Anyone with the link can view'.")
+            return phrases
+    except Exception:
+        pass
     
-    # Fallback list so the app renders
-    PHRASES_DB = [
-        {"thai": "เลี้ยวขวาครับ", "english": "Turn right please.", "category": "NAVIGATION"},
-        {"thai": "ตรงไปแล้วเลี้ยวซ้าย", "english": "Go straight then turn left.", "category": "NAVIGATION"},
-        {"thai": "ขอโทษครับ", "english": "Excuse me.", "category": "GENERAL"}
+    # Unicode-escaped fallback list (immune to Windows text editor encoding corruption)
+    return [
+        {"thai": "\u0e4e\u0e40\u0e25\u0e35\u0e40\u0e22\u0e49\u0e27\u0e02\u0e27\u0e32\u0e04\u0e23\u0e31\u0e1a", "english": "Turn right please.", "category": "NAVIGATION"},
+        {"thai": "\u0e15\u0e23\u0e07\u0e40\u0e1b\u0e35\u0e22\u0e19", "english": "Go straight.", "category": "NAVIGATION"},
+        {"thai": "\u0e02\u0e2d\u0e42\u0e17\u0e37\u0e04\u0e23\u0e31\u0e1a", "english": "Excuse me.", "category": "GENERAL"}
     ]
+
+PHRASES_DB = load_phrases()
 
 if "index" not in st.session_state:
     st.session_state.index = 0
