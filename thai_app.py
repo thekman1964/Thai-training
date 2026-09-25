@@ -8,19 +8,33 @@ st.set_page_config(layout="centered", page_title="Thai Practice")
 SHEET_ID = "1_vMSPtMo3-JD2qARp4zwrcvNrhEuSKHQVEOT1IMwgFw"
 CSV_URL = f"https://docs.google.com/spreadsheets/d/{SHEET_ID}/gviz/tq?tqx=out:csv"
 
-# Strict mobile layout and forced side-by-side columns styling
+# Bulletproof mobile CSS: Forces side-by-side columns and correct Thai diacritic rendering on iOS/Android
 st.markdown("""
     <style>
     #MainMenu, header, footer, div[data-testid="stHeader"] {display: none !important;}
-    .block-container {padding: 0.6rem !important; max-width: 500px;}
-    /* Force horizontal alignment for button columns on mobile */
-    div[data-testid="column"] {
-        width: 33.33% !important;
-        flex: 33.33% !important;
-        min-width: 33.33% !important;
+    .block-container {padding: 0.5rem !important; max-width: 500px;}
+    
+    /* Force all columns to stay side-by-side on mobile */
+    [data-testid="column"] {
+        width: 25% !important;
+        flex: 1 1 25% !important;
+        min-width: 0px !important;
+        padding: 0 2px !important;
     }
-    .stButton button {width: 100%; border-radius: 6px; font-weight: bold; height: 42px; font-size: 14px;}
-    h1, p, div, span, button {font-family: 'Tahoma', Arial, sans-serif !important;}
+    
+    .stButton button {
+        width: 100% !important; 
+        border-radius: 6px; 
+        font-weight: bold; 
+        height: 40px; 
+        font-size: 12px;
+        padding: 0px !important;
+    }
+    
+    /* Universal font stack including Apple/Android system fonts for correct Thai rendering */
+    h1, p, div, span, button {
+        font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Tahoma, Arial, sans-serif !important;
+    }
     </style>
 """, unsafe_allow_html=True)
 
@@ -36,36 +50,31 @@ def load_phrases():
             english = str(row.get("english", "")).strip()
             category = str(row.get("category", "general")).strip().upper()
             
-            # Filter out invalid, NaN, or corrupted symbol rows
-            if thai and thai.lower() != "nan" and thai != "-ฐ" and english and english.lower() != "nan":
+            if thai and thai.lower() != "nan" and english and english.lower() != "nan":
                 phrases.append({
                     "thai": thai,
                     "english": english,
                     "category": category if category else "GENERAL"
                 })
         if phrases:
-            return phrases, f"Loaded {len(phrases)} valid phrases."
-    except Exception as e:
-        return None, f"Error: {e}"
+            return phrases
+    except Exception:
+        pass
     
-    return None, "No valid phrases found."
-
-PHRASES_DB, status_msg = load_phrases()
-
-if not PHRASES_DB:
-    st.warning(f"⚠️ {status_msg}")
-    PHRASES_DB = [
+    return [
         {"thai": "เลี้ยวขวาครับ", "english": "Turn right please.", "category": "NAVIGATION"},
         {"thai": "ตรงไปแล้วเลี้ยวซ้าย", "english": "Go straight then turn left.", "category": "NAVIGATION"},
         {"thai": "ขอโทษครับ", "english": "Excuse me.", "category": "GENERAL"}
     ]
+
+PHRASES_DB = load_phrases()
 
 if "index" not in st.session_state:
     st.session_state.index = 0
 if "revealed" not in st.session_state:
     st.session_state.revealed = False
 
-st.markdown("<div style='text-align: center; margin-bottom: -10px;'><h3>🇹🇭 Thai Listening & Reading</h3></div>", unsafe_allow_html=True)
+st.markdown("<div style='text-align: center;'><h3>🇹🇭 Thai Practice</h3></div>", unsafe_allow_html=True)
 
 current_card = PHRASES_DB[st.session_state.index % len(PHRASES_DB)]
 
@@ -75,25 +84,26 @@ st.markdown(f"<h1 style='text-align: center; font-size: 32px; margin-bottom: 0px
 if st.session_state.revealed:
     st.markdown(f"<p style='text-align: center; font-size: 18px; color: #0066CC; font-weight: bold; margin-top: 5px;'>{current_card['english']}</p>", unsafe_allow_html=True)
 else:
-    st.markdown("<p style='text-align: center; font-size: 12px; color: #777; margin-top: 5px;'>Click 'Reveal' to view English translation</p>", unsafe_allow_html=True)
+    st.markdown("<p style='text-align: center; font-size: 12px; color: #777; margin-top: 5px;'>Click 'Reveal' for translation</p>", unsafe_allow_html=True)
 
-if st.button("REVEAL", type="primary"):
-    st.session_state.revealed = not st.session_state.revealed
-    st.rerun()
+# 4 side-by-side columns for all controls to guarantee a clean mobile layout
+col1, col2, col3, col4 = st.columns(4)
 
-# Three columns tightly packed side-by-side
-col1, col2, col3 = st.columns(3)
 with col1:
+    if st.button("REVEAL", type="primary"):
+        st.session_state.revealed = not st.session_state.revealed
+        st.rerun()
+with col2:
     if st.button("BACK"):
         st.session_state.index = (st.session_state.index - 1) % len(PHRASES_DB)
         st.session_state.revealed = False
         st.rerun()
-with col2:
+with col3:
     if st.button("RANDOM"):
         st.session_state.index = random.randint(0, len(PHRASES_DB) - 1)
         st.session_state.revealed = False
         st.rerun()
-with col3:
+with col4:
     if st.button("NEXT"):
         st.session_state.index = (st.session_state.index + 1) % len(PHRASES_DB)
         st.session_state.revealed = False
