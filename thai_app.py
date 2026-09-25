@@ -1,11 +1,15 @@
 # -*- coding: utf-8 -*-
 import streamlit as st
+import pandas as pd
 import random
-import base64
 
 st.set_page_config(layout="centered", page_title="Thai Practice")
 
-# Universal CSS forcing clean font rendering on mobile
+# Public Google Sheet configuration (Sheet must be set to "Anyone with the link can view")
+SHEET_ID = "1_vMSPtMo3-JD2qARp4zwrcvNrhEuSKHQVEOT1IMwgFw"
+CSV_URL = f"https://docs.google.com/spreadsheets/d/{SHEET_ID}/export?format=csv&gid=0"
+
+# Mobile-responsive CSS with explicit Thai-compatible font stack
 st.markdown("""
     <style>
     #MainMenu, header, footer, div[data-testid="stHeader"] {display: none !important;}
@@ -15,32 +19,37 @@ st.markdown("""
     </style>
 """, unsafe_allow_html=True)
 
-def d(b64):
-    return base64.b64decode(b64.encode('ascii')).decode('utf-8')
+@st.cache_data(ttl=30)
+def load_phrases():
+    try:
+        df = pd.read_csv(CSV_URL, encoding='utf-8')
+        df.columns = [str(col).strip().lower() for col in df.columns]
+        
+        phrases = []
+        for _, row in df.iterrows():
+            thai = str(row.get("thai", "")).strip()
+            english = str(row.get("english", "")).strip()
+            category = str(row.get("category", "general")).strip().upper()
+            
+            if thai and thai != "nan" and english and english != "nan":
+                phrases.append({
+                    "thai": thai,
+                    "english": english,
+                    "category": category if category else "GENERAL"
+                })
+        if phrases:
+            return phrases
+    except Exception:
+        pass
+    
+    # Unicode-escaped fallback list (100% immune to Windows text editor corruption)
+    return [
+        {"thai": "\u0e4e\u0e40\u0e25\u0e35\u0e40\u0e22\u0e49\u0e27\u0e02\u0e27\u0e32\u0e04\u0e23\u0e31\u0e1a", "english": "Turn right please.", "category": "NAVIGATION"},
+        {"thai": "\u0e15\u0e23\u0e07\u0e40\u0e1b\u0e35\u0e22\u0e19", "english": "Go straight.", "category": "NAVIGATION"},
+        {"thai": "\u0e02\u0e2d\u0e42\u0e17\u0e37\u0e04\u0e23\u0e31\u0e1a", "english": "Excuse me.", "category": "GENERAL"}
+    ]
 
-# 100% Pure ASCII Base64-encoded Thai data (immune to editor encoding bugs)
-PHRASES_DB = [
-    {
-        "thai": d("4Lit4Lix4LiZ4Li44LmI4Lih4Liq4Liy4Lij4Liw"), 
-        "english": "Turn right please.", 
-        "category": "NAVIGATION"
-    },
-    {
-        "thai": d("4Lit4Li44LmI4Lih4Li04LmA4Liq4Li34Lit4Liq4Liy4Lij4Liw4Lit4Li44LmI4Lih4Li04Lit4Lix4LiZ"), 
-        "english": "Go straight then turn left.", 
-        "category": "NAVIGATION"
-    },
-    {
-        "thai": d("4Lit4Liy4LiE4Liy4Lij4Liw"), 
-        "english": "Excuse me.", 
-        "category": "GENERAL"
-    },
-    {
-        "thai": d("4Lih4Liy4LmM4Lit4Liy4LiE4Li04LiZ4Lii4Liy4Lij4Liw4Liq4Liy4Lij4Liw"), 
-        "english": "Where is the restroom?", 
-        "category": "GENERAL"
-    }
-]
+PHRASES_DB = load_phrases()
 
 if "index" not in st.session_state:
     st.session_state.index = 0
