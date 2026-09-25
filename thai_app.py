@@ -218,7 +218,6 @@ html_code = f"""
         </div>
     </div>
 
-    <!-- Hidden iframe to handle form submission responses silently -->
     <iframe name="hidden_iframe" id="hidden_iframe" style="display:none;"></iframe>
 
     <script>
@@ -427,7 +426,6 @@ html_code = f"""
             saveBtn.innerText = "SAVING...";
             saveBtn.style.backgroundColor = "#4B5563";
 
-            // Create a hidden form to submit via GET to the webhook (bypasses CORS completely)
             const form = document.createElement('form');
             form.method = 'GET';
             form.action = WEBHOOK_URL;
@@ -455,7 +453,7 @@ html_code = f"""
                 alert("✓ Saved to Google Sheet!");
                 saveBtn.innerText = "➕ SAVE TO SPREADSHEET";
                 saveBtn.style.backgroundColor = "#8B5CF6";
-            }, 800);
+            }}, 800);
         }}
 
         updateCard();
