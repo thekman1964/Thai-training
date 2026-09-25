@@ -1,7 +1,7 @@
 import streamlit as st
 import time
 import random
-import json
+import gspread
 
 st.set_page_config(layout="centered", page_title="Thai Practice")
 
@@ -18,18 +18,11 @@ st.markdown("""
 @st.cache_data(ttl=600)
 def load_phrases():
     try:
-        import gspread
-        from oauth2client.service_account import ServiceAccountCredentials
-        
-        scope = ['https://spreadsheets.google.com/feeds', 'https://www.googleapis.com/auth/drive']
-        
-        # Convert secrets to a standard dict and fix private key newline padding
         creds_dict = dict(st.secrets["gcp_service_account"])
         if "private_key" in creds_dict:
             creds_dict["private_key"] = creds_dict["private_key"].replace("\\n", "\n")
-            
-        creds = ServiceAccountCredentials.from_json_keyfile_dict(creds_dict, scope)
-        client = gspread.authorize(creds)
+        
+        client = gspread.service_account_from_dict(creds_dict)
         sheet = client.open_by_key(SHEET_ID).get_worksheet(0)
         
         records = sheet.get_all_records()
@@ -46,17 +39,21 @@ def load_phrases():
                     "category": category if category else "GENERAL"
                 })
         if cleaned:
-            return cleaned
+            return cleaned, None
     except Exception as e:
-        st.sidebar.error(f"Sheet Load Error: {e}")
+        return None, str(e)
 
-    return [
+    return None, "No records found in spreadsheet."
+
+PHRASES_DB, error_msg = load_phrases()
+
+if error_msg:
+    st.error(f"⚠️ Google Sheets Error: {error_msg}")
+    PHRASES_DB = [
         {"thai": "เลี้ยวขวาครับ", "english": "Turn right please.", "category": "NAVIGATION"},
         {"thai": "ตรงไปแล้วเลี้ยวซ้าย", "english": "Go straight then turn left.", "category": "NAVIGATION"},
         {"thai": "ขอโทษครับ", "english": "Excuse me.", "category": "GENERAL"}
     ]
-
-PHRASES_DB = load_phrases()
 
 if "index" not in st.session_state:
     st.session_state.index = 0
@@ -108,16 +105,11 @@ with st.form("add_form", clear_on_submit=True):
     if submitted:
         if new_thai.strip() and new_english.strip():
             try:
-                import gspread
-                from oauth2client.service_account import ServiceAccountCredentials
-                
-                scope = ['https://spreadsheets.google.com/feeds', 'https://www.googleapis.com/auth/drive']
                 creds_dict = dict(st.secrets["gcp_service_account"])
                 if "private_key" in creds_dict:
                     creds_dict["private_key"] = creds_dict["private_key"].replace("\\n", "\n")
-                    
-                creds = ServiceAccountCredentials.from_json_keyfile_dict(creds_dict, scope)
-                client = gspread.authorize(creds)
+                
+                client = gspread.service_account_from_dict(creds_dict)
                 sheet = client.open_by_key(SHEET_ID).get_worksheet(0)
                 
                 sheet.append_row([new_thai.strip(), new_english.strip(), new_category.strip()])
