@@ -1,6 +1,7 @@
 import streamlit as st
 import csv
 import urllib.request
+import urllib.parse
 import io
 import time
 import json
@@ -16,6 +17,24 @@ st.markdown("""
     .block-container {padding: 0.5rem !important;}
     </style>
 """, unsafe_allow_html=True)
+
+# --- CONFIGURABLE GOOGLE APPS SCRIPT WEB APP URL ---
+WEB_APP_URL = "YOUR_DEPLOYED_APPS_SCRIPT_WEB_APP_URL_HERE"
+
+# --- SERVER-SIDE GOOGLE SHEET APPEND HELPER ---
+def append_to_sheet(thai_text, english_text, category="SPOKEN"):
+    params = urllib.parse.urlencode({
+        "thai": thai_text,
+        "english": english_text,
+        "category": category
+    })
+    try:
+        url = f"{WEB_APP_URL}?{params}"
+        req = urllib.request.urlopen(url)
+        res_data = json.loads(req.read().decode('utf-8'))
+        return res_data.get("total", len(PHRASES_DB) + 1)
+    except Exception as e:
+        raise e
 
 # --- LOAD DATASET WITHOUT PANDAS ---
 @st.cache_data(ttl=600)
@@ -110,8 +129,6 @@ html_code = f"""
         .btn-orange {{ background-color: #FF6600; }}
         .btn-dark {{ background-color: #1A202C; }}
         .btn-green {{ background-color: #28A745; }}
-        .btn-purple {{ background-color: #8E44AD; }}
-        .btn-purple:hover {{ background-color: #732D91; }}
         
         .nav-grid {{
             display: flex;
@@ -230,20 +247,11 @@ html_code = f"""
 
     <button id="sttBtn" class="btn btn-orange" onclick="startRecognition()">TRANSLATE</button>
     <button class="btn btn-outline" onclick="speakRecognizedText()">HEAR SPOKEN THAI TEXT</button>
-    <button class="btn btn-purple" onclick="addSpokenToSheet()">ADD TO SHEET</button>
 
     <div class="meta-info">
         <div><b>Available Records:</b> <span id="recordCount">{len(PHRASES_DB)}</span></div>
         <div><b>Spreadsheet Last Updated:</b> {LAST_UPDATED}</div>
     </div>
-
-    <!-- Hidden Form for Reliable Google Sheet Submissions -->
-    <form id="sheetForm" method="GET" target="hiddenFrame" style="display:none;">
-        <input type="hidden" name="thai" id="formThai">
-        <input type="hidden" name="english" id="formEng">
-        <input type="hidden" name="category" value="SPOKEN">
-    </form>
-    <iframe name="hiddenFrame" style="display:none;"></iframe>
 
     <div id="filterModal" class="modal-overlay">
         <div class="modal-content">
@@ -263,7 +271,6 @@ html_code = f"""
     <script>
         const fullDb = {json_data};
         const allCategories = {json_cats};
-        const WEB_APP_URL = "YOUR_DEPLOYED_APPS_SCRIPT_WEB_APP_URL_HERE";
         
         let activeDb = [...fullDb];
         let selectedCategories = new Set(allCategories);
@@ -438,7 +445,7 @@ html_code = f"""
                     resetSttBtn();
                 }}
             }} else {{
-                alert("Speech recognition is not supported in this browser. You can type directly into the dashed boxes!");
+                alert("Speech recognition is not supported in this browser.");
             }}
         }}
 
@@ -459,36 +466,45 @@ html_code = f"""
             }}
         }}
 
-        function addSpokenToSheet() {{
-            const thaiText = document.getElementById('speechOutput').innerText.trim();
-            let engText = document.getElementById('speechTrans').innerText.trim();
-            
-            if (!thaiText || thaiText === "Spoken Thai text...") {{
-                alert("Please enter or speak a Thai phrase first.");
-                return;
-            }}
-
-            if (!engText || engText === "Translating..." || engText === "Translation unavailable") {{
-                let userEng = prompt("Enter English translation for: " + thaiText);
-                if (userEng === null) return;
-                engText = userEng.trim();
-                document.getElementById('speechTrans').innerText = engText;
-            }}
-
-            // Submit securely via hidden form iframe
-            const form = document.getElementById('sheetForm');
-            form.action = WEB_APP_URL;
-            document.getElementById('formThai').value = thaiText;
-            document.getElementById('formEng').value = engText;
-            form.submit();
-
-            alert("Added to Google Sheet successfully!");
-        }}
-
         updateCard();
     </script>
 </body>
 </html>
 """
 
-components.html(html_code, height=640, scrolling=True)
+components.html(html_code, height=560, scrolling=True)
+
+# --- STYLING FOR THE PURPLE ADD BUTTON ---
+st.markdown("""
+    <style>
+    div.stButton > button[kind="primary"] {
+        background-color: #8E44AD !important;
+        color: white !important;
+        border: none !important;
+    }
+    div.stButton > button[kind="primary"]:hover {
+        background-color: #732D91 !important;
+        color: white !important;
+    }
+    </style>
+""", unsafe_allow_html=True)
+
+# --- NATIVE STREAMLIT ADD TO SHEET SECTION ---
+st.markdown("---")
+with st.container():
+    st.markdown("<h4 style='text-align: center; color: #8E44AD; margin-bottom: 8px;'>Add Phrase to Google Sheet</h4>", unsafe_allow_html=True)
+    col1, col2 = st.columns(2)
+    with col1:
+        thai_input = st.text_input("Thai", placeholder="Thai phrase...")
+    with col2:
+        eng_input = st.text_input("English", placeholder="English translation...")
+    
+    if st.button("ADD TO SHEET", type="primary", use_container_width=True):
+        if not thai_input or not eng_input:
+            st.warning("Please provide both Thai and English text.")
+        else:
+            try:
+                new_total = append_to_sheet(thai_input, eng_input, "SPOKEN")
+                st.success(f"Successfully added to sheet! Total records: {new_total}")
+            except Exception as e:
+                st.error(f"Failed to append: {e}")
