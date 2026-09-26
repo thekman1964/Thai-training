@@ -387,8 +387,6 @@ html_code = f"""
                 document.getElementById('speechTrans').innerText = "Translating...";
                 
                 const cleanedText = text.trim().normalize('NFC');
-                
-                // Strict normalized match only (prevents wrong partial substring matches)
                 const match = fullDb.find(item => item.thai.trim().normalize('NFC') === cleanedText);
                 
                 if (match) {{
@@ -432,11 +430,19 @@ html_code = f"""
 
         function addSpokenToSheet() {{
             const thaiText = document.getElementById('speechOutput').innerText;
-            const engText = document.getElementById('speechTrans').innerText;
+            let engText = document.getElementById('speechTrans').innerText;
             
             if (!thaiText || thaiText === "Spoken Thai text...") {{
                 alert("Please translate a spoken phrase first.");
                 return;
+            }}
+
+            // If translation is unavailable, prompt user to enter English meaning
+            if (!engText || engText === "Translating..." || engText === "Translation unavailable") {{
+                let userEng = prompt("This phrase is not in your database.\nEnter the English translation for: " + thaiText);
+                if (userEng === null) return; // Cancelled
+                engText = userEng.trim();
+                document.getElementById('speechTrans').innerText = engText;
             }}
 
             // REPLACE THE URL BELOW WITH YOUR DEPLOYED GOOGLE APPS SCRIPT WEB APP URL
@@ -444,7 +450,7 @@ html_code = f"""
             
             const params = new URLSearchParams({{
                 thai: thaiText,
-                english: engText && engText !== "Translating..." && engText !== "Translation unavailable" ? engText : "",
+                english: engText,
                 category: "SPOKEN"
             }});
 
