@@ -1,7 +1,6 @@
 import streamlit as st
 import csv
 import urllib.request
-import urllib.parse
 import io
 import time
 import json
@@ -476,7 +475,7 @@ html_code = f"""
                 document.getElementById('speechTrans').innerText = engText;
             }}
 
-            // Submit securely via hidden form iframe to bypass CORS / iframe security blocks
+            // Submit securely via hidden form iframe
             const form = document.getElementById('sheetForm');
             form.action = WEB_APP_URL;
             document.getElementById('formThai').value = thaiText;
