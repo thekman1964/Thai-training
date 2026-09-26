@@ -402,13 +402,16 @@ html_code = f"""
                 
                 document.getElementById('speechTrans').innerText = "Translating...";
                 
-                const match = fullDb.find(item => item.thai === text.trim());
-                if (match) {{
+                // Clean up recognized text and database entries for a foolproof match
+                const cleanedText = text.trim().replace(/\s+/g, ' ');
+                const match = fullDb.find(item => item.thai.trim().replace(/\s+/g, ' ') === cleanedText);
+                
+                if (match) {
                     document.getElementById('speechTrans').innerText = match.english;
-                }} else {{
-                    document.getElementById('speechTrans').innerText = "Translation unavailable";
-                }}
-            }};
+                } else {
+                    // Fallback: if it's not in the main DB, let's allow it to be added with a default translation or allow custom entry
+                    document.getElementById('speechTrans').innerText = "Custom Spoken Phrase";
+                }
 
             recognition.onerror = () => resetSttBtn();
             recognition.onend = () => resetSttBtn();
