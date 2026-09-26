@@ -122,8 +122,14 @@ html_code = f"""
         
         hr {{ border: 0; border-top: 1px solid #e2e8f0; margin: 15px 0; }}
 
-        .spoken-title {{ color: #FF6600; font-size: 28px; font-weight: bold; margin-bottom: 4px; min-height: 38px; }}
-        .spoken-trans {{ color: #0066CC; font-size: 18px; font-weight: bold; margin-bottom: 10px; min-height: 26px; }}
+        .spoken-title {{ 
+            color: #FF6600; font-size: 28px; font-weight: bold; margin-bottom: 4px; min-height: 38px; 
+            border: 2px dashed #FF6600; border-radius: 6px; padding: 4px; outline: none; background: #FFF9F5;
+        }}
+        .spoken-trans {{ 
+            color: #0066CC; font-size: 18px; font-weight: bold; margin-bottom: 10px; min-height: 26px; 
+            border: 2px dashed #0066CC; border-radius: 6px; padding: 4px; outline: none; background: #F0F7FF;
+        }}
         
         .btn-outline {{
             background-color: #FFFFFF !important;
@@ -219,8 +225,9 @@ html_code = f"""
 
     <hr>
 
-    <div id="speechOutput" class="spoken-title">Spoken Thai text...</div>
-    <div id="speechTrans" class="spoken-trans">English translation...</div>
+    <div style="font-size: 11px; color: #666; margin-bottom: 2px;">Tap boxes below to edit or type manually:</div>
+    <div id="speechOutput" class="spoken-title" contenteditable="true">Spoken Thai text...</div>
+    <div id="speechTrans" class="spoken-trans" contenteditable="true">English translation...</div>
 
     <button id="sttBtn" class="btn btn-orange" onclick="startRecognition()">TRANSLATE</button>
     <button class="btn btn-outline" onclick="speakRecognizedText()">HEAR SPOKEN THAI TEXT</button>
@@ -377,12 +384,13 @@ html_code = f"""
         if (SpeechRecognition) {{
             recognition = new SpeechRecognition();
             recognition.lang = 'th-TH';
+            recognition.continuous = false;
+            recognition.interimResults = false;
             
             recognition.onresult = async (event) => {{
                 const text = event.results[0][0].transcript;
                 document.getElementById('speechOutput').innerText = text;
-                document.getElementById('sttBtn').innerText = "TRANSLATE";
-                document.getElementById('sttBtn').style.backgroundColor = "#FF6600";
+                resetSttBtn();
                 
                 document.getElementById('speechTrans').innerText = "Translating...";
                 
@@ -396,7 +404,10 @@ html_code = f"""
                 }}
             }};
 
-            recognition.onerror = () => resetSttBtn();
+            recognition.onerror = (event) => {{
+                resetSttBtn();
+                alert("Microphone/Speech error: " + (event.error || "Permission denied or unsupported. You can type directly into the box!"));
+            }};
             recognition.onend = () => resetSttBtn();
         }}
 
@@ -407,16 +418,21 @@ html_code = f"""
                     const btn = document.getElementById('sttBtn');
                     btn.innerText = "LISTENING...";
                     btn.style.backgroundColor = "#CC0000";
-                }} catch(e) {{ recognition.stop(); }}
+                }} catch(e) {{ 
+                    try {{ recognition.stop(); }} catch(err) {{}}
+                    resetSttBtn();
+                }}
             }} else {{
-                alert("Speech recognition is not supported on this browser.");
+                alert("Speech recognition is not supported in this browser. You can type directly into the dashed boxes!");
             }}
         }}
 
         function resetSttBtn() {{
             const btn = document.getElementById('sttBtn');
-            btn.innerText = "TRANSLATE";
-            btn.style.backgroundColor = "#FF6600";
+            if (btn) {{
+                btn.innerText = "TRANSLATE";
+                btn.style.backgroundColor = "#FF6600";
+            }}
         }}
 
         function speakRecognizedText() {{
@@ -429,18 +445,17 @@ html_code = f"""
         }}
 
         function addSpokenToSheet() {{
-            const thaiText = document.getElementById('speechOutput').innerText;
-            let engText = document.getElementById('speechTrans').innerText;
+            const thaiText = document.getElementById('speechOutput').innerText.trim();
+            let engText = document.getElementById('speechTrans').innerText.trim();
             
             if (!thaiText || thaiText === "Spoken Thai text...") {{
-                alert("Please translate a spoken phrase first.");
+                alert("Please enter or speak a Thai phrase first.");
                 return;
             }}
 
-            // If translation is unavailable, prompt user to enter English meaning
             if (!engText || engText === "Translating..." || engText === "Translation unavailable") {{
-                let userEng = prompt("This phrase is not in your database.\nEnter the English translation for: " + thaiText);
-                if (userEng === null) return; // Cancelled
+                let userEng = prompt("Enter English translation for: " + thaiText);
+                if (userEng === null) return;
                 engText = userEng.trim();
                 document.getElementById('speechTrans').innerText = engText;
             }}
@@ -470,4 +485,4 @@ html_code = f"""
 </html>
 """
 
-components.html(html_code, height=660, scrolling=True)
+components.html(html_code, height=700, scrolling=True)
