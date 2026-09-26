@@ -388,19 +388,32 @@ html_code = f"""
             recognition.interimResults = false;
             
             recognition.onresult = async (event) => {{
-                const text = event.results[0][0].transcript;
+                const text = event.results[0][0].transcript.trim();
                 document.getElementById('speechOutput').innerText = text;
                 resetSttBtn();
                 
                 document.getElementById('speechTrans').innerText = "Translating...";
                 
-                const cleanedText = text.trim().normalize('NFC');
+                const cleanedText = text.normalize('NFC');
+                
+                // 1. Check local database first
                 const match = fullDb.find(item => item.thai.trim().normalize('NFC') === cleanedText);
                 
                 if (match) {{
                     document.getElementById('speechTrans').innerText = match.english;
                 }} else {{
-                    document.getElementById('speechTrans').innerText = "Translation unavailable";
+                    // 2. Fallback to free public translation API if not in database
+                    try {{
+                        const apiRes = await fetch(`https://api.mymemory.translated.net/get?q=${{encodeURIComponent(text)}}&langpair=th|en`);
+                        const apiData = await apiRes.json();
+                        if (apiData && apiData.responseData && apiData.responseData.translatedText) {{
+                            document.getElementById('speechTrans').innerText = apiData.responseData.translatedText;
+                        }} else {{
+                            document.getElementById('speechTrans').innerText = "Translation unavailable";
+                        }}
+                    }} catch (err) {{
+                        document.getElementById('speechTrans').innerText = "Translation unavailable";
+                    }}
                 }}
             }};
 
