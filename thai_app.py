@@ -14,8 +14,7 @@ st.markdown("""
     <style>
     #MainMenu, header, footer, div[data-testid="stHeader"] {display: none !important;}
     .stApp {background-color: #FFFFFF !important;}
-    .block-container {padding: 0.2rem !important; max-width: 420px !important;}
-    iframe {width: 100% !important; border: none !important;}
+    .block-container {padding: 0.3rem !important; max-width: 430px !important;}
     </style>
 """, unsafe_allow_html=True)
 
@@ -29,25 +28,10 @@ def append_to_sheet(thai_text, english_text, category="SPOKEN"):
         "english": english_text,
         "category": category
     })
-    try:
-        url = f"{WEB_APP_URL}?{params}"
-        req = urllib.request.urlopen(url)
-        res_data = json.loads(req.read().decode('utf-8'))
-        return res_data.get("total", 0)
-    except Exception as e:
-        raise e
-
-# --- HANDLE SERVER-SIDE SAVE VIA QUERY PARAMS ---
-query_params = st.query_params
-if "add_thai" in query_params and "add_eng" in query_params:
-    t_text = query_params["add_thai"]
-    e_text = query_params["add_eng"]
-    try:
-        append_to_sheet(t_text, e_text, "SPOKEN")
-        st.success(f"Added '{t_text}' to Google Sheet successfully!")
-    except Exception as err:
-        st.error(f"Failed to append: {err}")
-    st.query_params.clear()
+    url = f"{WEB_APP_URL}?{params}"
+    req = urllib.request.urlopen(url)
+    res_data = json.loads(req.read().decode('utf-8'))
+    return res_data.get("total", 0)
 
 # --- LOAD DATASET WITHOUT PANDAS ---
 @st.cache_data(ttl=600)
@@ -92,7 +76,7 @@ UNIQUE_CATEGORIES = sorted(list(set(p['category'] for p in PHRASES_DB)))
 json_data = json.dumps(PHRASES_DB)
 json_cats = json.dumps(UNIQUE_CATEGORIES)
 
-# --- COMPLETE SINGLE-COMPONENT UI ---
+# --- COMPLETE SINGLE-COMPONENT UI (READ/STT/TRANSLATE ONLY) ---
 html_code = f"""
 <!DOCTYPE html>
 <html>
@@ -142,8 +126,6 @@ html_code = f"""
         .btn-orange {{ background-color: #FF6600; }}
         .btn-dark {{ background-color: #1A202C; }}
         .btn-green {{ background-color: #28A745; }}
-        .btn-purple {{ background-color: #8E44AD; }}
-        .btn-purple:hover {{ background-color: #732D91; }}
         
         .nav-grid {{
             display: flex;
@@ -155,12 +137,12 @@ html_code = f"""
         hr {{ border: 0; border-top: 1px solid #e2e8f0; margin: 8px 0; }}
 
         .spoken-title {{ 
-            color: #FF6600; font-size: 22px; font-weight: bold; margin-bottom: 2px; min-height: 30px; 
-            border: 2px dashed #FF6600; border-radius: 6px; padding: 4px; outline: none; background: #FFF9F5;
+            color: #FF6600; font-size: 20px; font-weight: bold; margin-bottom: 2px; min-height: 32px; 
+            border: 2px dashed #FF6600; border-radius: 6px; padding: 6px; outline: none; background: #FFF9F5; width: 100%; text-align: center;
         }}
         .spoken-trans {{ 
-            color: #0066CC; font-size: 15px; font-weight: bold; margin-bottom: 6px; min-height: 22px; 
-            border: 2px dashed #0066CC; border-radius: 6px; padding: 4px; outline: none; background: #F0F7FF;
+            color: #0066CC; font-size: 15px; font-weight: bold; margin-bottom: 6px; min-height: 26px; 
+            border: 2px dashed #0066CC; border-radius: 6px; padding: 6px; outline: none; background: #F0F7FF; width: 100%; text-align: center;
         }}
         
         .btn-outline {{
@@ -258,12 +240,11 @@ html_code = f"""
 
     <hr>
 
-    <div id="speechOutput" class="spoken-title" contenteditable="true">Spoken Thai text...</div>
-    <div id="speechTrans" class="spoken-trans" contenteditable="true">English translation...</div>
+    <input type="text" id="speechOutput" class="spoken-title" value="Spoken Thai text...">
+    <input type="text" id="speechTrans" class="spoken-trans" value="English translation...">
 
     <button id="sttBtn" class="btn btn-orange" onclick="startRecognition()">TRANSLATE</button>
     <button class="btn btn-outline" onclick="speakRecognizedText()">HEAR SPOKEN THAI TEXT</button>
-    <button class="btn btn-purple" onclick="addSpokenToSheet()">ADD TO SHEET</button>
 
     <div class="meta-info">
         <div><b>Available Records:</b> <span id="recordCount">{len(PHRASES_DB)}</span></div>
@@ -421,27 +402,27 @@ html_code = f"""
             
             recognition.onresult = async (event) => {{
                 const text = event.results[0][0].transcript.trim();
-                document.getElementById('speechOutput').innerText = text;
+                document.getElementById('speechOutput').value = text;
                 resetSttBtn();
                 
-                document.getElementById('speechTrans').innerText = "Translating...";
+                document.getElementById('speechTrans').value = "Translating...";
                 
                 const cleanedText = text.normalize('NFC');
                 const match = fullDb.find(item => item.thai.trim().normalize('NFC') === cleanedText);
                 
                 if (match) {{
-                    document.getElementById('speechTrans').innerText = match.english;
+                    document.getElementById('speechTrans').value = match.english;
                 }} else {{
                     try {{
                         const apiRes = await fetch(`https://api.mymemory.translated.net/get?q=${{encodeURIComponent(text)}}&langpair=th|en`);
                         const apiData = await apiRes.json();
                         if (apiData && apiData.responseData && apiData.responseData.translatedText) {{
-                            document.getElementById('speechTrans').innerText = apiData.responseData.translatedText;
+                            document.getElementById('speechTrans').value = apiData.responseData.translatedText;
                         }} else {{
-                            document.getElementById('speechTrans').innerText = "Translation unavailable";
+                            document.getElementById('speechTrans').value = "Translation unavailable";
                         }}
                     }} catch (err) {{
-                        document.getElementById('speechTrans').innerText = "Translation unavailable";
+                        document.getElementById('speechTrans').value = "Translation unavailable";
                     }}
                 }}
             }};
@@ -475,34 +456,12 @@ html_code = f"""
         }}
 
         function speakRecognizedText() {{
-            const txt = document.getElementById('speechOutput').innerText;
+            const txt = document.getElementById('speechOutput').value;
             if (txt && txt !== "Spoken Thai text...") {{
                 const utterance = new SpeechSynthesisUtterance(txt);
                 utterance.lang = 'th-TH';
                 window.speechSynthesis.speak(utterance);
             }}
-        }}
-
-        function addSpokenToSheet() {{
-            const thaiText = document.getElementById('speechOutput').innerText.trim();
-            let engText = document.getElementById('speechTrans').innerText.trim();
-            
-            if (!thaiText || thaiText === "Spoken Thai text...") {{
-                alert("Please enter or speak a Thai phrase first.");
-                return;
-            }}
-
-            if (!engText || engText === "Translating..." || engText === "Translation unavailable") {{
-                let userEng = prompt("Enter English translation for: " + thaiText);
-                if (userEng === null) return;
-                engText = userEng.trim();
-                document.getElementById('speechTrans').innerText = engText;
-            }}
-
-            // Pass parameters securely to parent Streamlit window for server-side python execution
-            const targetUrl = window.parent.location.origin + window.parent.location.pathname + 
-                              `?add_thai=${{encodeURIComponent(thaiText)}}&add_eng=${{encodeURIComponent(engText)}}`;
-            window.parent.location.href = targetUrl;
         }}
 
         updateCard();
@@ -511,4 +470,40 @@ html_code = f"""
 </html>
 """
 
-components.html(html_code, height=600, scrolling=False)
+components.html(html_code, height=440, scrolling=False)
+
+# --- NATIVE STREAMLIT ADD TO SHEET PANEL (100% RELIABLE) ---
+st.markdown("""
+    <style>
+    div.stButton > button[kind="primary"] {
+        background-color: #8E44AD !important;
+        color: white !important;
+        border: none !important;
+        height: 42px !important;
+        font-weight: bold !important;
+    }
+    div.stButton > button[kind="primary"]:hover {
+        background-color: #732D91 !important;
+        color: white !important;
+    }
+    </style>
+""", unsafe_allow_html=True)
+
+with st.form("native_sheet_form", clear_on_submit=False):
+    st.markdown("<p style='text-align: center; color: #8E44AD; font-weight: bold; margin-bottom: 4px;'>Save Phrase to Google Sheet</p>", unsafe_allow_html=True)
+    f_col1, f_col2 = st.columns(2)
+    with f_col1:
+        native_thai = st.text_input("Thai", placeholder="Type or copy Thai...")
+    with f_col2:
+        native_eng = st.text_input("English", placeholder="Type or copy English...")
+    
+    submitted = st.form_submit_button("ADD TO SHEET", type="primary", use_container_width=True)
+    if submitted:
+        if not native_thai or not native_eng:
+            st.warning("Please provide both Thai and English fields.")
+        else:
+            try:
+                total_count = append_to_sheet(native_thai, native_eng, "SPOKEN")
+                st.success(f"Successfully added to Google Sheet! Total records: {total_count}")
+            except Exception as ex:
+                st.error(f"Save failed: {ex}")
