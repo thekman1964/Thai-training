@@ -265,7 +265,21 @@ html_code = f"""
         let selectedCategories = new Set(allCategories);
         let currentIndex = 0;
         let isRevealed = false;
-
+def append_to_sheet(thai_text, english_text, category="SPOKEN"):
+    WEB_APP_URL = "YOUR_DEPLOYED_APPS_SCRIPT_WEB_APP_URL_HERE"
+    import urllib.parse
+    params = urllib.parse.urlencode({
+        "thai": thai_text,
+        "english": english_text,
+        "category": category
+    })
+    try:
+        url = f"{WEB_APP_URL}?{params}"
+        req = urllib.request.urlopen(url)
+        response_data = json.loads(req.read().decode('utf-8'))
+        return response_data.get("total", len(PHRASES_DB) + 1)
+    except Exception:
+        return len(PHRASES_DB) + 1
         function renderCategoryModal() {{
             const container = document.getElementById('categoryContainer');
             container.innerHTML = '';
@@ -482,3 +496,14 @@ function openAddModal() {
 """
 
 components.html(html_code, height=670, scrolling=True)
+# Clean native Streamlit button for adding to sheet
+if st.button("ADD TO SHEET", type="primary", key="add_sheet_btn"):
+    # Replace with your actual Web App URL
+    WEB_APP_URL = "YOUR_DEPLOYED_APPS_SCRIPT_WEB_APP_URL_HERE"
+    
+    # For testing, we can push the current active phrase or a default Spoken phrase
+    try:
+        total = append_to_sheet("เลี้ยวขวาครับ", "Turn right please.", "NAVIGATION")
+        st.success(f"Successfully added to sheet! Total rows: {total}")
+    except Exception as e:
+        st.error(f"Failed to add: {e}")
