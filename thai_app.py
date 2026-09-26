@@ -4,6 +4,7 @@ import urllib.request
 import io
 import time
 import json
+import streamlit.components.v1 as components
 
 st.set_page_config(layout="centered", page_title="Thai Practice")
 
@@ -13,20 +14,6 @@ st.markdown("""
     #MainMenu, header, footer, div[data-testid="stHeader"] {display: none !important;}
     .stApp {background-color: #FFFFFF !important;}
     .block-container {padding: 0.5rem !important;}
-    /* Custom Purple Button Styling */
-    div.stButton > button[data-baseweb="button"]:has(div:contains("ADD TO SHEET")) {
-        background-color: #8E44AD !important;
-        color: white !important;
-    }
-    .st-key-add_to_sheet_btn button {
-        background-color: #8E44AD !important;
-        color: white !important;
-        border: none !important;
-    }
-    .st-key-add_to_sheet_btn button:hover {
-        background-color: #732D91 !important;
-        color: white !important;
-    }
     </style>
 """, unsafe_allow_html=True)
 
@@ -123,6 +110,8 @@ html_code = f"""
         .btn-orange {{ background-color: #FF6600; }}
         .btn-dark {{ background-color: #1A202C; }}
         .btn-green {{ background-color: #28A745; }}
+        .btn-purple {{ background-color: #8E44AD; }}
+        .btn-purple:hover {{ background-color: #732D91; }}
         
         .nav-grid {{
             display: flex;
@@ -235,12 +224,14 @@ html_code = f"""
 
     <button id="sttBtn" class="btn btn-orange" onclick="startRecognition()">TRANSLATE</button>
     <button class="btn btn-outline" onclick="speakRecognizedText()">HEAR SPOKEN THAI TEXT</button>
+    <button class="btn btn-purple" onclick="openAddModal()">ADD TO SHEET</button>
 
     <div class="meta-info">
         <div><b>Available Records:</b> <span id="recordCount">{len(PHRASES_DB)}</span></div>
         <div><b>Spreadsheet Last Updated:</b> {LAST_UPDATED}</div>
     </div>
 
+    <!-- Filter Modal -->
     <div id="filterModal" class="modal-overlay">
         <div class="modal-content">
             <div class="modal-header">
@@ -253,6 +244,16 @@ html_code = f"""
                 <button class="btn btn-dark" onclick="selectAllCategories(false)">Clear</button>
                 <button class="btn btn-blue" onclick="applyFilters()">Apply</button>
             </div>
+        </div>
+    </div>
+
+    <!-- Success Confirmation Modal -->
+    <div id="successModal" class="modal-overlay">
+        <div class="modal-content" style="text-align: center; padding: 24px;">
+            <div id="successMsg" style="font-size: 15px; font-weight: bold; color: #1E293B; margin-bottom: 20px;">
+                Translation added successfully.
+            </div>
+            <button class="btn btn-blue" onclick="closeSuccessModal()">OK</button>
         </div>
     </div>
 
@@ -436,28 +437,49 @@ html_code = f"""
             }}
         }}
 
+        function openAddModal() {{
+            const thaiText = document.getElementById('speechOutput').innerText;
+            const engText = document.getElementById('speechTrans').innerText;
+            
+            if (!thaiText || thaiText === "Spoken Thai text...") {{
+                alert("Please translate a spoken phrase first.");
+                return;
+            }}
+
+            // REPLACE THE URL BELOW WITH YOUR DEPLOYED GOOGLE APPS SCRIPT WEB APP URL
+            const WEB_APP_URL = "YOUR_DEPLOYED_APPS_SCRIPT_WEB_APP_URL_HERE";
+            
+            const payload = {{
+                thai: thaiText,
+                english: engText && engText !== "Translating..." && engText !== "Translation unavailable" ? engText : "",
+                category: "SPOKEN"
+            }};
+
+            fetch(WEB_APP_URL, {{
+                method: "POST",
+                mode: "no-cors",
+                headers: {{ "Content-Type": "text/plain;charset=utf-8" }},
+                body: JSON.stringify(payload)
+            }}).then(() => {{
+                const countElem = document.getElementById('recordCount');
+                let currentCount = parseInt(countElem.innerText) || 944;
+                currentCount += 1;
+                
+                document.getElementById('successMsg').innerText = `Translation added successfully. There are now ${{currentCount}} translations available.`;
+                document.getElementById('successModal').style.display = 'flex';
+            }}).catch(err => {{
+                alert("Error connecting to Google Sheet: " + err);
+            }});
+        }}
+
+        function closeSuccessModal() {{
+            document.getElementById('successModal').style.display = 'none';
+        }}
+
         updateCard();
     </script>
 </body>
-# Atomic addition: Purple button to write to Google Sheet
-if st.button("ADD TO SHEET", key="add_to_sheet_btn", type="primary"):
-    WEB_APP_URL = "YOUR_DEPLOYED_APPS_SCRIPT_WEB_APP_URL_HERE"
-    payload = {
-        "thai": current_card['thai'], 
-        "english": current_card['english'], 
-        "category": current_card.get('category', 'GENERAL')
-    }
-    try:
-        import requests
-        res = requests.post(WEB_APP_URL, json=payload)
-        if res.status_code == 200:
-            data = res.json()
-            show_success_dialog(data.get("total", len(PHRASES_DB) + 1))
-        else:
-            st.error("Failed to append to Google Sheet.")
-    except Exception as e:
-        st.error(f"Connection error: {e}")
 </html>
 """
 
-st.components.v1.html(html_code, height=670, scrolling=True)
+components.html(html_code, height=670, scrolling=True)
