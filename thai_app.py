@@ -13,6 +13,11 @@ st.markdown("""
     #MainMenu, header, footer, div[data-testid="stHeader"] {display: none !important;}
     .stApp {background-color: #FFFFFF !important;}
     .block-container {padding: 0.5rem !important;}
+    /* Custom Purple Button Styling */
+    div.stButton > button[data-baseweb="button"]:has(div:contains("ADD TO SHEET")) {
+        background-color: #8E44AD !important;
+        color: white !important;
+    }
     </style>
 """, unsafe_allow_html=True)
 
