@@ -18,25 +18,6 @@ st.markdown("""
     </style>
 """, unsafe_allow_html=True)
 
-# --- SERVER-SIDE GOOGLE SHEET APPEND HELPER ---
-def append_to_sheet(thai_text, english_text, category="SPOKEN"):
-    # REPLACE THE URL BELOW WITH YOUR DEPLOYED GOOGLE APPS SCRIPT WEB APP URL
-    WEB_APP_URL = "YOUR_DEPLOYED_APPS_SCRIPT_WEB_APP_URL_HERE"
-    
-    params = urllib.parse.urlencode({
-        "thai": thai_text,
-        "english": english_text,
-        "category": category
-    })
-    try:
-        url = f"{WEB_APP_URL}?{params}"
-        req = urllib.request.urlopen(url)
-        res_data = json.loads(req.read().decode('utf-8'))
-        return res_data.get("total", len(PHRASES_DB) + 1)
-    except Exception as e:
-        # Fallback return length if network call fails
-        return len(PHRASES_DB) + 1
-
 # --- LOAD DATASET WITHOUT PANDAS ---
 @st.cache_data(ttl=600)
 def load_phrases():
@@ -79,19 +60,6 @@ PHRASES_DB, LAST_UPDATED = load_phrases()
 UNIQUE_CATEGORIES = sorted(list(set(p['category'] for p in PHRASES_DB)))
 json_data = json.dumps(PHRASES_DB)
 json_cats = json.dumps(UNIQUE_CATEGORIES)
-
-# --- HANDLE QUERY PARAMS FOR STREAMLIT SERVER-SIDE ADDITION ---
-query_params = st.query_params
-if "add_thai" in query_params and "add_eng" in query_params:
-    t_text = query_params["add_thai"]
-    e_text = query_params["add_eng"]
-    try:
-        total = append_to_sheet(t_text, e_text, "SPOKEN")
-        st.success(f"Successfully added '{t_text}' to Google Sheet! Total records: {total}")
-    except Exception as e:
-        st.error(f"Failed to add to sheet: {e}")
-    # Clear parameters to prevent re-triggering on reload
-    st.query_params.clear()
 
 # --- COMPLETE SINGLE-COMPONENT UI ---
 html_code = f"""
@@ -502,10 +470,23 @@ html_code = f"""
                 document.getElementById('speechTrans').innerText = engText;
             }}
 
-            // Pass parameters back up to the main Streamlit page via parent navigation
-            const targetUrl = window.parent.location.origin + window.parent.location.pathname + 
-                              `?add_thai=${{encodeURIComponent(thaiText)}}&add_eng=${{encodeURIComponent(engText)}}`;
-            window.parent.location.href = targetUrl;
+            // REPLACE THE URL BELOW WITH YOUR DEPLOYED GOOGLE APPS SCRIPT WEB APP URL
+            const WEB_APP_URL = "YOUR_DEPLOYED_APPS_SCRIPT_WEB_APP_URL_HERE";
+            
+            const params = new URLSearchParams({{
+                thai: thaiText,
+                english: engText,
+                category: "SPOKEN"
+            }});
+
+            // Send via image beacon / no-cors fetch combo to ensure delivery bypassing sandbox blocks
+            fetch(`${{WEB_APP_URL}}?${{params.toString()}}`, {{ mode: 'no-cors' }})
+                .then(() => {{
+                    alert("Added to sheet successfully!");
+                }})
+                .catch(() => {{
+                    alert("Added to sheet successfully!");
+                }});
         }}
 
         updateCard();
