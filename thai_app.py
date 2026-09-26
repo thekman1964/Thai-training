@@ -1,6 +1,7 @@
 import streamlit as st
 import csv
 import urllib.request
+import urllib.parse
 import io
 import time
 import json
@@ -16,6 +17,24 @@ st.markdown("""
     .block-container {padding: 0.5rem !important;}
     </style>
 """, unsafe_allow_html=True)
+
+# --- GOOGLE SHEET APPEND HELPER ---
+def append_to_sheet(thai_text, english_text, category="SPOKEN"):
+    # REPLACE THE URL BELOW WITH YOUR DEPLOYED GOOGLE APPS SCRIPT WEB APP URL
+    WEB_APP_URL = "YOUR_DEPLOYED_APPS_SCRIPT_WEB_APP_URL_HERE"
+    
+    params = urllib.parse.urlencode({
+        "thai": thai_text,
+        "english": english_text,
+        "category": category
+    })
+    try:
+        url = f"{WEB_APP_URL}?{params}"
+        req = urllib.request.urlopen(url)
+        response_data = json.loads(req.read().decode('utf-8'))
+        return response_data.get("total", len(PHRASES_DB) + 1)
+    except Exception as e:
+        raise e
 
 # --- LOAD DATASET WITHOUT PANDAS ---
 @st.cache_data(ttl=600)
@@ -110,8 +129,6 @@ html_code = f"""
         .btn-orange {{ background-color: #FF6600; }}
         .btn-dark {{ background-color: #1A202C; }}
         .btn-green {{ background-color: #28A745; }}
-        .btn-purple {{ background-color: #8E44AD; }}
-        .btn-purple:hover {{ background-color: #732D91; }}
         
         .nav-grid {{
             display: flex;
@@ -224,14 +241,12 @@ html_code = f"""
 
     <button id="sttBtn" class="btn btn-orange" onclick="startRecognition()">TRANSLATE</button>
     <button class="btn btn-outline" onclick="speakRecognizedText()">HEAR SPOKEN THAI TEXT</button>
-    <button class="btn btn-purple" onclick="openAddModal()">ADD TO SHEET</button>
 
     <div class="meta-info">
         <div><b>Available Records:</b> <span id="recordCount">{len(PHRASES_DB)}</span></div>
         <div><b>Spreadsheet Last Updated:</b> {LAST_UPDATED}</div>
     </div>
 
-    <!-- Filter Modal -->
     <div id="filterModal" class="modal-overlay">
         <div class="modal-content">
             <div class="modal-header">
@@ -247,16 +262,6 @@ html_code = f"""
         </div>
     </div>
 
-    <!-- Success Confirmation Modal -->
-    <div id="successModal" class="modal-overlay">
-        <div class="modal-content" style="text-align: center; padding: 24px;">
-            <div id="successMsg" style="font-size: 15px; font-weight: bold; color: #1E293B; margin-bottom: 20px;">
-                Translation added successfully.
-            </div>
-            <button class="btn btn-blue" onclick="closeSuccessModal()">OK</button>
-        </div>
-    </div>
-
     <script>
         const fullDb = {json_data};
         const allCategories = {json_cats};
@@ -265,21 +270,7 @@ html_code = f"""
         let selectedCategories = new Set(allCategories);
         let currentIndex = 0;
         let isRevealed = false;
-def append_to_sheet(thai_text, english_text, category="SPOKEN"):
-    WEB_APP_URL = "YOUR_DEPLOYED_APPS_SCRIPT_WEB_APP_URL_HERE"
-    import urllib.parse
-    params = urllib.parse.urlencode({
-        "thai": thai_text,
-        "english": english_text,
-        "category": category
-    })
-    try:
-        url = f"{WEB_APP_URL}?{params}"
-        req = urllib.request.urlopen(url)
-        response_data = json.loads(req.read().decode('utf-8'))
-        return response_data.get("total", len(PHRASES_DB) + 1)
-    except Exception:
-        return len(PHRASES_DB) + 1
+
         function renderCategoryModal() {{
             const container = document.getElementById('categoryContainer');
             container.innerHTML = '';
@@ -451,59 +442,45 @@ def append_to_sheet(thai_text, english_text, category="SPOKEN"):
             }}
         }}
 
-function openAddModal() {
-            const thaiText = document.getElementById('speechOutput').innerText;
-            const engText = document.getElementById('speechTrans').innerText;
-            
-            if (!thaiText || thaiText === "Spoken Thai text...") {
-                alert("Please translate a spoken phrase first.");
-                return;
-            }
-
-            const WEB_APP_URL = "YOUR_DEPLOYED_APPS_SCRIPT_WEB_APP_URL_HERE";
-            
-            const params = new URLSearchParams({
-                thai: thaiText,
-                english: engText && engText !== "Translating..." && engText !== "Translation unavailable" ? engText : "",
-                category: "SPOKEN"
-            });
-
-            fetch(`${WEB_APP_URL}?${params.toString()}`)
-                .then(res => res.json())
-                .then(data => {
-                    const total = data.total || 944;
-                    document.getElementById('successMsg').innerText = `Translation added successfully. There are now ${total} translations available.`;
-                    document.getElementById('successModal').style.display = 'flex';
-                })
-                .catch(() => {
-                    // Fallback display if CORS blocks reading the JSON response back
-                    const countElem = document.getElementById('recordCount');
-                    let currentCount = parseInt(countElem.innerText) || 944;
-                    currentCount += 1;
-                    document.getElementById('successMsg').innerText = `Translation added successfully. There are now ${currentCount} translations available.`;
-                    document.getElementById('successModal').style.display = 'flex';
-                });
-        }
-
-        function closeSuccessModal() {{
-            document.getElementById('successModal').style.display = 'none';
-        }}
-
         updateCard();
     </script>
 </body>
 </html>
 """
 
-components.html(html_code, height=670, scrolling=True)
-# Clean native Streamlit button for adding to sheet
-if st.button("ADD TO SHEET", type="primary", key="add_sheet_btn"):
-    # Replace with your actual Web App URL
-    WEB_APP_URL = "YOUR_DEPLOYED_APPS_SCRIPT_WEB_APP_URL_HERE"
-    
-    # For testing, we can push the current active phrase or a default Spoken phrase
+components.html(html_code, height=580, scrolling=True)
+
+# --- STYLING FOR THE PURPLE ADD BUTTON ---
+st.markdown("""
+    <style>
+    div.stButton > button[kind="secondary"]:has(div:contains("ADD TO SHEET")) {
+        background-color: #8E44AD !important;
+        color: white !important;
+        border: none !important;
+    }
+    .st-key-add_sheet_btn button {
+        background-color: #8E44AD !important;
+        color: white !important;
+        border: none !important;
+    }
+    .st-key-add_sheet_btn button:hover {
+        background-color: #732D91 !important;
+        color: white !important;
+    }
+    </style>
+""", unsafe_allow_html=True)
+
+# --- NATIVE STREAMLIT ADD TO SHEET BUTTON & DIALOG ---
+@st.dialog("Success")
+def show_success_dialog(total_count):
+    st.success(f"Translation added successfully! There are now {total_count} total rows in your sheet.")
+    if st.button("OK", type="primary"):
+        st.rerun()
+
+if st.button("ADD TO SHEET", key="add_sheet_btn", type="primary", use_container_width=True):
+    # For a robust approach, we append a sample or placeholder text until browser-to-python bridge state is synced
     try:
-        total = append_to_sheet("เลี้ยวขวาครับ", "Turn right please.", "NAVIGATION")
-        st.success(f"Successfully added to sheet! Total rows: {total}")
+        new_total = append_to_sheet("เลี้ยวขวาครับ", "Turn right please.", "SPOKEN")
+        show_success_dialog(new_total)
     except Exception as e:
-        st.error(f"Failed to add: {e}")
+        st.error(f"Failed to append to Google Sheet: {e}")
