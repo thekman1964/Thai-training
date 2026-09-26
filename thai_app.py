@@ -18,6 +18,15 @@ st.markdown("""
         background-color: #8E44AD !important;
         color: white !important;
     }
+    .st-key-add_to_sheet_btn button {
+        background-color: #8E44AD !important;
+        color: white !important;
+        border: none !important;
+    }
+    .st-key-add_to_sheet_btn button:hover {
+        background-color: #732D91 !important;
+        color: white !important;
+    }
     </style>
 """, unsafe_allow_html=True)
 
@@ -430,6 +439,24 @@ html_code = f"""
         updateCard();
     </script>
 </body>
+# Atomic addition: Purple button to write to Google Sheet
+if st.button("ADD TO SHEET", key="add_to_sheet_btn", type="primary"):
+    WEB_APP_URL = "YOUR_DEPLOYED_APPS_SCRIPT_WEB_APP_URL_HERE"
+    payload = {
+        "thai": current_card['thai'], 
+        "english": current_card['english'], 
+        "category": current_card.get('category', 'GENERAL')
+    }
+    try:
+        import requests
+        res = requests.post(WEB_APP_URL, json=payload)
+        if res.status_code == 200:
+            data = res.json()
+            show_success_dialog(data.get("total", len(PHRASES_DB) + 1))
+        else:
+            st.error("Failed to append to Google Sheet.")
+    except Exception as e:
+        st.error(f"Connection error: {e}")
 </html>
 """
 
