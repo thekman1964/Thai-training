@@ -8,7 +8,7 @@ import streamlit.components.v1 as components
 
 st.set_page_config(layout="centered", page_title="Thai Practice")
 
-# Hide Streamlit Chrome UI & Keep Layout Compact
+# Hide Streamlit Chrome UI & Keep Layout Clean
 st.markdown("""
     <style>
     #MainMenu, header, footer, div[data-testid="stHeader"] {display: none !important;}
@@ -61,7 +61,7 @@ UNIQUE_CATEGORIES = sorted(list(set(p['category'] for p in PHRASES_DB)))
 json_data = json.dumps(PHRASES_DB)
 json_cats = json.dumps(UNIQUE_CATEGORIES)
 
-# --- COMPLETE SINGLE-SCREEN MOBILE UI ---
+# --- COMPLETE SINGLE-SCREEN MOBILE UI (TOUCH-FRIENDLY PADDING) ---
 html_code = f"""
 <!DOCTYPE html>
 <html>
@@ -69,42 +69,43 @@ html_code = f"""
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <style>
         * {{ box-sizing: border-box; font-family: system-ui, -apple-system, sans-serif; }}
-        body {{ margin: 0; padding: 4px; background-color: #ffffff; text-align: center; }}
+        body {{ margin: 0; padding: 6px; background-color: #ffffff; text-align: center; }}
         
-        .flag {{ width: 45px; height: 30px; border-radius: 3px; box-shadow: 0 2px 4px rgba(0,0,0,0.2); }}
-        .title {{ font-size: 16px; margin: 4px 0 2px 0; color: #000; font-weight: bold; }}
+        .flag {{ width: 50px; height: 34px; border-radius: 3px; box-shadow: 0 2px 4px rgba(0,0,0,0.2); }}
+        .title {{ font-size: 17px; margin: 6px 0 4px 0; color: #000; font-weight: bold; }}
         
         .filter-btn-pill {{
             display: inline-flex;
             align-items: center;
-            gap: 4px;
+            gap: 5px;
             background-color: #F1F5F9;
             border: 1px solid #CBD5E1;
-            border-radius: 14px;
-            padding: 2px 10px;
-            font-size: 11px;
+            border-radius: 16px;
+            padding: 4px 12px;
+            font-size: 12px;
             font-weight: 700;
             color: #334155;
             cursor: pointer;
-            margin-bottom: 2px;
+            margin-bottom: 6px;
         }}
         .filter-btn-pill:hover {{ background-color: #E2E8F0; }}
         
-        .thai-text {{ font-size: 26px; font-weight: bold; color: #000; margin: 4px 0; min-height: 38px; }}
-        .sub-text {{ font-size: 13px; color: #777; margin-bottom: 8px; min-height: 20px; }}
-        .eng-text {{ font-size: 18px; font-weight: bold; color: #0066CC; margin-bottom: 8px; min-height: 20px; }}
+        .thai-text {{ font-size: 30px; font-weight: bold; color: #000; margin: 6px 0; min-height: 44px; }}
+        .sub-text {{ font-size: 14px; color: #777; margin-bottom: 12px; min-height: 22px; }}
+        .eng-text {{ font-size: 20px; font-weight: bold; color: #0066CC; margin-bottom: 12px; min-height: 22px; }}
         
+        /* Larger, more touch-friendly buttons with generous spacing */
         .btn {{
             width: 100%;
-            height: 38px;
+            height: 48px;
             border: none;
-            border-radius: 6px;
-            font-size: 14px;
+            border-radius: 8px;
+            font-size: 16px;
             font-weight: 800;
             color: #ffffff !important;
             cursor: pointer;
-            margin-bottom: 6px;
-            box-shadow: 0 2px 4px rgba(0,0,0,0.15);
+            margin-bottom: 12px;
+            box-shadow: 0 3px 6px rgba(0,0,0,0.15);
         }}
         
         .btn-blue {{ background-color: #0066CC; }}
@@ -116,20 +117,20 @@ html_code = f"""
         
         .nav-grid {{
             display: flex;
-            gap: 6px;
-            margin-bottom: 6px;
+            gap: 10px;
+            margin-bottom: 12px;
         }}
-        .nav-grid .btn {{ flex: 1; margin-bottom: 0; height: 34px; font-size: 13px; }}
+        .nav-grid .btn {{ flex: 1; margin-bottom: 0; height: 44px; font-size: 14px; }}
         
-        hr {{ border: 0; border-top: 1px solid #e2e8f0; margin: 6px 0; }}
+        hr {{ border: 0; border-top: 1px solid #e2e8f0; margin: 12px 0; }}
 
         .spoken-title {{ 
-            color: #FF6600; font-size: 20px; font-weight: bold; margin-bottom: 2px; min-height: 30px; 
-            border: 2px dashed #FF6600; border-radius: 6px; padding: 4px; outline: none; background: #FFF9F5; width: 100%; text-align: center;
+            color: #FF6600; font-size: 22px; font-weight: bold; margin-bottom: 4px; min-height: 36px; 
+            border: 2px dashed #FF6600; border-radius: 8px; padding: 6px; outline: none; background: #FFF9F5; width: 100%; text-align: center;
         }}
         .spoken-trans {{ 
-            color: #0066CC; font-size: 15px; font-weight: bold; margin-bottom: 6px; min-height: 24px; 
-            border: 2px dashed #0066CC; border-radius: 6px; padding: 4px; outline: none; background: #F0F7FF; width: 100%; text-align: center;
+            color: #0066CC; font-size: 16px; font-weight: bold; margin-bottom: 10px; min-height: 28px; 
+            border: 2px dashed #0066CC; border-radius: 8px; padding: 6px; outline: none; background: #F0F7FF; width: 100%; text-align: center;
         }}
         
         .btn-outline {{
@@ -137,10 +138,10 @@ html_code = f"""
             color: #FF6600 !important;
             border: 2px solid #FF6600 !important;
             box-shadow: 0 2px 4px rgba(0,0,0,0.08);
-            height: 36px;
+            height: 46px;
         }}
         
-        .meta-info {{ font-size: 11px; color: #555; margin-top: 4px; line-height: 1.3; }}
+        .meta-info {{ font-size: 12px; color: #555; margin-top: 8px; line-height: 1.4; }}
 
         .modal-overlay {{
             display: none;
@@ -156,7 +157,7 @@ html_code = f"""
             width: 90%;
             max-width: 340px;
             border-radius: 12px;
-            padding: 14px;
+            padding: 16px;
             text-align: left;
             box-shadow: 0 10px 25px rgba(0,0,0,0.2);
             max-height: 75vh;
@@ -164,10 +165,10 @@ html_code = f"""
             flex-direction: column;
         }}
         .modal-header {{
-            font-size: 15px;
+            font-size: 16px;
             font-weight: bold;
             color: #1E293B;
-            margin-bottom: 10px;
+            margin-bottom: 12px;
             display: flex;
             justify-content: space-between;
             align-items: center;
@@ -175,32 +176,32 @@ html_code = f"""
         .cat-list {{
             overflow-y: auto;
             flex-grow: 1;
-            margin-bottom: 12px;
+            margin-bottom: 14px;
             padding-right: 4px;
         }}
         .cat-item {{
             display: flex;
             align-items: center;
-            padding: 6px 0;
+            padding: 8px 0;
             border-bottom: 1px solid #F1F5F9;
-            font-size: 13px;
+            font-size: 14px;
             color: #334155;
             cursor: pointer;
         }}
         .cat-item input {{
-            margin-right: 8px;
-            width: 16px;
-            height: 16px;
+            margin-right: 10px;
+            width: 18px;
+            height: 18px;
             accent-color: #0066CC;
         }}
         .modal-actions {{
             display: flex;
-            gap: 6px;
+            gap: 8px;
         }}
         .modal-actions button {{
             flex: 1;
-            height: 34px;
-            font-size: 12px;
+            height: 38px;
+            font-size: 13px;
         }}
     </style>
 </head>
@@ -466,12 +467,10 @@ html_code = f"""
                 let userEng = prompt("Enter English translation for: " + thaiText);
                 if (userEng === null) return;
                 engText = userEng.trim();
-                document.getElementById('speechTrans').value = userEng;
+                document.getElementById('speechTrans').value = engText;
             }}
 
-            // Use the Image Beacon trick to bypass all iframe restrictions and trigger Google Apps Script
             const targetUrl = WEB_APP_URL + `?thai=${{encodeURIComponent(thaiText)}}&english=${{encodeURIComponent(engText)}}&category=SPOKEN`;
-            
             const beacon = new Image();
             beacon.src = targetUrl;
             
@@ -484,4 +483,4 @@ html_code = f"""
 </html>
 """
 
-components.html(html_code, height=590, scrolling=False)
+components.html(html_code, height=690, scrolling=False)
