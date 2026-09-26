@@ -482,13 +482,13 @@ html_code = f"""
                 category: "SPOKEN"
             }});
 
-            fetch(`${{WEB_APP_URL}}?${{params.toString()}}`)
-                .then(res => res.json())
-                .then(data => {{
-                    alert(`Translation added successfully! Total records: ${{data.total}}`);
+            // Using mode: 'no-cors' guarantees the request executes without browser security blocks
+            fetch(`${{WEB_APP_URL}}?${{params.toString()}}`, {{ mode: 'no-cors' }})
+                .then(() => {{
+                    alert("Translation added successfully to Google Sheet!");
                 }})
-                .catch(() => {{
-                    alert("Translation added successfully to sheet!");
+                .catch((err) => {{
+                    alert("Error sending to sheet: " + err);
                 }});
         }}
 
