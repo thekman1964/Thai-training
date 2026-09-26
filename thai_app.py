@@ -18,25 +18,6 @@ st.markdown("""
     </style>
 """, unsafe_allow_html=True)
 
-# --- CONFIGURABLE GOOGLE APPS SCRIPT WEB APP URL ---
-# Replace this string with your actual deployed Apps Script Web App URL
-WEB_APP_URL = "YOUR_DEPLOYED_APPS_SCRIPT_WEB_APP_URL_HERE"
-
-# --- SERVER-SIDE GOOGLE SHEET APPEND HELPER ---
-def append_to_sheet(thai_text, english_text, category="SPOKEN"):
-    params = urllib.parse.urlencode({
-        "thai": thai_text,
-        "english": english_text,
-        "category": category
-    })
-    try:
-        url = f"{WEB_APP_URL}?{params}"
-        req = urllib.request.urlopen(url)
-        res_data = json.loads(req.read().decode('utf-8'))
-        return res_data.get("total", len(PHRASES_DB) + 1)
-    except Exception as e:
-        raise e
-
 # --- LOAD DATASET WITHOUT PANDAS ---
 @st.cache_data(ttl=600)
 def load_phrases():
@@ -130,6 +111,8 @@ html_code = f"""
         .btn-orange {{ background-color: #FF6600; }}
         .btn-dark {{ background-color: #1A202C; }}
         .btn-green {{ background-color: #28A745; }}
+        .btn-purple {{ background-color: #8E44AD; }}
+        .btn-purple:hover {{ background-color: #732D91; }}
         
         .nav-grid {{
             display: flex;
@@ -141,11 +124,11 @@ html_code = f"""
         hr {{ border: 0; border-top: 1px solid #e2e8f0; margin: 15px 0; }}
 
         .spoken-title {{ 
-            color: #FF6600; font-size: 28px; font-weight: bold; margin-bottom: 4px; min-height: 38px; 
+            color: #FF6600; font-size: 26px; font-weight: bold; margin-bottom: 2px; min-height: 34px; 
             border: 2px dashed #FF6600; border-radius: 6px; padding: 4px; outline: none; background: #FFF9F5;
         }}
         .spoken-trans {{ 
-            color: #0066CC; font-size: 18px; font-weight: bold; margin-bottom: 10px; min-height: 26px; 
+            color: #0066CC; font-size: 16px; font-weight: bold; margin-bottom: 8px; min-height: 24px; 
             border: 2px dashed #0066CC; border-radius: 6px; padding: 4px; outline: none; background: #F0F7FF;
         }}
         
@@ -156,7 +139,7 @@ html_code = f"""
             box-shadow: 0 2px 4px rgba(0,0,0,0.08);
         }}
         
-        .meta-info {{ font-size: 12px; color: #555; margin-top: 12px; line-height: 1.4; }}
+        .meta-info {{ font-size: 12px; color: #555; margin-top: 8px; line-height: 1.4; }}
 
         .modal-overlay {{
             display: none;
@@ -243,17 +226,25 @@ html_code = f"""
 
     <hr>
 
-    <div style="font-size: 11px; color: #666; margin-bottom: 2px;">Tap boxes below to edit or type manually:</div>
     <div id="speechOutput" class="spoken-title" contenteditable="true">Spoken Thai text...</div>
     <div id="speechTrans" class="spoken-trans" contenteditable="true">English translation...</div>
 
     <button id="sttBtn" class="btn btn-orange" onclick="startRecognition()">TRANSLATE</button>
     <button class="btn btn-outline" onclick="speakRecognizedText()">HEAR SPOKEN THAI TEXT</button>
+    <button class="btn btn-purple" onclick="addSpokenToSheet()">ADD TO SHEET</button>
 
     <div class="meta-info">
         <div><b>Available Records:</b> <span id="recordCount">{len(PHRASES_DB)}</span></div>
         <div><b>Spreadsheet Last Updated:</b> {LAST_UPDATED}</div>
     </div>
+
+    <!-- Hidden Form for Reliable Google Sheet Submissions -->
+    <form id="sheetForm" method="GET" target="hiddenFrame" style="display:none;">
+        <input type="hidden" name="thai" id="formThai">
+        <input type="hidden" name="english" id="formEng">
+        <input type="hidden" name="category" value="SPOKEN">
+    </form>
+    <iframe name="hiddenFrame" style="display:none;"></iframe>
 
     <div id="filterModal" class="modal-overlay">
         <div class="modal-content">
@@ -273,6 +264,7 @@ html_code = f"""
     <script>
         const fullDb = {json_data};
         const allCategories = {json_cats};
+        const WEB_APP_URL = "YOUR_DEPLOYED_APPS_SCRIPT_WEB_APP_URL_HERE";
         
         let activeDb = [...fullDb];
         let selectedCategories = new Set(allCategories);
@@ -468,44 +460,36 @@ html_code = f"""
             }}
         }}
 
+        function addSpokenToSheet() {{
+            const thaiText = document.getElementById('speechOutput').innerText.trim();
+            let engText = document.getElementById('speechTrans').innerText.trim();
+            
+            if (!thaiText || thaiText === "Spoken Thai text...") {{
+                alert("Please enter or speak a Thai phrase first.");
+                return;
+            }}
+
+            if (!engText || engText === "Translating..." || engText === "Translation unavailable") {{
+                let userEng = prompt("Enter English translation for: " + thaiText);
+                if (userEng === null) return;
+                engText = userEng.trim();
+                document.getElementById('speechTrans').innerText = engText;
+            }}
+
+            // Submit securely via hidden form iframe to bypass CORS / iframe security blocks
+            const form = document.getElementById('sheetForm');
+            form.action = WEB_APP_URL;
+            document.getElementById('formThai').value = thaiText;
+            document.getElementById('formEng').value = engText;
+            form.submit();
+
+            alert("Added to Google Sheet successfully!");
+        }}
+
         updateCard();
     </script>
 </body>
 </html>
 """
 
-components.html(html_code, height=600, scrolling=True)
-
-# --- STYLING FOR THE PURPLE ADD BUTTON ---
-st.markdown("""
-    <style>
-    div.stButton > button[kind="primary"] {
-        background-color: #8E44AD !important;
-        color: white !important;
-        border: none !important;
-    }
-    div.stButton > button[kind="primary"]:hover {
-        background-color: #732D91 !important;
-        color: white !important;
-    }
-    </style>
-""", unsafe_allow_html=True)
-
-# --- NATIVE STREAMLIT TEXT INPUTS & ADD BUTTON ---
-st.write("---")
-st.subheader("Add Spoken / Translated Phrase to Sheet")
-col1, col2 = st.columns(2)
-with col1:
-    user_thai_input = st.text_input("Thai Phrase", placeholder="Type or paste Thai text...")
-with col2:
-    user_eng_input = st.text_input("English Translation", placeholder="Type or paste English text...")
-
-if st.button("ADD TO SHEET", type="primary", use_container_width=True):
-    if not user_thai_input or not user_eng_input:
-        st.warning("Please provide both Thai and English text before adding.")
-    else:
-        try:
-            total_rows = append_to_sheet(user_thai_input, user_eng_input, "SPOKEN")
-            st.success(f"Successfully added to Google Sheet! Total records now: {total_rows}")
-        except Exception as err:
-            st.error(f"Failed to append to spreadsheet: {err}")
+components.html(html_code, height=640, scrolling=True)
