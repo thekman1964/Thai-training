@@ -21,7 +21,7 @@ st.markdown("""
 # --- GOOGLE SHEET APPEND HELPER ---
 def append_to_sheet(thai_text, english_text, category="SPOKEN"):
     # REPLACE THE URL BELOW WITH YOUR DEPLOYED GOOGLE APPS SCRIPT WEB APP URL
-    WEB_APP_URL = "https://script.google.com/macros/s/AKfycbztke4DWB6dRnKpk-lel6kKZt5uU9fhvDxWrEaUFF7Rc9chuPrBgj9YOcNj8uCg-1sa/exec"
+    WEB_APP_URL = "YOUR_DEPLOYED_APPS_SCRIPT_WEB_APP_URL_HERE"
     
     params = urllib.parse.urlencode({
         "thai": thai_text,
@@ -402,16 +402,15 @@ html_code = f"""
                 
                 document.getElementById('speechTrans').innerText = "Translating...";
                 
-                // Clean up recognized text and database entries for a foolproof match
-                const cleanedText = text.trim().replace(/\s+/g, ' ');
-                const match = fullDb.find(item => item.thai.trim().replace(/\s+/g, ' ') === cleanedText);
+                const cleanedText = text.trim().replace(/\\s+/g, ' ');
+                const match = fullDb.find(item => item.thai.trim().replace(/\\s+/g, ' ') === cleanedText);
                 
-                if (match) {
+                if (match) {{
                     document.getElementById('speechTrans').innerText = match.english;
-                } else {
-                    // Fallback: if it's not in the main DB, let's allow it to be added with a default translation or allow custom entry
-                    document.getElementById('speechTrans').innerText = "Custom Spoken Phrase";
-                }
+                }} else {{
+                    document.getElementById('speechTrans').innerText = "Translation unavailable";
+                }}
+            }};
 
             recognition.onerror = () => resetSttBtn();
             recognition.onend = () => resetSttBtn();
@@ -481,7 +480,6 @@ def show_success_dialog(total_count):
         st.rerun()
 
 if st.button("ADD TO SHEET", key="add_sheet_btn", type="primary", use_container_width=True):
-    # For a robust approach, we append a sample or placeholder text until browser-to-python bridge state is synced
     try:
         new_total = append_to_sheet("เลี้ยวขวาครับ", "Turn right please.", "SPOKEN")
         show_success_dialog(new_total)
