@@ -9,12 +9,12 @@ import streamlit.components.v1 as components
 
 st.set_page_config(layout="centered", page_title="Thai Practice")
 
-# Hide Streamlit Chrome UI
+# Hide Streamlit Chrome UI & Keep Layout Compact
 st.markdown("""
     <style>
     #MainMenu, header, footer, div[data-testid="stHeader"] {display: none !important;}
     .stApp {background-color: #FFFFFF !important;}
-    .block-container {padding: 0.5rem !important;}
+    .block-container {padding: 0.4rem !important; max-width: 450px !important;}
     </style>
 """, unsafe_allow_html=True)
 
@@ -79,6 +79,19 @@ UNIQUE_CATEGORIES = sorted(list(set(p['category'] for p in PHRASES_DB)))
 json_data = json.dumps(PHRASES_DB)
 json_cats = json.dumps(UNIQUE_CATEGORIES)
 
+# --- CAPTURE QUERY PARAMS FROM COMPONENT TRIGGERS ---
+query_params = st.query_params
+if "action" in query_params and query_params["action"] == "add":
+    t_text = query_params.get("thai", "")
+    e_text = query_params.get("english", "")
+    if t_text and e_text:
+        try:
+            total = append_to_sheet(t_text, e_text, "SPOKEN")
+            st.success(f"Added to Sheet! Total records: {total}")
+        except Exception as err:
+            st.error(f"Error adding to sheet: {err}")
+    st.query_params.clear()
+
 # --- COMPLETE SINGLE-COMPONENT UI ---
 html_code = f"""
 <!DOCTYPE html>
@@ -87,41 +100,41 @@ html_code = f"""
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <style>
         * {{ box-sizing: border-box; font-family: system-ui, -apple-system, sans-serif; }}
-        body {{ margin: 0; padding: 10px; background-color: #ffffff; text-align: center; }}
+        body {{ margin: 0; padding: 5px; background-color: #ffffff; text-align: center; }}
         
-        .flag {{ width: 55px; height: 36px; border-radius: 3px; box-shadow: 0 2px 4px rgba(0,0,0,0.2); }}
-        .title {{ font-size: 18px; margin: 6px 0 4px 0; color: #000; font-weight: bold; }}
+        .flag {{ width: 45px; height: 30px; border-radius: 3px; box-shadow: 0 2px 4px rgba(0,0,0,0.2); }}
+        .title {{ font-size: 16px; margin: 4px 0 2px 0; color: #000; font-weight: bold; }}
         
         .filter-btn-pill {{
             display: inline-flex;
             align-items: center;
-            gap: 6px;
+            gap: 4px;
             background-color: #F1F5F9;
             border: 1px solid #CBD5E1;
-            border-radius: 16px;
-            padding: 4px 12px;
-            font-size: 12px;
+            border-radius: 14px;
+            padding: 2px 10px;
+            font-size: 11px;
             font-weight: 700;
             color: #334155;
             cursor: pointer;
-            margin-bottom: 4px;
+            margin-bottom: 2px;
         }}
         .filter-btn-pill:hover {{ background-color: #E2E8F0; }}
         
-        .thai-text {{ font-size: 32px; font-weight: bold; color: #000; margin: 8px 0; min-height: 48px; }}
-        .sub-text {{ font-size: 14px; color: #777; margin-bottom: 15px; min-height: 24px; }}
-        .eng-text {{ font-size: 20px; font-weight: bold; color: #0066CC; margin-bottom: 15px; min-height: 24px; }}
+        .thai-text {{ font-size: 28px; font-weight: bold; color: #000; margin: 4px 0; min-height: 40px; }}
+        .sub-text {{ font-size: 13px; color: #777; margin-bottom: 10px; min-height: 20px; }}
+        .eng-text {{ font-size: 18px; font-weight: bold; color: #0066CC; margin-bottom: 10px; min-height: 20px; }}
         
         .btn {{
             width: 100%;
-            height: 46px;
+            height: 40px;
             border: none;
             border-radius: 6px;
-            font-size: 15px;
+            font-size: 14px;
             font-weight: 800;
             color: #ffffff !important;
             cursor: pointer;
-            margin-bottom: 8px;
+            margin-bottom: 6px;
             box-shadow: 0 2px 4px rgba(0,0,0,0.15);
         }}
         
@@ -129,22 +142,24 @@ html_code = f"""
         .btn-orange {{ background-color: #FF6600; }}
         .btn-dark {{ background-color: #1A202C; }}
         .btn-green {{ background-color: #28A745; }}
+        .btn-purple {{ background-color: #8E44AD; }}
+        .btn-purple:hover {{ background-color: #732D91; }}
         
         .nav-grid {{
             display: flex;
             gap: 6px;
-            margin-bottom: 12px;
+            margin-bottom: 8px;
         }}
-        .nav-grid .btn {{ flex: 1; margin-bottom: 0; }}
+        .nav-grid .btn {{ flex: 1; margin-bottom: 0; height: 36px; font-size: 13px; }}
         
-        hr {{ border: 0; border-top: 1px solid #e2e8f0; margin: 15px 0; }}
+        hr {{ border: 0; border-top: 1px solid #e2e8f0; margin: 10px 0; }}
 
         .spoken-title {{ 
-            color: #FF6600; font-size: 26px; font-weight: bold; margin-bottom: 2px; min-height: 34px; 
+            color: #FF6600; font-size: 22px; font-weight: bold; margin-bottom: 2px; min-height: 30px; 
             border: 2px dashed #FF6600; border-radius: 6px; padding: 4px; outline: none; background: #FFF9F5;
         }}
         .spoken-trans {{ 
-            color: #0066CC; font-size: 16px; font-weight: bold; margin-bottom: 8px; min-height: 24px; 
+            color: #0066CC; font-size: 15px; font-weight: bold; margin-bottom: 6px; min-height: 22px; 
             border: 2px dashed #0066CC; border-radius: 6px; padding: 4px; outline: none; background: #F0F7FF;
         }}
         
@@ -153,9 +168,10 @@ html_code = f"""
             color: #FF6600 !important;
             border: 2px solid #FF6600 !important;
             box-shadow: 0 2px 4px rgba(0,0,0,0.08);
+            height: 38px;
         }}
         
-        .meta-info {{ font-size: 12px; color: #555; margin-top: 8px; line-height: 1.4; }}
+        .meta-info {{ font-size: 11px; color: #555; margin-top: 6px; line-height: 1.3; }}
 
         .modal-overlay {{
             display: none;
@@ -169,20 +185,20 @@ html_code = f"""
         .modal-content {{
             background-color: #ffffff;
             width: 90%;
-            max-width: 360px;
+            max-width: 340px;
             border-radius: 12px;
-            padding: 16px;
+            padding: 14px;
             text-align: left;
             box-shadow: 0 10px 25px rgba(0,0,0,0.2);
-            max-height: 80vh;
+            max-height: 75vh;
             display: flex;
             flex-direction: column;
         }}
         .modal-header {{
-            font-size: 16px;
+            font-size: 15px;
             font-weight: bold;
             color: #1E293B;
-            margin-bottom: 12px;
+            margin-bottom: 10px;
             display: flex;
             justify-content: space-between;
             align-items: center;
@@ -190,32 +206,32 @@ html_code = f"""
         .cat-list {{
             overflow-y: auto;
             flex-grow: 1;
-            margin-bottom: 14px;
+            margin-bottom: 12px;
             padding-right: 4px;
         }}
         .cat-item {{
             display: flex;
             align-items: center;
-            padding: 8px 0;
+            padding: 6px 0;
             border-bottom: 1px solid #F1F5F9;
-            font-size: 14px;
+            font-size: 13px;
             color: #334155;
             cursor: pointer;
         }}
         .cat-item input {{
-            margin-right: 10px;
-            width: 18px;
-            height: 18px;
+            margin-right: 8px;
+            width: 16px;
+            height: 16px;
             accent-color: #0066CC;
         }}
         .modal-actions {{
             display: flex;
-            gap: 8px;
+            gap: 6px;
         }}
         .modal-actions button {{
             flex: 1;
-            height: 38px;
-            font-size: 13px;
+            height: 34px;
+            font-size: 12px;
         }}
     </style>
 </head>
@@ -247,6 +263,7 @@ html_code = f"""
 
     <button id="sttBtn" class="btn btn-orange" onclick="startRecognition()">TRANSLATE</button>
     <button class="btn btn-outline" onclick="speakRecognizedText()">HEAR SPOKEN THAI TEXT</button>
+    <button class="btn btn-purple" onclick="addSpokenToSheet()">ADD TO SHEET</button>
 
     <div class="meta-info">
         <div><b>Available Records:</b> <span id="recordCount">{len(PHRASES_DB)}</span></div>
@@ -466,45 +483,32 @@ html_code = f"""
             }}
         }}
 
+        function addSpokenToSheet() {{
+            const thaiText = document.getElementById('speechOutput').innerText.trim();
+            let engText = document.getElementById('speechTrans').innerText.trim();
+            
+            if (!thaiText || thaiText === "Spoken Thai text...") {{
+                alert("Please enter or speak a Thai phrase first.");
+                return;
+            }}
+
+            if (!engText || engText === "Translating..." || engText === "Translation unavailable") {{
+                let userEng = prompt("Enter English translation for: " + thaiText);
+                if (userEng === null) return;
+                engText = userEng.trim();
+                document.getElementById('speechTrans').innerText = engText;
+            }}
+
+            // Pass parameters back to parent Streamlit window securely
+            const targetUrl = window.parent.location.origin + window.parent.location.pathname + 
+                              `?action=add&thai=${{encodeURIComponent(thaiText)}}&english=${{encodeURIComponent(engText)}}`;
+            window.parent.location.href = targetUrl;
+        }}
+
         updateCard();
     </script>
 </body>
 </html>
 """
 
-components.html(html_code, height=560, scrolling=True)
-
-# --- STYLING FOR THE PURPLE ADD BUTTON ---
-st.markdown("""
-    <style>
-    div.stButton > button[kind="primary"] {
-        background-color: #8E44AD !important;
-        color: white !important;
-        border: none !important;
-    }
-    div.stButton > button[kind="primary"]:hover {
-        background-color: #732D91 !important;
-        color: white !important;
-    }
-    </style>
-""", unsafe_allow_html=True)
-
-# --- NATIVE STREAMLIT ADD TO SHEET SECTION ---
-st.markdown("---")
-with st.container():
-    st.markdown("<h4 style='text-align: center; color: #8E44AD; margin-bottom: 8px;'>Add Phrase to Google Sheet</h4>", unsafe_allow_html=True)
-    col1, col2 = st.columns(2)
-    with col1:
-        thai_input = st.text_input("Thai", placeholder="Thai phrase...")
-    with col2:
-        eng_input = st.text_input("English", placeholder="English translation...")
-    
-    if st.button("ADD TO SHEET", type="primary", use_container_width=True):
-        if not thai_input or not eng_input:
-            st.warning("Please provide both Thai and English text.")
-        else:
-            try:
-                new_total = append_to_sheet(thai_input, eng_input, "SPOKEN")
-                st.success(f"Successfully added to sheet! Total records: {new_total}")
-            except Exception as e:
-                st.error(f"Failed to append: {e}")
+components.html(html_code, height=600, scrolling=True)
