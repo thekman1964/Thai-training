@@ -1,6 +1,7 @@
 import streamlit as st
 import csv
 import urllib.request
+import urllib.parse
 import io
 import time
 import json
@@ -17,6 +18,33 @@ st.markdown("""
     iframe {width: 100% !important; border: none !important;}
     </style>
 """, unsafe_allow_html=True)
+
+# --- YOUR WORKING GOOGLE APPS SCRIPT WEB APP URL ---
+WEB_APP_URL = "https://script.google.com/macros/s/AKfycbztke4DWB6dRnKpk-lel6kKZt5uU9fhvDxWrEaUFF7Rc9chuPrBgj9YOcNj8uCg-1sa/exec"
+
+# --- SERVER-SIDE PYTHON APPEND (BYPASSES BROWSER BLOCKS) ---
+def append_to_sheet(thai_text, english_text, category="SPOKEN"):
+    params = urllib.parse.urlencode({
+        "thai": thai_text,
+        "english": english_text,
+        "category": category
+    })
+    url = f"{WEB_APP_URL}?{params}"
+    req = urllib.request.urlopen(url)
+    res_data = json.loads(req.read().decode('utf-8'))
+    return res_data.get("total", 0)
+
+# --- HANDLE SAVE REQUEST PASSED FROM COMPONENT ---
+query_params = st.query_params
+if "save_thai" in query_params and "save_eng" in query_params:
+    t = query_params["save_thai"]
+    e = query_params["save_eng"]
+    try:
+        total = append_to_sheet(t, e, "SPOKEN")
+        st.success(f"Successfully added to Sheet! Total records: {total}")
+    except Exception as err:
+        st.error(f"Failed to add: {err}")
+    st.query_params.clear()
 
 # --- LOAD DATASET WITHOUT PANDAS ---
 @st.cache_data(ttl=600)
@@ -239,14 +267,6 @@ html_code = f"""
         <div><b>Spreadsheet Last Updated:</b> {LAST_UPDATED}</div>
     </div>
 
-    <!-- Hidden form to submit directly to Google Apps Script bypassing CORS blocks -->
-    <form id="sheetForm" method="GET" target="hiddenFrame" style="display:none;">
-        <input type="hidden" name="thai" id="formThai">
-        <input type="hidden" name="english" id="formEng">
-        <input type="hidden" name="category" value="SPOKEN">
-    </form>
-    <iframe name="hiddenFrame" style="display:none;"></iframe>
-
     <div id="filterModal" class="modal-overlay">
         <div class="modal-content">
             <div class="modal-header">
@@ -265,7 +285,6 @@ html_code = f"""
     <script>
         const fullDb = {json_data};
         const allCategories = {json_cats};
-        const WEB_APP_URL = "YOUR_DEPLOYED_APPS_SCRIPT_WEB_APP_URL_HERE";
         
         let activeDb = [...fullDb];
         let selectedCategories = new Set(allCategories);
@@ -477,14 +496,10 @@ html_code = f"""
                 document.getElementById('speechTrans').value = engText;
             }}
 
-            // Submit via background hidden form iframe to securely reach Google Apps Script
-            const form = document.getElementById('sheetForm');
-            form.action = WEB_APP_URL;
-            document.getElementById('formThai').value = thaiText;
-            document.getElementById('formEng').value = engText;
-            form.submit();
-
-            alert("Added to Google Sheet successfully!");
+            // Pass to parent window so Python executes the save securely server-side
+            const targetUrl = window.parent.location.origin + window.parent.location.pathname + 
+                              `?save_thai=${{encodeURIComponent(thaiText)}}&save_eng=${{encodeURIComponent(engText)}}`;
+            window.parent.location.href = targetUrl;
         }}
 
         updateCard();
