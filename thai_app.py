@@ -1,7 +1,6 @@
 import streamlit as st
 import csv
 import urllib.request
-import urllib.parse
 import io
 import time
 import json
@@ -14,24 +13,10 @@ st.markdown("""
     <style>
     #MainMenu, header, footer, div[data-testid="stHeader"] {display: none !important;}
     .stApp {background-color: #FFFFFF !important;}
-    .block-container {padding: 0.3rem !important; max-width: 430px !important;}
+    .block-container {padding: 0.2rem !important; max-width: 420px !important;}
+    iframe {width: 100% !important; border: none !important;}
     </style>
 """, unsafe_allow_html=True)
-
-# --- CONFIGURABLE GOOGLE APPS SCRIPT WEB APP URL ---
-WEB_APP_URL = "YOUR_DEPLOYED_APPS_SCRIPT_WEB_APP_URL_HERE"
-
-# --- SERVER-SIDE GOOGLE SHEET APPEND HELPER ---
-def append_to_sheet(thai_text, english_text, category="SPOKEN"):
-    params = urllib.parse.urlencode({
-        "thai": thai_text,
-        "english": english_text,
-        "category": category
-    })
-    url = f"{WEB_APP_URL}?{params}"
-    req = urllib.request.urlopen(url)
-    res_data = json.loads(req.read().decode('utf-8'))
-    return res_data.get("total", 0)
 
 # --- LOAD DATASET WITHOUT PANDAS ---
 @st.cache_data(ttl=600)
@@ -76,7 +61,7 @@ UNIQUE_CATEGORIES = sorted(list(set(p['category'] for p in PHRASES_DB)))
 json_data = json.dumps(PHRASES_DB)
 json_cats = json.dumps(UNIQUE_CATEGORIES)
 
-# --- COMPLETE SINGLE-COMPONENT UI (READ/STT/TRANSLATE ONLY) ---
+# --- COMPLETE SINGLE-SCREEN MOBILE UI ---
 html_code = f"""
 <!DOCTYPE html>
 <html>
@@ -106,12 +91,12 @@ html_code = f"""
         .filter-btn-pill:hover {{ background-color: #E2E8F0; }}
         
         .thai-text {{ font-size: 26px; font-weight: bold; color: #000; margin: 4px 0; min-height: 38px; }}
-        .sub-text {{ font-size: 13px; color: #777; margin-bottom: 10px; min-height: 20px; }}
-        .eng-text {{ font-size: 18px; font-weight: bold; color: #0066CC; margin-bottom: 10px; min-height: 20px; }}
+        .sub-text {{ font-size: 13px; color: #777; margin-bottom: 8px; min-height: 20px; }}
+        .eng-text {{ font-size: 18px; font-weight: bold; color: #0066CC; margin-bottom: 8px; min-height: 20px; }}
         
         .btn {{
             width: 100%;
-            height: 40px;
+            height: 38px;
             border: none;
             border-radius: 6px;
             font-size: 14px;
@@ -126,23 +111,25 @@ html_code = f"""
         .btn-orange {{ background-color: #FF6600; }}
         .btn-dark {{ background-color: #1A202C; }}
         .btn-green {{ background-color: #28A745; }}
+        .btn-purple {{ background-color: #8E44AD; }}
+        .btn-purple:hover {{ background-color: #732D91; }}
         
         .nav-grid {{
             display: flex;
             gap: 6px;
-            margin-bottom: 8px;
+            margin-bottom: 6px;
         }}
-        .nav-grid .btn {{ flex: 1; margin-bottom: 0; height: 36px; font-size: 13px; }}
+        .nav-grid .btn {{ flex: 1; margin-bottom: 0; height: 34px; font-size: 13px; }}
         
-        hr {{ border: 0; border-top: 1px solid #e2e8f0; margin: 8px 0; }}
+        hr {{ border: 0; border-top: 1px solid #e2e8f0; margin: 6px 0; }}
 
         .spoken-title {{ 
-            color: #FF6600; font-size: 20px; font-weight: bold; margin-bottom: 2px; min-height: 32px; 
-            border: 2px dashed #FF6600; border-radius: 6px; padding: 6px; outline: none; background: #FFF9F5; width: 100%; text-align: center;
+            color: #FF6600; font-size: 20px; font-weight: bold; margin-bottom: 2px; min-height: 30px; 
+            border: 2px dashed #FF6600; border-radius: 6px; padding: 4px; outline: none; background: #FFF9F5; width: 100%; text-align: center;
         }}
         .spoken-trans {{ 
-            color: #0066CC; font-size: 15px; font-weight: bold; margin-bottom: 6px; min-height: 26px; 
-            border: 2px dashed #0066CC; border-radius: 6px; padding: 6px; outline: none; background: #F0F7FF; width: 100%; text-align: center;
+            color: #0066CC; font-size: 15px; font-weight: bold; margin-bottom: 6px; min-height: 24px; 
+            border: 2px dashed #0066CC; border-radius: 6px; padding: 4px; outline: none; background: #F0F7FF; width: 100%; text-align: center;
         }}
         
         .btn-outline {{
@@ -150,10 +137,10 @@ html_code = f"""
             color: #FF6600 !important;
             border: 2px solid #FF6600 !important;
             box-shadow: 0 2px 4px rgba(0,0,0,0.08);
-            height: 38px;
+            height: 36px;
         }}
         
-        .meta-info {{ font-size: 11px; color: #555; margin-top: 6px; line-height: 1.3; }}
+        .meta-info {{ font-size: 11px; color: #555; margin-top: 4px; line-height: 1.3; }}
 
         .modal-overlay {{
             display: none;
@@ -245,11 +232,20 @@ html_code = f"""
 
     <button id="sttBtn" class="btn btn-orange" onclick="startRecognition()">TRANSLATE</button>
     <button class="btn btn-outline" onclick="speakRecognizedText()">HEAR SPOKEN THAI TEXT</button>
+    <button class="btn btn-purple" onclick="addSpokenToSheet()">ADD TO SHEET</button>
 
     <div class="meta-info">
         <div><b>Available Records:</b> <span id="recordCount">{len(PHRASES_DB)}</span></div>
         <div><b>Spreadsheet Last Updated:</b> {LAST_UPDATED}</div>
     </div>
+
+    <!-- Hidden form to submit directly to Google Apps Script bypassing CORS blocks -->
+    <form id="sheetForm" method="GET" target="hiddenFrame" style="display:none;">
+        <input type="hidden" name="thai" id="formThai">
+        <input type="hidden" name="english" id="formEng">
+        <input type="hidden" name="category" value="SPOKEN">
+    </form>
+    <iframe name="hiddenFrame" style="display:none;"></iframe>
 
     <div id="filterModal" class="modal-overlay">
         <div class="modal-content">
@@ -269,6 +265,7 @@ html_code = f"""
     <script>
         const fullDb = {json_data};
         const allCategories = {json_cats};
+        const WEB_APP_URL = "YOUR_DEPLOYED_APPS_SCRIPT_WEB_APP_URL_HERE";
         
         let activeDb = [...fullDb];
         let selectedCategories = new Set(allCategories);
@@ -464,46 +461,36 @@ html_code = f"""
             }}
         }}
 
+        function addSpokenToSheet() {{
+            const thaiText = document.getElementById('speechOutput').value.trim();
+            let engText = document.getElementById('speechTrans').value.trim();
+            
+            if (!thaiText || thaiText === "Spoken Thai text...") {{
+                alert("Please enter or speak a Thai phrase first.");
+                return;
+            }}
+
+            if (!engText || engText === "Translating..." || engText === "Translation unavailable") {{
+                let userEng = prompt("Enter English translation for: " + thaiText);
+                if (userEng === null) return;
+                engText = userEng.trim();
+                document.getElementById('speechTrans').value = engText;
+            }}
+
+            // Submit via background hidden form iframe to securely reach Google Apps Script
+            const form = document.getElementById('sheetForm');
+            form.action = WEB_APP_URL;
+            document.getElementById('formThai').value = thaiText;
+            document.getElementById('formEng').value = engText;
+            form.submit();
+
+            alert("Added to Google Sheet successfully!");
+        }}
+
         updateCard();
     </script>
 </body>
 </html>
 """
 
-components.html(html_code, height=440, scrolling=False)
-
-# --- NATIVE STREAMLIT ADD TO SHEET PANEL (100% RELIABLE) ---
-st.markdown("""
-    <style>
-    div.stButton > button[kind="primary"] {
-        background-color: #8E44AD !important;
-        color: white !important;
-        border: none !important;
-        height: 42px !important;
-        font-weight: bold !important;
-    }
-    div.stButton > button[kind="primary"]:hover {
-        background-color: #732D91 !important;
-        color: white !important;
-    }
-    </style>
-""", unsafe_allow_html=True)
-
-with st.form("native_sheet_form", clear_on_submit=False):
-    st.markdown("<p style='text-align: center; color: #8E44AD; font-weight: bold; margin-bottom: 4px;'>Save Phrase to Google Sheet</p>", unsafe_allow_html=True)
-    f_col1, f_col2 = st.columns(2)
-    with f_col1:
-        native_thai = st.text_input("Thai", placeholder="Type or copy Thai...")
-    with f_col2:
-        native_eng = st.text_input("English", placeholder="Type or copy English...")
-    
-    submitted = st.form_submit_button("ADD TO SHEET", type="primary", use_container_width=True)
-    if submitted:
-        if not native_thai or not native_eng:
-            st.warning("Please provide both Thai and English fields.")
-        else:
-            try:
-                total_count = append_to_sheet(native_thai, native_eng, "SPOKEN")
-                st.success(f"Successfully added to Google Sheet! Total records: {total_count}")
-            except Exception as ex:
-                st.error(f"Save failed: {ex}")
+components.html(html_code, height=590, scrolling=False)
