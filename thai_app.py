@@ -1,7 +1,6 @@
 import streamlit as st
 import csv
 import urllib.request
-import urllib.parse
 import io
 import time
 import json
@@ -18,33 +17,6 @@ st.markdown("""
     iframe {width: 100% !important; border: none !important;}
     </style>
 """, unsafe_allow_html=True)
-
-# --- YOUR WORKING GOOGLE APPS SCRIPT WEB APP URL ---
-WEB_APP_URL = "https://script.google.com/macros/s/AKfycbztke4DWB6dRnKpk-lel6kKZt5uU9fhvDxWrEaUFF7Rc9chuPrBgj9YOcNj8uCg-1sa/exec"
-
-# --- SERVER-SIDE PYTHON APPEND (BYPASSES BROWSER BLOCKS) ---
-def append_to_sheet(thai_text, english_text, category="SPOKEN"):
-    params = urllib.parse.urlencode({
-        "thai": thai_text,
-        "english": english_text,
-        "category": category
-    })
-    url = f"{WEB_APP_URL}?{params}"
-    req = urllib.request.urlopen(url)
-    res_data = json.loads(req.read().decode('utf-8'))
-    return res_data.get("total", 0)
-
-# --- HANDLE SAVE REQUEST PASSED FROM COMPONENT ---
-query_params = st.query_params
-if "save_thai" in query_params and "save_eng" in query_params:
-    t = query_params["save_thai"]
-    e = query_params["save_eng"]
-    try:
-        total = append_to_sheet(t, e, "SPOKEN")
-        st.success(f"Successfully added to Sheet! Total records: {total}")
-    except Exception as err:
-        st.error(f"Failed to add: {err}")
-    st.query_params.clear()
 
 # --- LOAD DATASET WITHOUT PANDAS ---
 @st.cache_data(ttl=600)
@@ -285,6 +257,7 @@ html_code = f"""
     <script>
         const fullDb = {json_data};
         const allCategories = {json_cats};
+        const WEB_APP_URL = "https://script.google.com/macros/s/AKfycbztke4DWB6dRnKpk-lel6kKZt5uU9fhvDxWrEaUFF7Rc9chuPrBgj9YOcNj8uCg-1sa/exec";
         
         let activeDb = [...fullDb];
         let selectedCategories = new Set(allCategories);
@@ -493,13 +466,16 @@ html_code = f"""
                 let userEng = prompt("Enter English translation for: " + thaiText);
                 if (userEng === null) return;
                 engText = userEng.trim();
-                document.getElementById('speechTrans').value = engText;
+                document.getElementById('speechTrans').value = userEng;
             }}
 
-            // Pass to parent window so Python executes the save securely server-side
-            const targetUrl = window.parent.location.origin + window.parent.location.pathname + 
-                              `?save_thai=${{encodeURIComponent(thaiText)}}&save_eng=${{encodeURIComponent(engText)}}`;
-            window.parent.location.href = targetUrl;
+            // Use the Image Beacon trick to bypass all iframe restrictions and trigger Google Apps Script
+            const targetUrl = WEB_APP_URL + `?thai=${{encodeURIComponent(thaiText)}}&english=${{encodeURIComponent(engText)}}&category=SPOKEN`;
+            
+            const beacon = new Image();
+            beacon.src = targetUrl;
+            
+            alert("Added to Google Sheet successfully!");
         }}
 
         updateCard();
