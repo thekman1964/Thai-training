@@ -388,18 +388,13 @@ html_code = f"""
                 
                 const cleanedText = text.trim().normalize('NFC');
                 
-                // 1. Try exact normalized match
-                let match = fullDb.find(item => item.thai.trim().normalize('NFC') === cleanedText);
-                
-                // 2. If no exact match, try flexible substring match (handles missing polite particles like ครับ/ค่ะ)
-                if (!match) {{
-                    match = fullDb.find(item => item.thai.includes(cleanedText) || cleanedText.includes(item.thai));
-                }}
+                // Strict normalized match only (prevents wrong partial substring matches)
+                const match = fullDb.find(item => item.thai.trim().normalize('NFC') === cleanedText);
                 
                 if (match) {{
                     document.getElementById('speechTrans').innerText = match.english;
                 }} else {{
-                    document.getElementById('speechTrans').innerText = "New Spoken Phrase (Ready to Add)";
+                    document.getElementById('speechTrans').innerText = "Translation unavailable";
                 }}
             }};
 
@@ -449,7 +444,7 @@ html_code = f"""
             
             const params = new URLSearchParams({{
                 thai: thaiText,
-                english: engText && engText !== "Translating..." && engText !== "New Spoken Phrase (Ready to Add)" ? engText : "",
+                english: engText && engText !== "Translating..." && engText !== "Translation unavailable" ? engText : "",
                 category: "SPOKEN"
             }});
 
