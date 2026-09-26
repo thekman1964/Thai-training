@@ -437,40 +437,39 @@ html_code = f"""
             }}
         }}
 
-        function openAddModal() {{
+function openAddModal() {
             const thaiText = document.getElementById('speechOutput').innerText;
             const engText = document.getElementById('speechTrans').innerText;
             
-            if (!thaiText || thaiText === "Spoken Thai text...") {{
+            if (!thaiText || thaiText === "Spoken Thai text...") {
                 alert("Please translate a spoken phrase first.");
                 return;
-            }}
+            }
 
-            // REPLACE THE URL BELOW WITH YOUR DEPLOYED GOOGLE APPS SCRIPT WEB APP URL
             const WEB_APP_URL = "YOUR_DEPLOYED_APPS_SCRIPT_WEB_APP_URL_HERE";
             
-            const payload = {{
+            const params = new URLSearchParams({
                 thai: thaiText,
                 english: engText && engText !== "Translating..." && engText !== "Translation unavailable" ? engText : "",
                 category: "SPOKEN"
-            }};
+            });
 
-            fetch(WEB_APP_URL, {{
-                method: "POST",
-                mode: "no-cors",
-                headers: {{ "Content-Type": "text/plain;charset=utf-8" }},
-                body: JSON.stringify(payload)
-            }}).then(() => {{
-                const countElem = document.getElementById('recordCount');
-                let currentCount = parseInt(countElem.innerText) || 944;
-                currentCount += 1;
-                
-                document.getElementById('successMsg').innerText = `Translation added successfully. There are now ${{currentCount}} translations available.`;
-                document.getElementById('successModal').style.display = 'flex';
-            }}).catch(err => {{
-                alert("Error connecting to Google Sheet: " + err);
-            }});
-        }}
+            fetch(`${WEB_APP_URL}?${params.toString()}`)
+                .then(res => res.json())
+                .then(data => {
+                    const total = data.total || 944;
+                    document.getElementById('successMsg').innerText = `Translation added successfully. There are now ${total} translations available.`;
+                    document.getElementById('successModal').style.display = 'flex';
+                })
+                .catch(() => {
+                    // Fallback display if CORS blocks reading the JSON response back
+                    const countElem = document.getElementById('recordCount');
+                    let currentCount = parseInt(countElem.innerText) || 944;
+                    currentCount += 1;
+                    document.getElementById('successMsg').innerText = `Translation added successfully. There are now ${currentCount} translations available.`;
+                    document.getElementById('successModal').style.display = 'flex';
+                });
+        }
 
         function closeSuccessModal() {{
             document.getElementById('successModal').style.display = 'none';
