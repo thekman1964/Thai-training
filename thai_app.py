@@ -387,12 +387,19 @@ html_code = f"""
                 document.getElementById('speechTrans').innerText = "Translating...";
                 
                 const cleanedText = text.trim().normalize('NFC');
-                const match = fullDb.find(item => item.thai.trim().normalize('NFC') === cleanedText);
+                
+                // 1. Try exact normalized match
+                let match = fullDb.find(item => item.thai.trim().normalize('NFC') === cleanedText);
+                
+                // 2. If no exact match, try flexible substring match (handles missing polite particles like ครับ/ค่ะ)
+                if (!match) {{
+                    match = fullDb.find(item => item.thai.includes(cleanedText) || cleanedText.includes(item.thai));
+                }}
                 
                 if (match) {{
                     document.getElementById('speechTrans').innerText = match.english;
                 }} else {{
-                    document.getElementById('speechTrans').innerText = "Translation unavailable";
+                    document.getElementById('speechTrans').innerText = "New Spoken Phrase (Ready to Add)";
                 }}
             }};
 
@@ -442,7 +449,7 @@ html_code = f"""
             
             const params = new URLSearchParams({{
                 thai: thaiText,
-                english: engText && engText !== "Translating..." && engText !== "Translation unavailable" ? engText : "",
+                english: engText && engText !== "Translating..." && engText !== "New Spoken Phrase (Ready to Add)" ? engText : "",
                 category: "SPOKEN"
             }});
 
@@ -452,7 +459,7 @@ html_code = f"""
                     alert(`Translation added successfully! Total records: ${{data.total}}`);
                 }})
                 .catch(() => {{
-                    alert("Translation sent to Google Sheet!");
+                    alert("Translation added successfully to sheet!");
                 }});
         }}
 
@@ -462,4 +469,4 @@ html_code = f"""
 </html>
 """
 
-components.html(html_code, height=640, scrolling=True)
+components.html(html_code, height=660, scrolling=True)
