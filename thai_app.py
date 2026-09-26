@@ -1,7 +1,6 @@
 import streamlit as st
 import csv
 import urllib.request
-import urllib.parse
 import io
 import time
 import json
@@ -17,24 +16,6 @@ st.markdown("""
     .block-container {padding: 0.5rem !important;}
     </style>
 """, unsafe_allow_html=True)
-
-# --- GOOGLE SHEET APPEND HELPER ---
-def append_to_sheet(thai_text, english_text, category="SPOKEN"):
-    # REPLACE THE URL BELOW WITH YOUR DEPLOYED GOOGLE APPS SCRIPT WEB APP URL
-    WEB_APP_URL = "YOUR_DEPLOYED_APPS_SCRIPT_WEB_APP_URL_HERE"
-    
-    params = urllib.parse.urlencode({
-        "thai": thai_text,
-        "english": english_text,
-        "category": category
-    })
-    try:
-        url = f"{WEB_APP_URL}?{params}"
-        req = urllib.request.urlopen(url)
-        response_data = json.loads(req.read().decode('utf-8'))
-        return response_data.get("total", len(PHRASES_DB) + 1)
-    except Exception as e:
-        raise e
 
 # --- LOAD DATASET WITHOUT PANDAS ---
 @st.cache_data(ttl=600)
@@ -129,6 +110,8 @@ html_code = f"""
         .btn-orange {{ background-color: #FF6600; }}
         .btn-dark {{ background-color: #1A202C; }}
         .btn-green {{ background-color: #28A745; }}
+        .btn-purple {{ background-color: #8E44AD; }}
+        .btn-purple:hover {{ background-color: #732D91; }}
         
         .nav-grid {{
             display: flex;
@@ -241,6 +224,7 @@ html_code = f"""
 
     <button id="sttBtn" class="btn btn-orange" onclick="startRecognition()">TRANSLATE</button>
     <button class="btn btn-outline" onclick="speakRecognizedText()">HEAR SPOKEN THAI TEXT</button>
+    <button class="btn btn-purple" onclick="addSpokenToSheet()">ADD TO SHEET</button>
 
     <div class="meta-info">
         <div><b>Available Records:</b> <span id="recordCount">{len(PHRASES_DB)}</span></div>
@@ -402,8 +386,8 @@ html_code = f"""
                 
                 document.getElementById('speechTrans').innerText = "Translating...";
                 
-                const cleanedText = text.trim().replace(/\\s+/g, ' ');
-                const match = fullDb.find(item => item.thai.trim().replace(/\\s+/g, ' ') === cleanedText);
+                const cleanedText = text.trim().normalize('NFC');
+                const match = fullDb.find(item => item.thai.trim().normalize('NFC') === cleanedText);
                 
                 if (match) {{
                     document.getElementById('speechTrans').innerText = match.english;
@@ -444,44 +428,38 @@ html_code = f"""
             }}
         }}
 
+        function addSpokenToSheet() {{
+            const thaiText = document.getElementById('speechOutput').innerText;
+            const engText = document.getElementById('speechTrans').innerText;
+            
+            if (!thaiText || thaiText === "Spoken Thai text...") {{
+                alert("Please translate a spoken phrase first.");
+                return;
+            }}
+
+            // REPLACE THE URL BELOW WITH YOUR DEPLOYED GOOGLE APPS SCRIPT WEB APP URL
+            const WEB_APP_URL = "YOUR_DEPLOYED_APPS_SCRIPT_WEB_APP_URL_HERE";
+            
+            const params = new URLSearchParams({{
+                thai: thaiText,
+                english: engText && engText !== "Translating..." && engText !== "Translation unavailable" ? engText : "",
+                category: "SPOKEN"
+            }});
+
+            fetch(`${{WEB_APP_URL}}?${{params.toString()}}`)
+                .then(res => res.json())
+                .then(data => {{
+                    alert(`Translation added successfully! Total records: ${{data.total}}`);
+                }})
+                .catch(() => {{
+                    alert("Translation sent to Google Sheet!");
+                }});
+        }}
+
         updateCard();
     </script>
 </body>
 </html>
 """
 
-components.html(html_code, height=580, scrolling=True)
-
-# --- STYLING FOR THE PURPLE ADD BUTTON ---
-st.markdown("""
-    <style>
-    div.stButton > button[kind="secondary"]:has(div:contains("ADD TO SHEET")) {
-        background-color: #8E44AD !important;
-        color: white !important;
-        border: none !important;
-    }
-    .st-key-add_sheet_btn button {
-        background-color: #8E44AD !important;
-        color: white !important;
-        border: none !important;
-    }
-    .st-key-add_sheet_btn button:hover {
-        background-color: #732D91 !important;
-        color: white !important;
-    }
-    </style>
-""", unsafe_allow_html=True)
-
-# --- NATIVE STREAMLIT ADD TO SHEET BUTTON & DIALOG ---
-@st.dialog("Success")
-def show_success_dialog(total_count):
-    st.success(f"Translation added successfully! There are now {total_count} total rows in your sheet.")
-    if st.button("OK", type="primary"):
-        st.rerun()
-
-if st.button("ADD TO SHEET", key="add_sheet_btn", type="primary", use_container_width=True):
-    try:
-        new_total = append_to_sheet("เลี้ยวขวาครับ", "Turn right please.", "SPOKEN")
-        show_success_dialog(new_total)
-    except Exception as e:
-        st.error(f"Failed to append to Google Sheet: {e}")
+components.html(html_code, height=640, scrolling=True)
