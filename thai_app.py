@@ -21,7 +21,7 @@ st.markdown("""
 # --- GOOGLE SHEET APPEND HELPER ---
 def append_to_sheet(thai_text, english_text, category="SPOKEN"):
     # REPLACE THE URL BELOW WITH YOUR DEPLOYED GOOGLE APPS SCRIPT WEB APP URL
-    WEB_APP_URL = "YOUR_DEPLOYED_APPS_SCRIPT_WEB_APP_URL_HERE"
+    WEB_APP_URL = "https://script.google.com/macros/s/AKfycbztke4DWB6dRnKpk-lel6kKZt5uU9fhvDxWrEaUFF7Rc9chuPrBgj9YOcNj8uCg-1sa/exec"
     
     params = urllib.parse.urlencode({
         "thai": thai_text,
